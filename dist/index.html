@@ -39,7 +39,7 @@
       <g fill="#d7ad68" opacity=".45"><circle cx="485" cy="189" r="2"/><circle cx="1099" cy="212" r="1.5"/><circle cx="692" cy="338" r="1.6"/><circle cx="1263" cy="297" r="2"/><circle cx="332" cy="347" r="1.3"/><circle cx="920" cy="362" r="1"/></g>
     </svg>
     <div class="scene-vignette"></div><div class="grain"></div>
-    <div class="encounter-title"><div class="eyebrow"><span></span> 第一幕 · 遗忘的门槛</div><h1>石门之前，<br><em>余火未熄。</em></h1><p>看清守卫的意图，再决定你的下一张牌。</p></div>
+    <div class="encounter-title"><div class="eyebrow"><span></span> 第一幕 · 遗忘的门槛</div><h1>石门之前，<br><em>余火未熄。</em></h1><p>把攻击拼进生命格，由你决定破碎的位置。</p></div>
     <div class="round-display"><span>ROUND</span><b id="turn">01</b><i></i><strong id="phase-label">你的回合</strong></div>
     <div class="relic-badge" id="relic-badge" hidden></div>
     <section class="actor hero-actor" id="hero-actor" aria-label="提灯旅人">
@@ -87,17 +87,24 @@
         <g fill="none" stroke="#63774f" stroke-width="3"><path d="m138 49-15-29-16 4m23 15 16-9m135 117 18-32 16 3m-25 13-11-11m-164 142-8 22-13 4"/></g>
         <g fill="#bbbc90" opacity=".6"><path d="m145 123 12-6 5 5-12 7Zm101 44 9 3-5 10-8-4ZM46 223l10-10 6 5-8 11ZM253 306l9-2 7 8-14 3Z"/></g>
       </svg>
-      <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span>石门守卫<span class="actor-role">古老构装体</span></div><div class="health-track enemy-health" id="enemy-health" role="progressbar" aria-label="守卫生命" aria-valuemin="0" aria-valuemax="48" aria-valuenow="48"><span id="enemy-hp-fill"></span><b>♥ <span id="enemy-hp">48 / 48</span></b></div><div class="statuses" id="enemy-status"></div></div>
+      <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span>石门守卫<span class="actor-role">古老构装体</span></div><div class="statuses" id="enemy-status"></div></div>
     </section>
-    <div class="first-hint" id="first-hint"><span>✧</span> 你的第一步：点击下方卡牌 <i>↓</i></div>
+    <section class="enemy-grid-panel" id="enemy-grid-panel" aria-label="守卫的可攻击生命方格">
+      <div class="grid-panel-header"><div><span class="grid-eyebrow">VITALITY MATRIX</span><h2>守卫生命格</h2></div><span class="grid-hp" id="enemy-health" role="progressbar" aria-label="守卫剩余生命格" aria-valuemin="0" aria-valuemax="24" aria-valuenow="24"><b id="enemy-hp">24 / 24</b><small>每格 1 生命</small></span></div>
+      <div class="hp-grid" id="enemy-grid" role="group" aria-label="点击生命方格放置攻击"></div>
+      <div class="grid-legend"><span><i class="legend-live"></i>生命</span><span><i class="legend-hit"></i>将移除</span><span><i class="legend-armor"></i>护甲 / 破甲</span></div>
+      <div class="placement-summary"><div id="placement-preview" aria-hidden="true"></div><div><strong id="placement-title">选择攻击形状</strong><p id="placement-status" role="status" aria-live="polite">先选择一张攻击牌。</p></div></div>
+      <div class="placement-actions"><button id="rotate-attack" disabled title="顺时针旋转90度">旋转 <kbd>R</kbd></button><button id="cancel-attack" disabled title="取消放置，不消耗能量">取消 <kbd>Esc</kbd></button><button id="confirm-attack" class="gold-button" disabled>放下攻击 <kbd>↵</kbd></button></div>
+    </section>
+    <div class="first-hint" id="first-hint"><span>✧</span> 选攻击牌 → 点生命格 → 确认落点 <i>↓</i></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div class="scene-bottom"><span>遗忘者的石门</span><button id="log-button">战斗记录 <span>↗</span></button></div>
   </main>
   <section class="hand-zone" aria-label="手牌区域">
-    <div class="hand-heading"><span>你的手牌 <b id="hand-count">5</b></span><span>点击出牌 <i>·</i> 数字键 1–9</span><span id="exhaust-count"></span></div>
+    <div class="hand-heading"><span>你的手牌 <b id="hand-count">5</b></span><span>选牌 1–9 <i>·</i> 旋转 R <i>·</i> 放置 Enter</span><span id="exhaust-count"></span></div>
     <div class="hand-layout"><div class="left-controls"><div class="energy-orb" id="energy-orb" title="每回合恢复3点能量"><div><b id="energy">3</b><span>/ 3</span></div><small>能 量</small></div><button class="pile-control" id="draw-pile"><span class="pile-symbol" id="draw-symbol"></span><b id="draw-count">5</b><span>抽牌堆</span></button></div><div class="hand" id="hand"></div><div class="right-controls"><button class="gold-button end-turn" id="end-turn"></button><button class="pile-control discard-control" id="discard-pile"><span class="pile-symbol" id="discard-symbol"></span><b id="discard-count">0</b><span>弃牌堆</span></button></div></div>
   </section>
-  <footer><span>✦ 余烬之后，仍有前路。</span><span>原创卡牌遭遇战 <i>·</i> 单关原型</span><button id="deck-button"></button></footer>
+  <footer><span>✦ 余烬之后，仍有前路。</span><span>形状攻击 · 方格生命 <i>·</i> 单关原型</span><button id="deck-button"></button></footer>
 </div>
 <div class="modal-backdrop" id="modal" hidden><section class="modal-panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="关闭弹窗">×</button><div class="modal-ornament">— ✦ —</div><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
 <script src="balance.js"></script><script src="game.js"></script>
