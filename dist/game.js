@@ -39,7 +39,7 @@
     }
     planAttack(card, { x, y, rotation = 0 } = {}) {
       const d = this.definition(card), shape = this.shapeFor(card, rotation);
-      if (!shape.length || !Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(rotation)) return { ok: false, reason: '请先选择一个生命格作为形状的左上角。', cells: [], hits: [], blocked: [] };
+      if (!shape.length || !Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(rotation)) return { ok: false, reason: '请先选择攻击图案的落点。', cells: [], hits: [], blocked: [] };
       let remainder = this.attackRemainder;
       const cells = shape.map(([dx, dy]) => {
         const cx = x + dx, cy = y + dy, inBounds = cx >= 0 && cx < this.columns && cy >= 0 && cy < this.rows, index = cy * this.columns + cx;
@@ -150,6 +150,8 @@
   const $ = id => document.getElementById(id);
   let battle = new Battle(), busy = false, sound = false, auto = false, context, modalOpen = false, reward = null;
   let selectedUid = null, rotation = 0, anchor = { x: 1, y: 1 }, anchorChosen = false;
+  let aim = { x: (battle.columns - 1) / 2, y: (battle.rows - 1) / 2 }, aimSource = 'keyboard', edgeSnapped = false;
+  let aimFrame = 0, queuedAim = null, wheelAmount = 0, lastWheelAt = 0, lastWheelTurn = -Infinity;
   let selectedPart = 'torso';
   let toastTimer, impactTimer, battleSerial = 0;
   const shakeTimers = new WeakMap();
@@ -229,10 +231,53 @@
     tone(hit.lost ? 150 : 360, .2, hit.lost ? 'sawtooth' : 'triangle');
   }
   function selectedCard() { return battle.hand.find(c => c.uid === selectedUid); }
-  function clearPlacement() { selectedUid = null; rotation = 0; anchorChosen = false; }
+  function clearPlacement() { selectedUid = null; rotation = 0; anchorChosen = false; edgeSnapped = false; if (aimFrame) root.cancelAnimationFrame(aimFrame); aimFrame = 0; queuedAim = null; wheelAmount = 0; lastWheelAt = 0; lastWheelTurn = -Infinity; }
+  function centeredPlacement(card) {
+    const shape = battle.shapeFor(card, rotation), width = Math.max(...shape.map(p => p[0])) + 1, height = Math.max(...shape.map(p => p[1])) + 1;
+    const rawX = Math.round(aim.x - (width - 1) / 2), rawY = Math.round(aim.y - (height - 1) / 2);
+    const x = Math.max(0, Math.min(battle.columns - width, rawX)), y = Math.max(0, Math.min(battle.rows - height, rawY));
+    return { x, y, width, height, shifted: x !== rawX || y !== rawY };
+  }
+  function aimAt(x, y, force = false) {
+    if (!Number.isFinite(x) || !Number.isFinite(y) || busy || modalOpen || auto) return;
+    aim = { x, y }; const card = selectedCard(); if (!card) return;
+    const next = centeredPlacement(card), changed = force || !anchorChosen || next.x !== anchor.x || next.y !== anchor.y || next.shifted !== edgeSnapped;
+    anchor = { x: next.x, y: next.y }; anchorChosen = true; edgeSnapped = next.shifted;
+    if (changed) paintPlacement();
+  }
+  function applyPointerAim(point) {
+    if (busy || modalOpen || auto || battle.status !== 'playing') return;
+    const cells = $('enemy-grid').children; if (!cells.length) return;
+    const first = cells[0].getBoundingClientRect(), next = cells[1].getBoundingClientRect(), below = cells[battle.columns].getBoundingClientRect();
+    const stepX = next.left - first.left, stepY = below.top - first.top; if (!stepX || !stepY) return;
+    aimSource = 'pointer'; aimAt((point.x - first.left - first.width / 2) / stepX, (point.y - first.top - first.height / 2) / stepY);
+  }
+  function flushPointerAim() { if (aimFrame) root.cancelAnimationFrame(aimFrame); aimFrame = 0; const point = queuedAim; queuedAim = null; if (point) applyPointerAim(point); }
+  function queuePointerAim(e) {
+    if (busy || modalOpen || auto || battle.status !== 'playing') return;
+    queuedAim = { x: e.clientX, y: e.clientY };
+    if (!aimFrame) aimFrame = root.requestAnimationFrame(flushPointerAim);
+  }
+  function aimAtCell(index) { aimSource = 'keyboard'; aimAt(index % battle.columns, Math.floor(index / battle.columns)); }
+  function moveAim(dx, dy) {
+    const card = selectedCard(); if (!card || busy || modalOpen) return;
+    flushPointerAim(); const placement = centeredPlacement(card); aimSource = 'keyboard';
+    const x = Math.max(0, Math.min(battle.columns - placement.width, anchor.x + dx)), y = Math.max(0, Math.min(battle.rows - placement.height, anchor.y + dy));
+    aimAt(x + (placement.width - 1) / 2, y + (placement.height - 1) / 2);
+  }
+  function paintReticle(card, pending) {
+    const reticle = $('placement-reticle'); reticle.hidden = !pending; if (!pending) return;
+    const placement = centeredPlacement(card), cells = $('enemy-grid').children;
+    const first = cells[anchor.y * battle.columns + anchor.x].getBoundingClientRect();
+    const last = cells[(anchor.y + placement.height - 1) * battle.columns + anchor.x + placement.width - 1].getBoundingClientRect();
+    const panel = $('enemy-grid-panel'), bounds = panel.getBoundingClientRect();
+    reticle.style.left = `${(first.left + last.right) / 2 - bounds.left - panel.clientLeft}px`;
+    reticle.style.top = `${(first.top + last.bottom) / 2 - bounds.top - panel.clientTop}px`;
+    reticle.classList.toggle('edge-snapped', edgeSnapped);
+  }
   function renderGrid() {
     $('enemy-grid').style.setProperty('--grid-cols', battle.columns);
-    $('enemy-grid').innerHTML = battle.enemy.cells.map((layers, i) => `<button class="hp-cell ${layers ? 'alive' : 'empty'} ${layers > 1 ? 'layered' : ''} ${layers && battle.enemy.armor[i] ? 'armored' : ''}" data-cell="${i}" data-layers="${layers}" style="--layer-color:${R.layerColors[Math.max(0, layers - 1)]}" aria-label="第${Math.floor(i / battle.columns) + 1}行第${i % battle.columns + 1}列，${layers ? `${layers}层生命${battle.enemy.armor[i] ? '，有护甲' : ''}` : '已破损'}" title="${layers ? `${layers}层生命 · 命中削1层${battle.enemy.armor[i] ? ' · 需先破甲' : ''}` : '空格'}" ${busy || battle.status !== 'playing' ? 'disabled' : ''}><span>${layers || '·'}</span>${layers && battle.enemy.armor[i] ? '<i class="cell-armor" aria-hidden="true">◇</i>' : ''}</button>`).join('');
+    $('enemy-grid').innerHTML = battle.enemy.cells.map((layers, i) => `<button class="hp-cell ${layers ? 'alive' : 'empty'} ${layers > 1 ? 'layered' : ''} ${layers && battle.enemy.armor[i] ? 'armored' : ''}" data-cell="${i}" data-layers="${layers}" style="--layer-color:${R.layerColors[Math.max(0, layers - 1)]}" aria-label="第${Math.floor(i / battle.columns) + 1}行第${i % battle.columns + 1}列，${layers ? `${layers}层生命${battle.enemy.armor[i] ? '，有护甲' : ''}` : '已破损'}" title="${layers ? `${layers}层生命${battle.enemy.armor[i] ? ' · 有护甲' : ''}` : '空格'}" ${busy || battle.status !== 'playing' ? 'disabled' : ''}><span>${layers || '·'}</span>${layers && battle.enemy.armor[i] ? '<i class="cell-armor" aria-hidden="true">◇</i>' : ''}</button>`).join('');
     $('enemy-cell-count').textContent = `${battle.enemy.cells.filter(layers => layers > 0).length} 格 · 每格最多 ${battle.maxCellLayers} 层`;
     paintPlacement();
   }
@@ -240,27 +285,26 @@
     const card = selectedCard(), pending = !!card && !auto && !busy && battle.status === 'playing';
     const plan = pending ? battle.planAttack(card, { ...anchor, rotation }) : null;
     const cells = [...$('enemy-grid').children];
-    cells.forEach(e => { e.classList.remove('preview-hit', 'preview-block', 'preview-empty', 'preview-invalid', 'is-anchor'); e.querySelector('.cell-forecast')?.remove(); });
+    cells.forEach((e, i) => { e.classList.remove('preview-hit', 'preview-block', 'preview-empty', 'preview-invalid', 'is-anchor'); e.querySelector('.cell-forecast')?.remove(); if (pending) e.removeAttribute('title'); else e.title = battle.enemy.cells[i] ? `${battle.enemy.cells[i]}层生命${battle.enemy.armor[i] ? ' · 有护甲' : ''}` : '空格'; });
     if (plan) {
       for (const c of plan.cells) if (c.inBounds) {
         cells[c.index].classList.add(!plan.ok && plan.reason.startsWith('形状超出') ? 'preview-invalid' : c.lost ? 'preview-hit' : c.breaksArmor ? 'preview-block' : 'preview-empty');
         const forecast = document.createElement('em'); forecast.className = 'cell-forecast'; forecast.textContent = c.lost ? `−${c.lost}` : c.breaksArmor ? '◇' : '0'; cells[c.index].appendChild(forecast);
       }
-      const index = anchor.y * battle.columns + anchor.x; if (cells[index]) cells[index].classList.add('is-anchor');
     }
     $('enemy-grid-panel').classList.toggle('placing', pending);
+    paintReticle(card, pending);
     $('rotate-attack').disabled = !pending; $('cancel-attack').disabled = !pending;
     $('placement-title').textContent = pending ? `${battle.definition(card).name} · ${battle.definition(card).shapeName} · ${rotation * 90}°` : auto ? 'AUTO 已开启 · 点攻击牌直接打出' : '选攻击牌 → 点格子立即攻击';
     $('placement-preview').innerHTML = pending ? shapeArt(battle.shapeFor(card, rotation)) : '<span class="idle-crosshair">⌖</span>';
-    $('placement-status').textContent = !pending ? auto ? '自动选择落点和旋转，按当前能力计算实际伤害。' : '100%攻效每格削1层；受伤减效，强化可削多层。' : !plan.ok ? plan.reason : `削 ${plan.damage} 层 · 碎 ${plan.cleared} 格${plan.blocked.length ? ` · 破甲 ${plan.blocked.length} 格` : ''} · 攻效 ${Math.round(battle.hero.effects.attack * 100)}%`;
+    $('placement-status').textContent = !pending ? auto ? '自动选择落点和旋转，按当前能力计算实际伤害。' : '图案中心跟随鼠标 · R/滚轮旋转 · 右键取消。' : !plan.ok ? plan.reason : `削 ${plan.damage} 层 · 碎 ${plan.cleared} 格${plan.blocked.length ? ` · 破甲 ${plan.blocked.length} 格` : ''} · 攻效 ${Math.round(battle.hero.effects.attack * 100)}%${edgeSnapped ? ' · 边缘吸附' : ''}`;
     $('auto-button').setAttribute('aria-pressed', String(auto)); $('auto-button').classList.toggle('active', auto);
     $('auto-button').disabled = busy || battle.status !== 'playing';
     $('auto-state').textContent = auto ? '开' : '关';
-    $('hand-shortcuts').textContent = auto ? 'AUTO · 点牌直接攻击  /  A 切换' : '选牌 1–9 · 点格攻击 · R 旋转';
+    $('hand-shortcuts').textContent = auto ? 'AUTO · 点牌直接攻击  /  A 切换' : '选牌 1–9 · 鼠标居中 · R/滚轮旋转';
     document.querySelectorAll('.card').forEach(e => e.classList.toggle('selected', e.dataset.uid === selectedUid));
   }
-  function setAnchor(index, chosen = false) { if (!selectedCard() || busy || modalOpen) return; anchor = { x: index % battle.columns, y: Math.floor(index / battle.columns) }; if (chosen) anchorChosen = true; paintPlacement(); }
-  function rotateAttack() { if (!selectedCard() || busy || modalOpen) return; rotation = (rotation + 1) % 4; paintPlacement(); tone(320, .06); }
+  function rotateAttack(direction = 1) { if (!selectedCard() || busy || modalOpen || auto) return; flushPointerAim(); rotation = (rotation + (direction < 0 ? 3 : 1)) % 4; aimAt(aim.x, aim.y, true); tone(320, .06); }
   function cancelAttack() { if (!selectedUid) return; clearPlacement(); paintPlacement(); toast('已取消放置，未消耗卡牌或能量。'); }
   function toggleAuto() {
     if (busy || modalOpen || battle.status !== 'playing') return;
@@ -349,8 +393,8 @@
         resolvePlay(uid, placement); return;
       }
       if (selectedUid === uid) { cancelAttack(); return; }
-      selectedUid = uid; rotation = 0; anchor = { x: 1, y: 1 }; anchorChosen = false; render(); tone(300, .08);
-      toast(`${d.name}已选中 · 点击生命格立即攻击，R旋转`); return;
+      flushPointerAim(); selectedUid = uid; rotation = 0; anchorChosen = false; wheelAmount = 0; lastWheelAt = 0; lastWheelTurn = -Infinity; aimAt(aim.x, aim.y, true); render(); tone(300, .08);
+      toast(`${d.name}已选中 · 图案中心跟随鼠标，点击攻击，滚轮旋转`); return;
     }
     clearPlacement(); resolvePlay(uid);
   }
@@ -388,7 +432,7 @@
   }
   function openModal(title, content, className = '') { modalOpen = true; $('modal-title').textContent = title; $('modal-body').innerHTML = content; $('modal-panel').className = `modal-panel ${className}`; $('modal').hidden = false; $('modal-close').focus(); }
   function closeModal() { modalOpen = false; $('modal').hidden = true; $('end-turn').focus(); renderHealth(); }
-  function restart(relic = null) { battleSerial++; battle = new Battle({ relic }); reward = null; selectedPart = 'torso'; busy = false; clearPlacement(); clearTimeout(impactTimer); $('combat-effects').replaceChildren(); $('combat-banner').classList.remove('visible'); closeModal(); render(); toast(relic ? '带着遗物，再次踏入回廊。' : '新的挑战开始了。'); }
+  function restart(relic = null) { battleSerial++; battle = new Battle({ relic }); reward = null; selectedPart = 'torso'; busy = false; aim = { x: (battle.columns - 1) / 2, y: (battle.rows - 1) / 2 }; aimSource = 'keyboard'; clearPlacement(); clearTimeout(impactTimer); $('combat-effects').replaceChildren(); $('combat-banner').classList.remove('visible'); closeModal(); render(); toast(relic ? '带着遗物，再次踏入回廊。' : '新的挑战开始了。'); }
   function showPile(pile) {
     const names = { draw: '抽牌堆', discard: '弃牌堆', deck: '初始牌组', exhaust: '消耗区' };
     const cards = pile === 'draw' ? battle.drawPile : pile === 'discard' ? battle.discardPile : pile === 'exhaust' ? battle.exhaustPile : battle.allCards;
@@ -396,7 +440,7 @@
     openModal(`${names[pile]} · ${cards.length} 张`, `<p class="modal-note">${pile === 'draw' ? '以下按类型展示，不代表抽取顺序。抽牌堆耗尽时，弃牌会重新洗入。' : pile === 'discard' ? '打出的牌和回合结束时的手牌会进入这里。' : pile === 'exhaust' ? '消耗的牌在本局战斗中不会再被抽到。' : '这是一场独立遭遇战。击败守卫后，可选择遗物重试。'}</p><div class="pile-list">${Object.entries(counts).map(([id, count]) => { const d = battle.definition(id); return `<div class="pile-item"><span class="mini-art ${id}">${art(id)}</span><div><strong>${d.name} <small>×${count}</small></strong><p>${d.description}</p></div><span class="mini-cost">${d.cost}</span></div>`; }).join('') || '<p class="empty-pile">这里暂时没有牌。</p>'}</div>`);
   }
   function showHelp() {
-    openModal('提灯旅人的战斗手册', `<div class="help-grid"><div>${icon('star')}<h3>点格即攻击 / AUTO</h3><p>选攻击牌，再点生命格立即打出；R旋转。开启AUTO可点牌直接攻击。敌人总生命24，每格最多9层；数字和颜色表示层数，0层才碎裂。</p></div><div>${icon('eye')}<h3>部位承伤</h3><p>旅人有22个独立部位。敌方伤害按受击倍率调整、先消耗格挡，余下最多分3段按部位权重命中。部位归零即毁坏，手臂或腿毁坏还会失去对应手脚。</p></div><div>${icon('shield')}<h3>能力会改变出牌</h3><p>正常机能为100%。操作与视觉影响攻击，操作与循环影响格挡；意识影响抽牌，行动与呼吸影响能量，行动与听觉影响受伤。预览小数字显示实际削层，低攻效可能弱击，高攻效能削多层。</p></div><div>${icon('flame')}<h3>包扎与强化</h3><p>左侧点部位或用下拉选择，再包扎：1能量、每局3次，修复并止血，不能再生缺失部位。强化剂：1能量、每局1次，持续当前及后续共3个玩家回合，机能可超过100%。代谢越高，治疗与血容量恢复越强。</p></div></div><p class="modal-note">点击“健康详情”查看全部部位、命中权重与能力影响。流血在回合结束扣血容量，疼痛与失血会降低意识。要害毁坏、意识低于30%、行动不高于15%或失血殆尽，单人战斗即失败。所有能力公式为本游戏的卡牌战斗改编。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 <span>·</span> <kbd>R</kbd> 旋转 <span>·</span> <kbd>A</kbd> AUTO <span>·</span> <kbd>E</kbd> 结束回合</div><p class="modal-note">手动支持方向键移动、Enter攻击，Esc取消或关闭弹窗。守卫循环：9点攻击 → 3格覆甲 → 5点攻击后力量+3。你的格挡在下回合清空。</p>`);
+    openModal('提灯旅人的战斗手册', `<div class="help-grid"><div>${icon('star')}<h3>点格即攻击 / AUTO</h3><p>选攻击牌，图案以鼠标居中吸附，点击棋盘立即打出；R/滚轮旋转，Shift+R反向，右键取消。开启AUTO可点牌直接攻击。敌人总生命24，每格最多9层；数字和颜色表示层数，0层才碎裂。</p></div><div>${icon('eye')}<h3>部位承伤</h3><p>旅人有22个独立部位。敌方伤害按受击倍率调整、先消耗格挡，余下最多分3段按部位权重命中。部位归零即毁坏，手臂或腿毁坏还会失去对应手脚。</p></div><div>${icon('shield')}<h3>能力会改变出牌</h3><p>正常机能为100%。操作与视觉影响攻击，操作与循环影响格挡；意识影响抽牌，行动与呼吸影响能量，行动与听觉影响受伤。预览小数字显示实际削层，低攻效可能弱击，高攻效能削多层。</p></div><div>${icon('flame')}<h3>包扎与强化</h3><p>左侧点部位或用下拉选择，再包扎：1能量、每局3次，修复并止血，不能再生缺失部位。强化剂：1能量、每局1次，持续当前及后续共3个玩家回合，机能可超过100%。代谢越高，治疗与血容量恢复越强。</p></div></div><p class="modal-note">点击“健康详情”查看全部部位、命中权重与能力影响。流血在回合结束扣血容量，疼痛与失血会降低意识。要害毁坏、意识低于30%、行动不高于15%或失血殆尽，单人战斗即失败。所有能力公式为本游戏的卡牌战斗改编。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 <span>·</span> <kbd>R</kbd> 旋转 <span>·</span> <kbd>A</kbd> AUTO <span>·</span> <kbd>E</kbd> 结束回合</div><p class="modal-note">手动支持方向键移动中心、Enter攻击；边缘自动向内吸附。Esc取消或关闭弹窗。守卫循环：9点攻击 → 3格覆甲 → 5点攻击后力量+3。你的格挡在下回合清空。</p>`);
   }
   function showResult() {
     if (battle.status === 'playing') return;
@@ -416,10 +460,26 @@
   $('end-turn').addEventListener('click', endTurn); $('help-button').addEventListener('click', showHelp);
   $('health-button').addEventListener('click', showHealth); $('bandage-button').addEventListener('click', () => useMedical('bandage')); $('boost-button').addEventListener('click', () => useMedical('boost'));
   $('treatment-part').addEventListener('change', e => selectBodyPart(e.target.value));
-  $('enemy-grid').addEventListener('pointerover', e => { const cell = e.target.closest('[data-cell]'); if (cell) setAnchor(Number(cell.dataset.cell)); });
-  $('enemy-grid').addEventListener('focusin', e => { const cell = e.target.closest('[data-cell]'); if (cell) setAnchor(Number(cell.dataset.cell), true); });
-  $('enemy-grid').addEventListener('click', e => { const cell = e.target.closest('[data-cell]'); if (!cell || busy || modalOpen || battle.status !== 'playing') return; if (auto) { toast('AUTO已开启，点击攻击牌即可出牌。'); return; } if (!selectedCard()) { toast('先选择一张攻击牌，再点击格子立即攻击。'); return; } setAnchor(Number(cell.dataset.cell), true); confirmAttack(); });
-  $('rotate-attack').addEventListener('click', rotateAttack); $('cancel-attack').addEventListener('click', cancelAttack); $('auto-button').addEventListener('click', toggleAuto);
+  $('enemy-grid').addEventListener('pointermove', queuePointerAim);
+  $('enemy-grid').addEventListener('pointerdown', e => { if (e.button === 0) { flushPointerAim(); applyPointerAim({ x: e.clientX, y: e.clientY }); } });
+  $('enemy-grid').addEventListener('focusin', e => { const cell = e.target.closest('[data-cell]'); if (cell && aimSource === 'keyboard') aimAtCell(Number(cell.dataset.cell)); });
+  $('enemy-grid').addEventListener('click', e => {
+    if (busy || modalOpen || battle.status !== 'playing') return;
+    if (auto) { toast('AUTO已开启，点击攻击牌即可出牌。'); return; }
+    if (!selectedCard()) { toast('先选择一张攻击牌，再点击棋盘立即攻击。'); return; }
+    flushPointerAim(); const cell = e.target.closest('[data-cell]');
+    if (e.detail === 0 && cell && !e.pointerType) aimAtCell(Number(cell.dataset.cell)); else applyPointerAim({ x: e.clientX, y: e.clientY });
+    confirmAttack();
+  });
+  $('enemy-grid').addEventListener('wheel', e => {
+    if (!selectedCard() || busy || modalOpen || auto || e.ctrlKey || e.metaKey || !e.deltaY) return;
+    e.preventDefault(); const now = performance.now(); if (now - lastWheelAt > 180) wheelAmount = 0; lastWheelAt = now;
+    wheelAmount += e.deltaY * (e.deltaMode ? 20 : 1);
+    if (Math.abs(wheelAmount) >= 18 && now - lastWheelTurn >= 100) { flushPointerAim(); applyPointerAim({ x: e.clientX, y: e.clientY }); rotateAttack(Math.sign(wheelAmount)); wheelAmount = 0; lastWheelTurn = now; }
+  }, { passive: false });
+  $('enemy-grid').addEventListener('contextmenu', e => { if (selectedCard() && !busy && !modalOpen) { e.preventDefault(); cancelAttack(); } });
+  $('rotate-attack').addEventListener('click', () => rotateAttack()); $('cancel-attack').addEventListener('click', cancelAttack); $('auto-button').addEventListener('click', toggleAuto);
+  root.addEventListener('resize', () => { if (selectedCard()) paintPlacement(); });
   $('draw-pile').addEventListener('click', () => showPile('draw')); $('discard-pile').addEventListener('click', () => showPile('discard'));
   $('deck-button').addEventListener('click', () => showPile('deck'));
   $('log-button').addEventListener('click', () => openModal('战斗记录', `<ol class="battle-log">${battle.log.map(l => `<li>${l}</li>`).join('')}</ol>`));
@@ -428,14 +488,15 @@
   $('sound-button').addEventListener('click', () => { sound = !sound; $('sound-button').classList.toggle('active', sound); $('sound-button').setAttribute('aria-pressed', String(sound)); $('sound-button').title = sound ? '关闭音效' : '开启音效'; toast(sound ? '音效已开启' : '音效已关闭'); if (sound) tone(500); });
   $('modal-close').addEventListener('click', closeModal); $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
   document.addEventListener('keydown', e => {
+    if (e.key === 'Tab') aimSource = 'keyboard';
     if (!modalOpen && e.target.closest('[data-body-part]') && ['Enter', ' '].includes(e.key)) { e.preventDefault(); selectBodyPart(e.target.closest('[data-body-part]').dataset.bodyPart); return; }
     if (e.key === 'Escape' && modalOpen) { closeModal(); return; }
     if (modalOpen) { if (e.key === 'Tab') { const list = [...$('modal').querySelectorAll('button:not([disabled])')]; if (e.shiftKey && document.activeElement === list[0]) { e.preventDefault(); list.at(-1).focus(); } else if (!e.shiftKey && document.activeElement === list.at(-1)) { e.preventDefault(); list[0].focus(); } } return; }
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     if (e.key === 'Escape' && selectedUid) { e.preventDefault(); cancelAttack(); return; }
     if (e.key.toLowerCase() === 'a') { e.preventDefault(); toggleAuto(); return; }
-    if (selectedCard() && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); anchor.x = Math.max(0, Math.min(battle.columns - 1, anchor.x + (e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0))); anchor.y = Math.max(0, Math.min(battle.rows - 1, anchor.y + (e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0))); anchorChosen = true; paintPlacement(); return; }
-    if (e.key.toLowerCase() === 'r' && selectedUid) { e.preventDefault(); rotateAttack(); return; }
+    if (selectedCard() && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); moveAim(e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0, e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0); return; }
+    if (e.key.toLowerCase() === 'r' && selectedUid) { e.preventDefault(); rotateAttack(e.shiftKey ? -1 : 1); return; }
     if (e.key === 'Enter' && selectedUid) { e.preventDefault(); confirmAttack(); return; }
     if (/^[1-9]$/.test(e.key)) { const c = battle.hand[Number(e.key) - 1]; if (c) { e.preventDefault(); play(c.uid); } }
     if (e.key.toLowerCase() === 'e') { e.preventDefault(); endTurn(); }

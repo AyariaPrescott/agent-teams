@@ -138,6 +138,15 @@
 .health-modal-actions{display:flex;gap:10px}.health-modal-actions button{flex:1;font-size:10px;letter-spacing:0;padding:11px 8px}.health-modal-actions button:disabled{opacity:.35}
 .combat-banner>small{max-width:440px;white-space:normal;line-height:1.6}
 .result-health-link{display:block;border:0;background:none;color:#b7c7aa;font-size:10px;padding:0;margin:0 auto 20px;text-decoration:underline;text-underline-offset:4px}
+.placement-reticle{position:absolute;width:18px;height:18px;transform:translate(-50%,-50%);border:1px solid #fff1c7cc;border-radius:50%;box-shadow:0 0 0 1px #18292ecc,0 0 9px #f6d28a55;z-index:8;pointer-events:none;transition:border-color 60ms,box-shadow 60ms}
+.placement-reticle:before,.placement-reticle:after{content:'';position:absolute;background:#fff0c6;box-shadow:0 0 3px #0b1c23}
+.placement-reticle:before{width:2px;height:5px;left:7px;top:-4px;box-shadow:0 20px 0 #fff0c6}
+.placement-reticle:after{height:2px;width:5px;top:7px;left:-4px;box-shadow:20px 0 0 #fff0c6}
+.placement-reticle.edge-snapped{border-color:#ebce85;box-shadow:0 0 0 1px #18292ecc,0 0 13px #f6d28a88}
+.enemy-grid-panel.placing .hp-grid{cursor:crosshair;user-select:none;-webkit-user-select:none}
+.enemy-grid-panel.placing .hp-cell{cursor:inherit;transition:background 60ms,border-color 50ms,box-shadow 60ms;outline-offset:1px}
+.hp-cell .cell-forecast{user-select:none;-webkit-user-select:none}
+.placement-reticle[hidden]{display:none}
 @keyframes body-hit{0%,25%,55%{fill:#ffcf9b;filter:drop-shadow(0 0 6px #ed987d)}100%{fill:var(--part-color)}}
 @media(min-width:1500px){.body-panel{width:282px;left:5%;top:28px;padding:16px}.body-overview{grid-template-columns:115px 1fr}.body-diagram{height:132px}.capacity-card{padding:6px 9px 9px;font-size:9px}.capacity-card>b{font-size:14px}.medical-actions button{font-size:9px}.hero-actor{left:40%}.enemy-actor{left:64%}.encounter-title{left:29%}}
 @media(max-width:1100px) and (min-width:761px){.body-panel{left:18px;width:222px;padding:11px;top:24px}.body-overview{grid-template-columns:88px 1fr;gap:7px}.body-diagram{height:138px}.body-panel-heading h2{font-size:15px}.body-section-label small{font-size:6px}.capacity-card{padding:6px 5px 9px;font-size:7px}.capacity-effects>span{font-size:7px}.capacity-effects b{font-size:8px}.medical-actions{gap:4px}.medical-actions button{font-size:7px}.part-description{font-size:7px}.hero-actor{left:39%}.enemy-actor{left:64%}.encounter-title{left:28%;top:25px}.encounter-title h1{font-size:23px}.encounter-title p{max-width:170px;white-space:normal}.round-display{left:63%;gap:7px}.combat-banner{left:51%;top:35%}.combat-banner>b{font-size:44px}}
