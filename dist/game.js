@@ -3,27 +3,28 @@
   const R = root.EmberRules || (typeof require === 'function' ? require('./balance.js') : null);
   const Body = root.EmberBody || (typeof require === 'function' ? require('./body.js').HeroBody : null);
   class Battle {
-    constructor({ rng = Math.random, relic = null } = {}) {
-      this.rng = rng; this.relic = relic;
-      this.hero = new Body({ relic }); this.attackRemainder = 0;
+    constructor({ rng = Math.random, relic = null, relics = [], hero = null, deck = R.deck, encounter = null } = {}) {
+      this.rng = rng; this.relic = relic; this.relics = [...relics]; this.encounter = encounter;
+      this.hero = hero || new Body({ relic }); this.attackRemainder = 0;
       this.columns = R.gridColumns; this.rows = R.gridRows;
       this.maxCellLayers = R.maxCellLayers;
-      this.enemy = { hp: 0, maxHp: 0, block: 0, strength: 0, cells: Array.from({ length: this.columns * this.rows }, (_, i) => this.clampLayers(R.enemyLayers[i])), armor: Array(this.columns * this.rows).fill(false) };
+      this.enemy = { hp: 0, maxHp: 0, block: 0, strength: 0, cells: Array.from({ length: this.columns * this.rows }, (_, i) => this.clampLayers((encounter?.layers || R.enemyLayers)[i])), armor: Array(this.columns * this.rows).fill(false) };
       this.syncEnemy(); this.enemy.maxHp = this.enemy.hp;
-      this.energy = 3; this.turn = 1; this.intentIndex = 0; this.status = 'playing'; this.phase = 'player'; this.played = 0;
-      this.allCards = R.deck.map((id, i) => ({ id, uid: `card-${i}` }));
-      this.hand = this.allCards.slice(0, 5); this.drawPile = this.shuffle(this.allCards.slice(5)); this.discardPile = []; this.exhaustPile = [];
-      this.log = ['你举起提灯，石门守卫从沉眠中醒来。'];
+      this.energy = this.hero.effects.energy; this.turn = 1; this.intentIndex = 0; this.status = 'playing'; this.phase = 'player'; this.played = 0;
+      this.allCards = deck.map((id, i) => ({ id, uid: `card-${i}` }));
+      const opening = encounter ? this.shuffle(this.allCards) : this.allCards;
+      this.hand = opening.slice(0, this.hero.effects.draw); this.drawPile = encounter ? opening.slice(this.hero.effects.draw) : this.shuffle(opening.slice(this.hero.effects.draw)); this.discardPile = []; this.exhaustPile = [];
+      this.log = [`你举起提灯，${encounter?.name || '石门守卫'}从沉眠中醒来。`];
     }
     shuffle(cards) {
       const a = [...cards];
       for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
       return a;
     }
-    get intent() { const base = R.intents[this.intentIndex]; return { ...base, damage: base.damage ? base.damage + this.enemy.strength : 0 }; }
+    get intent() { const base = (this.encounter?.intents || R.intents)[this.intentIndex], enraged = this.encounter?.kind === 'boss' && this.enemy.hp <= this.enemy.maxHp / 2; return { ...base, name: base.name + (enraged && base.damage ? ' · 狂怒' : ''), damage: base.damage ? base.damage + this.enemy.strength + (enraged ? 3 : 0) : 0 }; }
     definition(card) {
       const d = { ...R.cards[typeof card === 'string' ? card : card.id] }, effects = this.hero.effects;
-      if (d.shape) { d.damage = d.shape.length; d.power = effects.attack; d.pierce = this.relic === 'blade'; }
+      if (d.shape) { d.damage = d.shape.length; d.power = effects.attack; d.pierce = this.relic === 'blade' || this.relics.includes('blade'); }
       d.block = Math.max(0, Math.floor(d.block * effects.block + 1e-8));
       if (d.draw) d.draw = Math.max(1, Math.round(d.draw * this.hero.capacities.consciousness));
       d.description = [d.shape ? `${d.shape.length}格${d.shapeName}攻击，当前攻效${Math.round(d.power * 100)}%，按预览削去生命层。` : '', R.cards[typeof card === 'string' ? card : card.id].block ? `获得${d.block}点格挡。` : '', d.draw ? `抽${d.draw}张牌。` : '', d.energy ? '获得1能量；消耗。' : ''].filter(Boolean).join('');
@@ -83,7 +84,7 @@
       }
     }
     checkResult() {
-      if (this.enemy.hp <= 0) { this.status = 'won'; this.phase = 'finished'; this.log.push('石门守卫崩解。余烬之后，仍有前路。'); }
+      if (this.enemy.hp <= 0) { this.status = 'won'; this.phase = 'finished'; this.log.push(`${this.encounter?.name || '石门守卫'}崩解。余烬之后，仍有前路。`); }
       else if (this.hero.failureReason) { this.status = 'lost'; this.phase = 'finished'; this.log.push(`提灯熄灭：${this.hero.failureReason}。`); }
       return this.status;
     }
@@ -138,7 +139,7 @@
       if (recovery.bleeding > 0) this.log.push(`流血 ${recovery.bleeding.toFixed(1)}，恢复血容量 ${recovery.recovered.toFixed(1)}；血容量 ${this.hero.blood.toFixed(1)}%。`);
       if (recovery.expired) this.log.push('强化剂到期，身体能力重新计算。');
       if (this.checkResult() === 'lost') return { ok: true, intent, hit, recovery };
-      this.intentIndex = (this.intentIndex + 1) % R.intents.length; this.turn++; this.hero.block = 0; this.phase = 'player';
+      this.intentIndex = (this.intentIndex + 1) % (this.encounter?.intents || R.intents).length; this.turn++; this.hero.block = 0; this.phase = 'player';
       this.energy = this.hero.effects.energy; this.draw(this.hero.effects.draw);
       return { ok: true, intent, hit, recovery };
     }
@@ -148,7 +149,10 @@
   if (typeof document === 'undefined') return;
 
   const $ = id => document.getElementById(id);
-  let battle = new Battle(), busy = false, sound = false, auto = false, context, modalOpen = false, reward = null;
+  const Floor = root.EmberFloor, SAVE_KEY = 'ember-corridor.save.v1', BACKUP_KEY = SAVE_KEY + '.backup';
+  const escapeHtml = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let run = new Floor(), battle = new Battle({hero:run.hero,deck:run.deck}), busy = false, sound = false, auto = false, context, modalOpen = false;
+  let savedAt = null, saveError = '', memoryBackup = null, pendingImport = null, startupNotice = '';
   let selectedUid = null, rotation = 0, anchor = { x: 1, y: 1 }, anchorChosen = false;
   let aim = { x: (battle.columns - 1) / 2, y: (battle.rows - 1) / 2 }, aimSource = 'keyboard', edgeSnapped = false;
   let aimFrame = 0, queuedAim = null, wheelAmount = 0, lastWheelAt = 0, lastWheelTurn = -Infinity;
@@ -184,7 +188,7 @@
       parry: '<path d="m56 24 28 11-4 30c-2 9-14 18-24 24-10-6-22-15-24-24l-4-30Z" fill="currentColor" opacity=".12"/><path d="m56 24 28 11-4 30c-2 9-14 18-24 24-10-6-22-15-24-24l-4-30ZM56 36v37m13 20 34-55 5-3-1 10-32 51m-10-13 17 9M93 20l3-9"/>',
       focus: '<circle cx="64" cy="57" r="28" opacity=".4"/><path d="m64 18 8 29 28 10-28 8-8 30-8-30-28-8 28-10 8-29Z" fill="currentColor" opacity=".2"/><path d="m64 18 8 29 28 10-28 8-8 30-8-30-28-8 28-10 8-29ZM25 27l-6-6m84 6 6-6M26 87l-7 7m84-7 6 7"/>'
     };
-    return `<svg viewBox="0 0 128 112" ${common} stroke-width="2" aria-hidden="true"><circle cx="64" cy="57" r="43" opacity=".12"/>${drawings[id]}</svg>`;
+    return `<svg viewBox="0 0 128 112" ${common} stroke-width="2" aria-hidden="true"><circle cx="64" cy="57" r="43" opacity=".12"/>${drawings[id] || drawings.guard}</svg>`;
   };
   function tone(freq = 200, dur = .12, type = 'sine') {
     if (!sound) return;
@@ -229,6 +233,102 @@
     floatText('enemy-actor', hit.lost ? `−${hit.lost}` : hit.blocked ? `破甲 ${hit.blocked}` : '弱击', hit.lost ? 'damage' : 'block');
     announceImpact(d.name, hit.lost ? `−${hit.lost}` : hit.blocked ? '破甲' : '弱击', `${hit.lost ? `削去 ${hit.lost} 层 · 击碎 ${hit.cleared} 格` : hit.blocked ? '护甲碎裂' : '能力不足，本次未造成伤害'}${hit.blocked ? ` · 破甲 ${hit.blocked} 格` : ''}`, hit.lost ? 'damage' : 'block');
     tone(hit.lost ? 150 : 360, .2, hit.lost ? 'sawtooth' : 'triangle');
+  }
+  function saveRun(backup = false) {
+    const data=run.snapshot({auto,sound}), raw=JSON.stringify(data);
+    if(backup) memoryBackup=raw;
+    try {
+      if(backup) { const previous=localStorage.getItem(SAVE_KEY); if(previous) { memoryBackup=previous; localStorage.setItem(BACKUP_KEY,previous); } }
+      localStorage.setItem(SAVE_KEY,raw); savedAt=data.savedAt; saveError='';
+    } catch (_) { saveError='自动存档不可用，请导出'; }
+    updateSaveBadge();
+  }
+  function updateSaveBadge() {
+    $('save-state').textContent=saveError || (savedAt?'已自动保存':'本地存档');
+    $('save-button').classList.toggle('save-error',!!saveError);
+    $('save-button').setAttribute('aria-label',`存档管理：${saveError || (savedAt?'已自动保存':'可导出或导入')}`);
+    $('save-button').title=saveError || (savedAt?`上次保存 ${new Date(savedAt).toLocaleTimeString()} · 点击导出或导入`:'导出 / 导入 JSON 存档');
+  }
+  function commitAction() { run.finishBattle(); saveRun(); }
+  function adoptRun(next) {
+    battleSerial++; clearPlacement(); busy=false; run=next;
+    battle=run.battle || new Battle({hero:run.hero,relics:run.relics,deck:run.deck,rng:()=>0});
+    selectedPart=battle.hero.bestTreatment()?.id || 'torso'; aim={x:2.5,y:1.5}; aimSource='keyboard';
+    clearTimeout(impactTimer); $('combat-effects').replaceChildren(); $('combat-banner').classList.remove('visible');
+  }
+  function downloadSave(raw,name) {
+    const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));
+    const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  function exportSave() { saveRun(); downloadSave(JSON.stringify(run.snapshot({auto,sound}),null,2),`余烬回廊-第1层-${new Date().toISOString().replace(/[:.]/g,'-')}.json`); }
+  function showSaveMenu() {
+    if(busy) return;
+    let backup=memoryBackup; try { backup=backup || localStorage.getItem(BACKUP_KEY); } catch (_) { /* Export remains available. */ }
+    openModal('旅途存档',`<p class="modal-note">每次出牌、回合结算、选择节点和领取奖励后自动保存。再次打开同一个本地网站会继续当前旅途；导出文件可在不同浏览器或电脑间转移。</p><div class="save-summary"><b>第一层 · ${run.visited.length}/8 站</b><span>${run.gold} 金币 · ${run.deck.length} 张牌 · 身体 ${run.hero.hp}/${run.hero.maxHp}</span><span>${escapeHtml(saveError || (savedAt?'已保存于 '+new Date(savedAt).toLocaleString():'尚未保存'))}</span></div><div class="save-actions"><button class="gold-button" data-save-export>导出当前存档 ↓</button><button class="outline-button" data-save-import>导入存档 ↑</button>${backup?'<button class="outline-button" data-save-backup>导出替换前备份</button>':''}</div><p class="modal-note">导入会先校验并显示确认；替换前的当前进度会另存一份本机备份。浏览器清理数据或切换本地网址可能使自动存档不再可见，请用导出文件保留进度。</p>`);
+  }
+  function mapMarkup(interactive=true) {
+    const available=new Set(run.available.map(n=>n.id)), seen=new Set(run.visited);
+    const point=n=>({x:100+n.lane*170,y:650-n.row*82});
+    const edges=Floor.nodes.flatMap(a=>Floor.nodes.filter(b=>Floor.connects(a,b)).map(b=>{
+      const p=point(a),q=point(b),traveled=seen.has(a.id) && (seen.has(b.id)||run.nodeId===b.id);
+      return `<path class="route-edge ${traveled?'traveled':''}" d="M${p.x} ${p.y} C${p.x} ${p.y-40} ${q.x} ${q.y+40} ${q.x} ${q.y}"/>`;
+    })).join('');
+    return `<div class="route-canvas"><svg viewBox="0 0 540 710" aria-hidden="true">${edges}<text x="270" y="699" text-anchor="middle" class="map-start-label">提灯的起点</text></svg>${Floor.nodes.map(n=>{
+      const p=point(n),type=Floor.types[n.type],current=run.nodeId===n.id,enabled=interactive && available.has(n.id);
+      return `<button class="route-node type-${n.type} ${seen.has(n.id)?'visited':''} ${available.has(n.id)?'available':''} ${current?'current':''}" style="left:${p.x/540*100}%;top:${p.y/710*100}%" data-node="${n.id}" ${enabled?'':'disabled'} title="第${n.row+1}站 · ${type.name}${current?' · 当前':seen.has(n.id)?' · 已完成':enabled?' · 点击前往':''}" aria-label="第${n.row+1}站 ${type.name}${enabled?'，可前往':''}"><i>${type.mark}</i><span>${type.name}</span>${seen.has(n.id)?'<b>✓</b>':''}</button>`;
+    }).join('')}</div>`;
+  }
+  function nodeAction(action,title,note,disabled=false) { return `<button class="node-choice" data-node-choice="${action}" ${disabled?'disabled':''}><b>${title}</b><span>${note}</span><i>↗</i></button>`; }
+  function renderRoute() {
+    $('route-map').innerHTML=mapMarkup();
+    const h=run.hero, type=Floor.types[run.node?.type];
+    let content='';
+    if(run.screen==='node') {
+      const n=run.node;
+      content=`<span class="room-emblem">${type.mark}</span><span class="eyebrow">第 ${n.row+1} / 8 站</span><h2>${type.name}</h2><p>${type.note}</p><div class="node-choices">`;
+      if(n.type==='camp') content+=nodeAction('rest','靠近营火','存活部位各修复40%，止血，血容量+45%。')+nodeAction('train','磨练技艺','把一张「十字斩」加入牌组。');
+      if(n.type==='event') content+=nodeAction('spring','饮下余温泉水','存活部位各修复25%，止血，血容量+35%。')+nodeAction('coins','拾起古老钱币','获得50金币，继续前进。');
+      if(n.type==='treasure') content+=nodeAction('heart','残火之心','躯干上限+6、心脏上限+4，并恢复新增生命。',run.relics.includes('heart'))+nodeAction('blade','淬火刀锋','所有形状攻击穿过生命格护甲。',run.relics.includes('blade'))+nodeAction('gold','带走钱币','获得60金币。');
+      if(n.type==='shop') {
+        const goods=[['heal',35,'战地治疗','存活部位各修复30%，止血，血容量+40%。'],['sweep',35,'横扫','1能量 · 4格长线攻击。'],['wall',35,'坚守','1能量 · 9点基础格挡。'],['blade',65,'淬火刀锋','本层持续穿甲。']];
+        content+=goods.map(([id,cost,title,note])=>`<button class="node-choice shop-item" data-buy="${id}" ${run.bought.includes(id)||(id==='blade'&&run.relics.includes('blade'))||run.gold<cost?'disabled':''}><b>${title} <em>¤ ${cost}</em></b><span>${run.bought.includes(id)?'已售出':note}</span></button>`).join('');
+        content+=nodeAction('leave','离开商店','保留剩余金币，继续选择路线。');
+      }
+      content+='</div>';
+    } else content=`<span class="eyebrow">CHOOSE YOUR PATH</span><h2>${run.visited.length?'余火仍在前方':'踏入回廊'}</h2><p>从底部亮起的节点出发。每完成一站，只能沿连接的道路向上走。</p><div class="journey-meter"><b>${run.visited.length}<small> / 8 站</small></b><span>终点 · 灰冠门主</span></div><p class="node-tip">普通战斗赚取卡牌与金币，精英更危险。营火和商店能够修复伤势，宝箱会给予遗物。</p>`;
+    $('node-panel').innerHTML=content+`<div class="journey-health"><span>旅人身体 <b>${h.hp}/${h.maxHp}</b></span><span>血容量 <b>${Math.round(h.blood)}%</b> · 意识 <b>${Math.round(h.capacities.consciousness*100)}%</b></span><button class="outline-button" data-open-health>身体与能力 ↗</button></div><div class="journey-relics">${run.relics.map(id=>`✦ ${id==='heart'?'残火之心':'淬火刀锋'}`).join(' · ')||'尚未获得遗物'}</div>`;
+    $('map-legend').innerHTML=Object.entries(Floor.types).map(([,t])=>`<span><b>${t.mark}</b>${t.name}</span>`).join('');
+  }
+  function renderRun() {
+    const inCombat=['battle','reward','lost','cleared'].includes(run.screen);
+    document.querySelector('.game-shell').classList.toggle('map-mode',!inCombat);
+    $('arena').hidden=!inCombat; document.querySelector('.hand-zone').hidden=!inCombat; $('expedition-view').hidden=inCombat;
+    $('run-progress').textContent=`${run.visited.length} / 8`;
+    $('run-gold').textContent=run.gold; $('route-button').textContent=['reward','lost','cleared'].includes(run.screen)?'查看结算':'路线';
+    $('deck-button').innerHTML=`${icon('cards')} <span>牌组</span> <b>${run.deck.length}</b>`;
+    $('footer-status').textContent=run.node?`第 ${run.node.row+1} 站 · ${Floor.types[run.node.type].name}`:'第一层 · 八站分岔路线';
+    const e=battle.encounter;
+    $('encounter-name').textContent=e?.name || '残火之径'; $('enemy-name').textContent=e?.name || '石门守卫'; $('enemy-role').textContent=e?.role || '';
+    $('encounter-eyebrow').textContent=`第一层 · 第 ${(run.node?.row || 0)+1} / 8 站${e?.kind==='boss'?' · BOSS':e?.kind==='elite'?' · 精英':''}`;
+    $('encounter-note').textContent=e?.kind==='boss'?'半血狂怒：攻击额外+3，留意下一次意图。':'鼠标居中放置 · 点击即攻击';
+    $('arena').classList.toggle('boss-encounter',e?.kind==='boss'); $('arena').classList.toggle('elite-encounter',e?.kind==='elite');
+    $('arena').setAttribute('aria-label',`${e?.name || '回廊'}战斗场景`); $('enemy-actor').setAttribute('aria-label',e?.name || '敌人'); $('enemy-grid-panel').setAttribute('aria-label',`${e?.name || '敌人'}的生命方格`);
+    $('enemy-grid-panel').querySelector('h2').textContent='生命方格';
+    $('enemy-health').setAttribute('aria-label','敌人剩余总生命');
+    $('sound-button').classList.toggle('active',sound); $('sound-button').setAttribute('aria-pressed',String(sound));
+    $('relic-badge').hidden=!run.relics.length; $('relic-badge').textContent=run.relics.map(id=>`✦ ${id==='heart'?'残火之心':'淬火刀锋'}`).join(' · ');
+    if(!inCombat) renderRoute(); updateSaveBadge();
+  }
+  function routeAction(id) {
+    if(busy || modalOpen || !run.enter(id,Battle)) return;
+    adoptRun(run); saveRun(); render();
+  }
+  function afterNodeAction() { adoptRun(run); saveRun(); closeModal(); render(); }
+  function showRoute() {
+    if(busy) return;
+    if(['reward','lost','cleared'].includes(run.screen)) { showResult(); return; }
+    if(run.screen==='battle') openModal('第一层 · 当前路线',`<p class="modal-note">完成当前战斗后，才能前往下一个节点。</p><div class="route-preview">${mapMarkup(false)}</div>`,'map-modal');
+    else { closeModal(); render(); }
   }
   function selectedCard() { return battle.hand.find(c => c.uid === selectedUid); }
   function clearPlacement() { selectedUid = null; rotation = 0; anchorChosen = false; edgeSnapped = false; if (aimFrame) root.cancelAnimationFrame(aimFrame); aimFrame = 0; queuedAim = null; wheelAmount = 0; lastWheelAt = 0; lastWheelTurn = -Infinity; }
@@ -307,8 +407,8 @@
   function rotateAttack(direction = 1) { if (!selectedCard() || busy || modalOpen || auto) return; flushPointerAim(); rotation = (rotation + (direction < 0 ? 3 : 1)) % 4; aimAt(aim.x, aim.y, true); tone(320, .06); }
   function cancelAttack() { if (!selectedUid) return; clearPlacement(); paintPlacement(); toast('已取消放置，未消耗卡牌或能量。'); }
   function toggleAuto() {
-    if (busy || modalOpen || battle.status !== 'playing') return;
-    auto = !auto; clearPlacement(); render(); tone(auto ? 520 : 300, .08);
+    if (busy || modalOpen || run.screen !== 'battle' || battle.status !== 'playing') return;
+    auto = !auto; clearPlacement(); saveRun(); render(); tone(auto ? 520 : 300, .08);
     toast(auto ? 'AUTO 开启 · 点击攻击牌，自动选落点并打出' : 'AUTO 关闭 · 选牌后点击格子立即攻击');
   }
   const capacityTips = { consciousness: '大脑、头部、疼痛和失血影响意识；决定抽牌数量，并影响操作、行动与感官。', manipulation: '双臂与双手效率、意识决定操作；影响形状攻击和格挡。', moving: '腿、脚、脊柱、意识与器官决定行动；影响下回合能量和受击倍率。', sight: '双眼与意识决定视觉；影响攻击效能。', hearing: '双耳与意识决定听觉；影响受击倍率。', breathing: '双肺与颈部决定呼吸；影响意识、行动及能量恢复。', pumping: '心脏与血容量决定循环；影响意识、格挡和血容量恢复。', metabolism: '胃与循环决定代谢；影响包扎修复和血容量恢复。' };
@@ -339,17 +439,19 @@
   }
   function selectBodyPart(id) { if (!battle.hero.part(id) || busy) return; selectedPart = id; renderHealth(); if (modalOpen && $('modal-panel').classList.contains('health-modal')) showHealth(); }
   function useMedical(action) {
-    if (busy || (modalOpen && !$('modal-panel').classList.contains('health-modal'))) return;
+    if (busy || run.screen !== 'battle' || (modalOpen && !$('modal-panel').classList.contains('health-modal'))) return;
     const result = battle.medical(action, selectedPart);
     if (!result.ok) { toast(result.reason); return; }
-    clearPlacement(); render(); shake('hero-figure', 'shield-up'); tone(520, .2);
+    clearPlacement(); commitAction(); render(); shake('hero-figure', 'shield-up'); tone(520, .2);
     toast(result.action === 'bandage' ? result.healed ? `${result.part}修复 ${result.healed} 点，已止血。` : `${result.part}已止血，缺失部位不会再生。` : '强化开启，当前及后续共3个玩家回合生效。');
     if (modalOpen) showHealth();
   }
   function showHealth() {
     const h = battle.hero, sumWeights = h.parts.filter(p => h.available(p.id)).reduce((sum, p) => sum + p.weight, 0);
     openModal('旅人 · 身体与机能', `<p class="modal-note">每个部位独立承伤。父部位毁坏会连带失去子部位；要害失效、意识低于30%、行动不高于15%或血容量耗尽，单人战斗即失败。下列命中率是每段伤害在当前存活部位中的权重，属于本游戏改编规则。</p><div class="capacity-grid health-capacities">${capacityCards()}</div><div class="health-part-list">${h.parts.map(p => `<button data-body-part="${p.id}" class="health-part-row ${p.missing ? 'missing' : p.hp < p.maxHp ? 'injured' : ''} ${selectedPart === p.id ? 'selected' : ''}"><span>${p.internal ? '◇ ' : ''}${p.name}${p.vital ? ' <small>要害</small>' : ''}</span><b>${p.missing ? '缺失' : `${p.hp} / ${p.maxHp}`}</b><small>${p.affects}<br>${p.missing ? p.detachedBy ? `随${h.part(p.detachedBy).name}缺失` : '毁坏；残端可止血，不能再生' : `命中权重 ${(p.weight / sumWeights * 100).toFixed(1)}% · 流血 ${p.bleed.toFixed(1)}/回合`}</small></button>`).join('')}</div><p class="modal-note">已选 ${h.part(selectedPart).name} · 包扎修复最多${h.effects.healing}点并止血（每局3次）；强化提高机能、持续3个玩家回合（每局1次）。两者均消耗1能量，缺失部位不会再生。</p><div class="health-modal-actions"><button class="gold-button" data-medical="bandage" ${battle.energy < 1 || !h.canTreat(selectedPart) || battle.status !== 'playing' ? 'disabled' : ''}>包扎所选部位 · 剩${h.bandages}次</button><button class="gold-button" data-medical="boost" ${battle.energy < 1 || !h.stimulants || battle.status !== 'playing' ? 'disabled' : ''}>战斗强化剂 · 剩${h.stimulants}次</button></div>`, 'health-modal');
-    if (battle.status !== 'playing') $('modal-body').insertAdjacentHTML('beforeend', '<button class="gold-button result-restart" data-open-result>返回战斗结算</button>');
+    $('modal-body').insertAdjacentHTML('afterbegin',`<div class="health-anatomy">${bodyDiagram()}</div>`);
+    if (run.screen !== 'battle') $('modal-body').querySelectorAll('[data-medical]').forEach(b=>b.disabled=true);
+    if (['reward','lost','cleared'].includes(run.screen)) $('modal-body').insertAdjacentHTML('beforeend', '<button class="gold-button result-restart" data-open-result>返回战斗结算</button>');
     renderHealth();
   }
   function render() {
@@ -364,13 +466,13 @@
     $('hero-status').innerHTML = battle.hero.block ? `<span class="status shield" title="下次你的回合开始时清空">${icon('shield')} ${battle.hero.block} 格挡</span>` : `<span class="subtle-status">${battle.hero.failureReason || `血容量 ${battle.hero.blood.toFixed(0)}%`}</span>`;
     $('enemy-status').innerHTML = (battle.enemy.block ? `<span class="status shield" title="先破甲，再次命中才削1层生命">${icon('shield')} ${battle.enemy.block} 格护甲</span>` : '') + (battle.enemy.strength ? `<span class="status strength" title="攻击伤害永久增加">${icon('sword')} +${battle.enemy.strength}</span>` : '');
     const intent = battle.intent;
-    $('intent-value').innerHTML = `${icon(intent.type === 'attack' ? 'sword' : 'shield')} <b>${intent.damage || intent.block}</b>${intent.strength ? '<small>随后 +3 力量</small>' : ''}`;
+    $('intent-value').innerHTML = `${icon(intent.type === 'attack' ? 'sword' : 'shield')} <b>${intent.damage || intent.block}</b>${intent.strength ? `<small>随后 +${intent.strength} 力量</small>` : ''}`;
     $('intent-label').textContent = intent.name;
     $('enemy-intent').classList.toggle('defensive', intent.type === 'defend');
-    $('enemy-intent').title = intent.damage ? `基础攻击 ${intent.damage}，按当前受击倍率约 ${Math.round(intent.damage * battle.hero.effects.incoming)} 点；先格挡，再按部位权重分配最多3段${intent.strength ? '，随后力量+3' : ''}` : `为${intent.block}个生命格覆甲，护甲在下一次敌方行动前清空`;
+    $('enemy-intent').title = intent.damage ? `攻击 ${intent.damage}，按当前受击倍率约 ${Math.round(intent.damage * battle.hero.effects.incoming)} 点；先格挡，再按部位权重分配最多3段${intent.strength ? `，随后力量+${intent.strength}` : ''}` : `为${intent.block}个生命格覆甲，护甲在下一次敌方行动前清空`;
     $('draw-count').textContent = battle.drawPile.length; $('discard-count').textContent = battle.discardPile.length;
     $('hand-count').textContent = battle.hand.length; $('exhaust-count').textContent = battle.exhaustPile.length ? `已消耗 ${battle.exhaustPile.length}` : '';
-    $('phase-label').textContent = busy ? '守卫行动' : '你的回合'; $('end-turn').disabled = busy || battle.status !== 'playing';
+    $('phase-label').textContent = busy ? '敌方行动' : battle.status === 'playing' ? '你的回合' : '战斗结束'; $('end-turn').disabled = busy || run.screen !== 'battle' || battle.status !== 'playing';
     $('hand').style.setProperty('--cards', battle.hand.length);
     $('hand').innerHTML = battle.hand.map((card, i) => {
       const d = battle.definition(card), affordable = d.cost <= battle.energy;
@@ -379,10 +481,10 @@
     }).join('');
     $('arena').classList.toggle('victory', battle.status === 'won'); $('enemy-figure').classList.toggle('defeated', battle.status === 'won');
     $('relic-badge').hidden = !battle.relic; $('relic-badge').textContent = battle.relic === 'heart' ? '✦ 残火之心 · 生命 +10' : '✦ 淬火刀锋 · 形状攻击穿甲';
-    renderGrid(); renderHealth();
+    renderGrid(); renderHealth(); renderRun();
   }
   function play(uid) {
-    if (busy || modalOpen) return;
+    if (busy || modalOpen || run.screen !== 'battle') return;
     const card = battle.hand.find(c => c.uid === uid); if (!card || battle.status !== 'playing') return;
     const d = battle.definition(card);
     if (d.cost > battle.energy) { toast('能量不足，可以结束回合恢复能量。'); return; }
@@ -400,7 +502,7 @@
   }
   function resolvePlay(uid, placement = null) {
     const result = battle.play(uid, placement); if (!result.ok) { tone(90); toast(result.reason); return; }
-    clearPlacement();
+    clearPlacement(); commitAction();
     $('first-hint').classList.add('dismissed'); render();
     if (result.plan) attackFeedback(result); else tone(440, .15);
     if (result.definition.block) { floatText('hero-actor', `+${result.definition.block} 格挡`, 'block'); if (!result.plan) shake('hero-figure', 'shield-up'); }
@@ -408,13 +510,15 @@
   }
   function confirmAttack() { const card = selectedCard(); if (!card || busy || modalOpen || !anchorChosen) return; const plan = battle.planAttack(card, { ...anchor, rotation }); if (!plan.ok) { toast(plan.reason); return; } resolvePlay(card.uid, { ...anchor, rotation }); }
   function endTurn() {
-    if (busy || modalOpen || battle.status !== 'playing') return;
-    clearPlacement(); const serial = battleSerial; busy = true; $('first-hint').classList.add('dismissed'); render();
-    if (battle.intent.damage) shake('enemy-figure', 'attacking');
-    toast(`${battle.intent.name} · ${battle.intent.damage ? `${battle.intent.damage}点攻击来袭` : '守卫正在覆甲'}`);
+    if (busy || modalOpen || run.screen !== 'battle' || battle.status !== 'playing') return;
+    clearPlacement(); const serial = battleSerial, intent=battle.intent;
+    // Resolve and save atomically before playing feedback; reloading cannot skip this enemy turn.
+    const result=battle.endTurn(); commitAction();
+    busy = true; $('first-hint').classList.add('dismissed'); render();
+    if (intent.damage) shake('enemy-figure', 'attacking');
+    toast(`${intent.name} · ${intent.damage ? `${intent.damage}点攻击来袭` : '敌人正在覆甲'}`);
     setTimeout(() => {
       if (serial !== battleSerial) return;
-      const result = battle.endTurn();
       if (result.hit.hits.length) selectedPart = battle.hero.bestTreatment()?.id || result.hit.hits[0].id;
       busy = false; render();
       if (result.intent.damage) {
@@ -431,22 +535,22 @@
     }, 650);
   }
   function openModal(title, content, className = '') { modalOpen = true; $('modal-title').textContent = title; $('modal-body').innerHTML = content; $('modal-panel').className = `modal-panel ${className}`; $('modal').hidden = false; $('modal-close').focus(); }
-  function closeModal() { modalOpen = false; $('modal').hidden = true; $('end-turn').focus(); renderHealth(); }
-  function restart(relic = null) { battleSerial++; battle = new Battle({ relic }); reward = null; selectedPart = 'torso'; busy = false; aim = { x: (battle.columns - 1) / 2, y: (battle.rows - 1) / 2 }; aimSource = 'keyboard'; clearPlacement(); clearTimeout(impactTimer); $('combat-effects').replaceChildren(); $('combat-banner').classList.remove('visible'); closeModal(); render(); toast(relic ? '带着遗物，再次踏入回廊。' : '新的挑战开始了。'); }
+  function closeModal() { modalOpen = false; $('modal').hidden = true; (run.screen==='battle'?$('end-turn'):$('route-button')).focus(); renderHealth(); }
+  function restart() { saveRun(true); adoptRun(new Floor()); saveRun(); closeModal(); render(); }
   function showPile(pile) {
     const names = { draw: '抽牌堆', discard: '弃牌堆', deck: '初始牌组', exhaust: '消耗区' };
     const cards = pile === 'draw' ? battle.drawPile : pile === 'discard' ? battle.discardPile : pile === 'exhaust' ? battle.exhaustPile : battle.allCards;
     const counts = {}; cards.forEach(c => counts[c.id] = (counts[c.id] || 0) + 1);
-    openModal(`${names[pile]} · ${cards.length} 张`, `<p class="modal-note">${pile === 'draw' ? '以下按类型展示，不代表抽取顺序。抽牌堆耗尽时，弃牌会重新洗入。' : pile === 'discard' ? '打出的牌和回合结束时的手牌会进入这里。' : pile === 'exhaust' ? '消耗的牌在本局战斗中不会再被抽到。' : '这是一场独立遭遇战。击败守卫后，可选择遗物重试。'}</p><div class="pile-list">${Object.entries(counts).map(([id, count]) => { const d = battle.definition(id); return `<div class="pile-item"><span class="mini-art ${id}">${art(id)}</span><div><strong>${d.name} <small>×${count}</small></strong><p>${d.description}</p></div><span class="mini-cost">${d.cost}</span></div>`; }).join('') || '<p class="empty-pile">这里暂时没有牌。</p>'}</div>`);
+    openModal(`${names[pile]} · ${cards.length} 张`, `<p class="modal-note">${pile === 'draw' ? '以下按类型展示，不代表抽取顺序。抽牌堆耗尽时，弃牌会重新洗入。' : pile === 'discard' ? '打出的牌和回合结束时的手牌会进入这里。' : pile === 'exhaust' ? '消耗的牌在本局战斗中不会再被抽到。' : '这一层的完整牌组。战斗奖励、商店和营火可加入新牌，下一场战斗会重新洗牌。'}</p><div class="pile-list">${Object.entries(counts).map(([id, count]) => { const d = battle.definition(id); return `<div class="pile-item"><span class="mini-art ${id}">${art(id)}</span><div><strong>${d.name} <small>×${count}</small></strong><p>${d.description}</p></div><span class="mini-cost">${d.cost}</span></div>`; }).join('') || '<p class="empty-pile">这里暂时没有牌。</p>'}</div>`);
   }
   function showHelp() {
-    openModal('提灯旅人的战斗手册', `<div class="help-grid"><div>${icon('star')}<h3>点格即攻击 / AUTO</h3><p>选攻击牌，图案以鼠标居中吸附，点击棋盘立即打出；R/滚轮旋转，Shift+R反向，右键取消。开启AUTO可点牌直接攻击。敌人总生命24，每格最多9层；数字和颜色表示层数，0层才碎裂。</p></div><div>${icon('eye')}<h3>部位承伤</h3><p>旅人有22个独立部位。敌方伤害按受击倍率调整、先消耗格挡，余下最多分3段按部位权重命中。部位归零即毁坏，手臂或腿毁坏还会失去对应手脚。</p></div><div>${icon('shield')}<h3>能力会改变出牌</h3><p>正常机能为100%。操作与视觉影响攻击，操作与循环影响格挡；意识影响抽牌，行动与呼吸影响能量，行动与听觉影响受伤。预览小数字显示实际削层，低攻效可能弱击，高攻效能削多层。</p></div><div>${icon('flame')}<h3>包扎与强化</h3><p>左侧点部位或用下拉选择，再包扎：1能量、每局3次，修复并止血，不能再生缺失部位。强化剂：1能量、每局1次，持续当前及后续共3个玩家回合，机能可超过100%。代谢越高，治疗与血容量恢复越强。</p></div></div><p class="modal-note">点击“健康详情”查看全部部位、命中权重与能力影响。流血在回合结束扣血容量，疼痛与失血会降低意识。要害毁坏、意识低于30%、行动不高于15%或失血殆尽，单人战斗即失败。所有能力公式为本游戏的卡牌战斗改编。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 <span>·</span> <kbd>R</kbd> 旋转 <span>·</span> <kbd>A</kbd> AUTO <span>·</span> <kbd>E</kbd> 结束回合</div><p class="modal-note">手动支持方向键移动中心、Enter攻击；边缘自动向内吸附。Esc取消或关闭弹窗。守卫循环：9点攻击 → 3格覆甲 → 5点攻击后力量+3。你的格挡在下回合清空。</p>`);
+    openModal('提灯旅人的旅途手册', `<div class="help-grid"><div>${icon('star')}<h3>一层八站</h3><p>从路线底部出发，沿连线选择下一站。战斗、精英、事件、商店、营火、宝箱有不同奖励和选择；第八站是灰冠门主。战斗获胜后可选一张牌或跳过。</p></div><div>${icon('sword')}<h3>点格即攻击 / AUTO</h3><p>选攻击牌，图案以鼠标居中，点击棋盘立即打出。每格最多9层，每层1生命。R/滚轮旋转，Shift+R反向，右键取消。AUTO开启后点牌直接攻击。敌人意图展示下次行动；Boss半血后攻击额外+3。</p></div><div>${icon('eye')}<h3>身体与能力</h3><p>22部位、8项能力会影响攻击、格挡、能量与抽牌。敌人先扣格挡，再分部位承伤。身体伤势保留到下一站。点击“详情”查看部位、包扎或强化；每场战斗补充3次包扎和1次强化剂，使用各需1能量。</p></div><div>${icon('flame')}<h3>修复与保存</h3><p>营火、商店和事件可修复存活部位、止血和恢复血容量。完成一站后少量恢复并止血，缺失部位不会再生。动作完整结算后自动保存，顶部“已自动保存”可导出或导入文件。</p></div></div><p class="modal-note">要害毁坏、意识低于30%、行动不高于15%或失血殆尽则旅途结束。强化到期会重新计算能力。顶部路线可查看前方节点，不会离开未完成的战斗。存档保存在当前浏览器的本地网址下，切换网址请先导出。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>`);
   }
   function showResult() {
-    if (battle.status === 'playing') return;
-    reward = null;
-    const won = battle.status === 'won';
-    openModal(won ? '石门已开' : '提灯熄灭', `<div class="result-emblem">${icon(won ? 'flame' : 'shield')}</div><p class="result-eyebrow">${won ? 'ENCOUNTER CLEARED' : 'THE EMBERS WILL RETURN'}</p><p class="result-story">${won ? '最后一层生命熄灭，石门守卫化作碎石。<br>带走一件遗物，再试试不同的形状组合。' : `${battle.hero.failureReason}。<br>可以用格挡、包扎和强化维持身体机能，再次挑战。`}</p><div class="result-stats"><div><b>${battle.turn}</b><span>战斗回合</span></div><div><b>${battle.played}</b><span>打出卡牌</span></div><div><b>${Math.round(battle.hero.hp / battle.hero.maxHp * 100)}%</b><span>部位完好度</span></div></div><button class="result-health-link" data-open-health>查看部位与最终伤势 ↗</button>${won ? `<div class="reward-label">选择一件遗物，用于下一次挑战</div><div class="rewards"><button data-reward="heart">${icon('flame')}<b>残火之心</b><span>躯干上限+6，心脏上限+4</span></button><button data-reward="blade">${icon('sword')}<b>淬火刀锋</b><span>形状攻击直接穿甲</span></button></div>` : ''}<button class="gold-button result-restart" id="result-restart">${won ? '不带遗物重新挑战' : '再点燃一次提灯'} ${icon('arrow')}</button><p class="result-footnote">部位生命版 · 余烬回廊 / 01</p>`, 'result-panel');
+    if(!['reward','lost','cleared'].includes(run.screen)) return;
+    const cleared=run.screen==='cleared',won=run.screen==='reward'||cleared;
+    const rewardCards=run.offers.map(id=>{const d=R.cards[id];return `<button class="reward-card" data-card-reward="${id}"><span class="mini-art">${art(id)}</span><b>${d.name} <small>${d.cost}能量</small></b><span>${d.description}</span></button>`;}).join('');
+    openModal(cleared?'第一层 · 灰冠已落':won?'战利品':'提灯熄灭',`<div class="result-emblem">${icon(won?'flame':'shield')}</div><p class="result-eyebrow">${cleared?'FLOOR I CLEARED':won?'ENCOUNTER CLEARED':'THE EMBERS WILL RETURN'}</p><p class="result-story">${cleared?'灰冠门主的最后一层生命崩解。<br>你穿过了残火之径。':won?`${battle.encounter.name}已被击败。<br>获得 ${Floor.encounter(run.node).reward} 金币，选择一张牌加入牌组。`:`${escapeHtml(run.hero.failureReason)}。<br>这次旅途已结束，存档仍可导出留存。`}</p><div class="result-stats"><div><b>${run.visited.length}${won&&!cleared?'+1':''}</b><span>完成节点</span></div><div><b>${run.gold}</b><span>金币</span></div><div><b>${run.deck.length}</b><span>牌组</span></div></div><button class="result-health-link" data-open-health>查看身体与机能 ↗</button>${run.screen==='reward'?`<div class="card-rewards">${rewardCards}</div><button class="outline-button" data-card-reward="skip">跳过卡牌，继续路线 →</button>`:`<button class="gold-button" data-new-run>重新点亮提灯</button><button class="outline-button" data-save-export>导出这次旅途</button>`}<p class="result-footnote">进度已结算 · 存档状态见顶部</p>`,'result-panel');
   }
   document.addEventListener('click', e => {
     const bodyPart = e.target.closest('[data-body-part]'); if (bodyPart) selectBodyPart(bodyPart.dataset.bodyPart);
@@ -454,8 +558,15 @@
     if (e.target.closest('[data-open-health]')) showHealth();
     if (e.target.closest('[data-open-result]')) showResult();
     const card = e.target.closest('[data-uid]'); if (card) play(card.dataset.uid);
-    const chosen = e.target.closest('[data-reward]'); if (chosen) { reward = chosen.dataset.reward; document.querySelectorAll('[data-reward]').forEach(b => b.classList.toggle('selected', b === chosen)); $('result-restart').innerHTML = `带着${reward === 'heart' ? '残火之心' : '淬火刀锋'}重试 ${icon('arrow')}`; tone(500); }
-    if (e.target.closest('#result-restart')) restart(reward);
+    const node=e.target.closest('[data-node]'); if(node && !node.disabled) routeAction(node.dataset.node);
+    const choice=e.target.closest('[data-node-choice]'); if(choice && !choice.disabled && !modalOpen) { const result=run.choose(choice.dataset.nodeChoice); if(result.ok) afterNodeAction(); }
+    const buy=e.target.closest('[data-buy]'); if(buy && !buy.disabled && !modalOpen) { const result=run.buy(buy.dataset.buy); if(result.ok) { adoptRun(run); saveRun(); render(); } }
+    const cardReward=e.target.closest('[data-card-reward]'); if(cardReward && run.chooseCard(cardReward.dataset.cardReward)) afterNodeAction();
+    if(e.target.closest('[data-save-export]')) exportSave();
+    if(e.target.closest('[data-save-import]')) { $('save-file').value=''; $('save-file').click(); }
+    if(e.target.closest('[data-save-backup]')) { let raw=memoryBackup; try { raw=raw||localStorage.getItem(BACKUP_KEY); } catch (_) {} if(raw) downloadSave(raw,'余烬回廊-替换前备份.json'); }
+    if(e.target.closest('[data-confirm-import]') && pendingImport) { saveRun(true); const imported=pendingImport; pendingImport=null; adoptRun(imported.run); auto=imported.options.auto; sound=imported.options.sound; saveRun(); closeModal(); render(); if(['reward','lost','cleared'].includes(run.screen)) showResult(); }
+    if(e.target.closest('[data-new-run]')) openModal('开始新的旅途？','<p class="modal-note">当前旅途将被替换。替换前进度会保存为本机备份，也可先导出文件。</p><div class="save-actions"><button class="outline-button" data-save-export>先导出当前存档</button><button class="gold-button" id="confirm-restart">开始新旅途</button></div>');
   });
   $('end-turn').addEventListener('click', endTurn); $('help-button').addEventListener('click', showHelp);
   $('health-button').addEventListener('click', showHealth); $('bandage-button').addEventListener('click', () => useMedical('bandage')); $('boost-button').addEventListener('click', () => useMedical('boost'));
@@ -482,17 +593,29 @@
   root.addEventListener('resize', () => { if (selectedCard()) paintPlacement(); });
   $('draw-pile').addEventListener('click', () => showPile('draw')); $('discard-pile').addEventListener('click', () => showPile('discard'));
   $('deck-button').addEventListener('click', () => showPile('deck'));
-  $('log-button').addEventListener('click', () => openModal('战斗记录', `<ol class="battle-log">${battle.log.map(l => `<li>${l}</li>`).join('')}</ol>`));
-  $('restart-button').addEventListener('click', () => openModal('重新踏入回廊？', '<p class="modal-note">当前战斗会重新开始，遗物也会重置。</p><button class="gold-button" id="confirm-restart">重新挑战</button>'));
+  $('log-button').addEventListener('click', () => openModal('战斗记录', `<ol class="battle-log">${battle.log.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ol>`));
+  $('restart-button').addEventListener('click', () => { if(!busy) openModal('开始新的旅途？', '<p class="modal-note">当前这一层的进度将被替换，替换前会保存一份本机备份。</p><div class="save-actions"><button class="outline-button" data-save-export>先导出存档</button><button class="gold-button" id="confirm-restart">开始新旅途</button></div>'); });
   $('modal-body').addEventListener('click', e => { if (e.target.closest('#confirm-restart')) restart(); });
-  $('sound-button').addEventListener('click', () => { sound = !sound; $('sound-button').classList.toggle('active', sound); $('sound-button').setAttribute('aria-pressed', String(sound)); $('sound-button').title = sound ? '关闭音效' : '开启音效'; toast(sound ? '音效已开启' : '音效已关闭'); if (sound) tone(500); });
+  $('sound-button').addEventListener('click', () => { sound = !sound; saveRun(); $('sound-button').classList.toggle('active', sound); $('sound-button').setAttribute('aria-pressed', String(sound)); $('sound-button').title = sound ? '关闭音效' : '开启音效'; toast(sound ? '音效已开启' : '音效已关闭'); if (sound) tone(500); });
+  $('route-button').addEventListener('click',showRoute); $('save-button').addEventListener('click',showSaveMenu);
+  $('save-file').addEventListener('change',async e=>{
+    const file=e.target.files[0]; if(!file) return;
+    try {
+      if(file.size>131072) throw new Error('存档文件过大，请选择本游戏导出的 JSON 文件。');
+      const raw=await file.text(); let data;
+      try { data=JSON.parse(raw); } catch (_) { throw new Error('文件不是有效的 JSON 存档。'); }
+      pendingImport=Floor.restore(data,Battle);
+      const imported=pendingImport.run;
+      openModal('确认导入这次旅途？',`<p class="modal-note">文件：${escapeHtml(file.name)}</p><div class="save-summary"><b>第一层 · ${imported.visited.length}/8 站</b><span>${imported.gold} 金币 · ${imported.deck.length} 张牌</span><span>身体 ${imported.hero.hp}/${imported.hero.maxHp} · ${imported.screen==='cleared'?'已通关':imported.screen==='lost'?'旅途结束':'旅途中'}</span></div><p class="modal-note">导入将替换当前进度，并保留替换前的本机备份。</p><button class="gold-button" data-confirm-import>确认导入</button>`);
+    } catch(error) { pendingImport=null; openModal('未导入存档',`<p class="modal-note">${escapeHtml(error instanceof SyntaxError?'文件不是有效的存档。':error.message)}</p><p class="modal-note">当前旅途没有改变。</p>`); }
+  });
   $('modal-close').addEventListener('click', closeModal); $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
   document.addEventListener('keydown', e => {
     if (e.key === 'Tab') aimSource = 'keyboard';
     if (!modalOpen && e.target.closest('[data-body-part]') && ['Enter', ' '].includes(e.key)) { e.preventDefault(); selectBodyPart(e.target.closest('[data-body-part]').dataset.bodyPart); return; }
     if (e.key === 'Escape' && modalOpen) { closeModal(); return; }
     if (modalOpen) { if (e.key === 'Tab') { const list = [...$('modal').querySelectorAll('button:not([disabled])')]; if (e.shiftKey && document.activeElement === list[0]) { e.preventDefault(); list.at(-1).focus(); } else if (!e.shiftKey && document.activeElement === list.at(-1)) { e.preventDefault(); list[0].focus(); } } return; }
-    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || run.screen!=='battle') return;
     if (e.key === 'Escape' && selectedUid) { e.preventDefault(); cancelAttack(); return; }
     if (e.key.toLowerCase() === 'a') { e.preventDefault(); toggleAuto(); return; }
     if (selectedCard() && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); moveAim(e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0, e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0); return; }
@@ -506,6 +629,17 @@
   $('draw-symbol').innerHTML = icon('cards'); $('discard-symbol').innerHTML = icon('cards');
   $('end-turn').innerHTML = `结束回合 ${icon('arrow')}<kbd>E</kbd>`;
   $('layer-legend').innerHTML = `<span class="layer-legend-label">层数</span>${R.layerColors.map((color, i) => `<span class="layer-swatch" style="--layer-color:${color}" title="${i + 1}层生命">${i + 1}</span>`).join('')}`;
-  root.emberGame = { get battle() { return battle; }, get auto() { return auto; }, restart, play, endTurn, showResult, showHealth, useMedical, confirmAttack, rotateAttack, cancelAttack, toggleAuto };
+  root.emberGame = { get run() { return run; }, get battle() { return battle; }, get auto() { return auto; }, restart, play, endTurn, showResult, showHealth, useMedical, confirmAttack, rotateAttack, cancelAttack, toggleAuto, exportSave };
+  try {
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(raw) {
+      if(raw.length>131072) throw new Error('已有存档过大');
+      const data=JSON.parse(raw),restored=Floor.restore(data,Battle);
+      adoptRun(restored.run); auto=restored.options.auto; sound=restored.options.sound; savedAt=typeof data.savedAt==='string'&&!isNaN(Date.parse(data.savedAt))?data.savedAt:null;
+    } else saveRun();
+  } catch (_) { saveError='存档不可读，可导出或重开'; startupNotice='本地存档暂时无法读取，原记录尚未替换。你可在存档菜单导出备份，或开始新旅途。'; try { memoryBackup=localStorage.getItem(SAVE_KEY); if(memoryBackup) localStorage.setItem(BACKUP_KEY,memoryBackup); } catch (_) {} }
+  $('sound-button').classList.toggle('active',sound); $('sound-button').setAttribute('aria-pressed',String(sound));
   render();
+  if(startupNotice) openModal('本地存档提示',`<p class="modal-note">${startupNotice}</p><button class="outline-button" data-save-backup>导出原始备份</button>`);
+  else if(['reward','lost','cleared'].includes(run.screen)) showResult();
 })(typeof globalThis !== 'undefined' ? globalThis : this);
