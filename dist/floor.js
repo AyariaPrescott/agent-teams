@@ -22,7 +22,42 @@
   const pick=(array,random)=>array[Math.floor(random()*array.length)];
   const shuffle=(array,random)=>{const a=[...array];for(let i=a.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
   const hash=text=>[...text].reduce((h,c)=>Math.imul(h^c.charCodeAt(0),16777619)>>>0,2166136261);
+  const routeStyle=seed=>Math.floor(rng(seed^0x510e527f)()*4);
+  const routeNames=['蜿蜒峡谷','双翼回廊','斜行长桥','收束深井'];
+  function wovenMap(seed){
+    const random=rng(seed^0xbb67ae85),content=rng(seed^0x6a09e667),style=routeStyle(seed),phase=random()*Math.PI*2;
+    // Interior counts sum to 43: variable narrow/wide rows, always 47 nodes in total.
+    const counts=[3,...shuffle([2,3,4,4,5,5,5,5,5,5],random),1],nodes=[];
+    const normals=Object.keys(R.enemies).filter(id=>R.enemies[id].kind==='battle');
+    counts.forEach((count,row)=>{
+      const t=row/11,kinds=shuffle(rows[row][1],content);
+      const anchor={1:'event',2:'shop',3:'elite',5:'treasure',10:'camp'}[row];
+      if(anchor){const i=kinds.indexOf(anchor);[kinds[0],kinds[i]]=[kinds[i],kinds[0]];}
+      const center=380+(style===0?Math.sin(t*Math.PI*2+phase)*78:style===1?Math.sin(t*Math.PI+phase)*42:style===2?(t-.5)*140:Math.sin(t*Math.PI*2+phase)*38);
+      const desired=style===1?110+Math.sin(t*Math.PI)*145:style===3?100+Math.abs(t-.5)*290:190+Math.sin(t*Math.PI+phase)*40;
+      const spread=Math.max((count-1)*52,desired);
+      for(let i=0;i<count;i++){
+        const type=kinds[i%kinds.length],pool=type==='event'?Object.keys(R.events):type==='battle'?(row<3?normals.slice(0,6):normals):Object.keys(R.enemies).filter(id=>R.enemies[id].kind===type);
+        nodes.push({id:'r'+row+'c'+i,row,lane:i,type,variant:pool.length?pick(pool,content):null,
+          x:Math.round(Math.max(70,Math.min(690,center+(count===1?0:(i/(count-1)*2-1)*spread)+(random()-.5)*18))),
+          y:Math.round(1080-row*90+(row===0||row===11?0:(random()-.5)*18)),next:[]});
+      }
+    });
+    for(let row=0;row<11;row++){
+      const from=nodes.filter(n=>n.row===row),to=nodes.filter(n=>n.row===row+1);
+      const nearest=(list,x)=>[...list].sort((a,b)=>Math.abs(a.x-x)-Math.abs(b.x-x)||a.lane-b.lane);
+      // Give every source an exit and every destination an entry; no orphan/dead-end nodes.
+      for(const a of from)a.next.push(nearest(to,a.x)[0].id);
+      for(const b of to)if(!from.some(a=>a.next.includes(b.id)))nearest(from,b.x)[0].next.push(b.id);
+      for(const a of from){
+        const second=nearest(to,a.x).find(b=>!a.next.includes(b.id));
+        if(second&&Math.abs(second.x-a.x)<280&&random()<.58)a.next.push(second.id);
+      }
+    }
+    return nodes;
+  }
   function makeMap(seed,version){
+    if(version===3)return wovenMap(seed);
     const random=rng(seed^0x6a09e667),normals=Object.keys(R.enemies).filter(id=>R.enemies[id].kind==='battle');
     const layout=version===1?legacyLayout:rows.map(([lanes,kinds])=>{const shuffled=shuffle(kinds,random);return lanes.map((lane,i)=>[lane,shuffled[i]]);});
     return layout.flatMap((row,r)=>row.map(([lane,type])=>{
@@ -30,7 +65,7 @@
       return {id:'r'+r+'c'+lane,row:r,lane,type,variant:pool.length?pick(pool,random):null};
     }));
   }
-  const connects=(a,b,version=2)=>b.row===a.row+1&&(b.type==='boss'||Math.abs(a.lane-b.lane)<=(version===2&&[5,8].includes(a.row)?2:1));
+  const connects=(a,b,version=3)=>b.row===a.row+1&&(version===3?a.next.includes(b.id):(b.type==='boss'||Math.abs(a.lane-b.lane)<=(version===2&&[5,8].includes(a.row)?2:1)));
   const masks=[
     [7,8,9,10,6,11,1,2,3,4,13,14,15,16,19,20],
     [7,8,9,13,14,15,19,20,21],
@@ -52,12 +87,19 @@
   const number=(v,min,max)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
   const ids=(v,allowed,min,max)=>Array.isArray(v)&&v.length>=min&&v.length<=max&&v.every(x=>typeof x==='string'&&allowed.includes(x));
   class Floor{
-    constructor({seed=(Date.now()>>>0)||1,routeVersion=2}={}){
+    constructor({seed=(Date.now()>>>0)||1,routeVersion=3}={}){
       this.seed=seed>>>0||1;this.rngState=this.seed;this.routeVersion=routeVersion;this.nodes=makeMap(this.seed,routeVersion);this.stations=routeVersion===1?8:12;
       this.gold=60;this.deck=[...R.deck];this.relics=[];this.hero=new Body();this.visited=[];this.nodeId=null;this.screen='map';this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.migrated=false;
     }
     random(){let x=this.rngState;x^=x<<13;x^=x>>>17;x^=x<<5;this.rngState=x>>>0;return this.rngState/4294967296;}
     get node(){return this.nodes.find(n=>n.id===this.nodeId);}
+    get mapName(){return this.routeVersion===1?'旧日石径':routeNames[routeStyle(this.seed)];}
+    point(node){
+      if(this.routeVersion===1)return{x:100+node.lane*170,y:650-node.row*82};
+      if(this.routeVersion===3)return{x:node.x,y:node.y};
+      const phase=(this.seed%628)/100,jitter=hash(this.seed+':'+node.id);
+      return{x:90+node.lane*145+Math.sin(node.row*.65+phase)*25+(jitter%17-8),y:1080-node.row*90+((jitter>>>8)%15-7)};
+    }
     linked(a,b){return connects(a,b,this.routeVersion);}
     get available(){if(this.screen!=='map')return[];const last=this.nodes.find(n=>n.id===this.visited.at(-1));return this.nodes.filter(n=>last?this.linked(last,n):n.row===0);}
     get event(){return R.events[this.node?.variant];}
@@ -143,7 +185,7 @@
       assert(data&&data.format==='ember-corridor'&&[1,2].includes(data.version),'不是本游戏支持的存档版本。');
       const old=data.version===1,s=data.run;assert(s&&typeof s==='object');
       assert(integer(s.seed,1,4294967295)&&integer(s.rngState,1,4294967295)&&integer(s.gold,0,100000));
-      const version=old?1:s.routeVersion;assert([1,2].includes(version));const run=new Floor({seed:s.seed,routeVersion:version}),nodeIds=run.nodes.map(n=>n.id),relicIds=Object.keys(R.relics);
+      const version=old?1:s.routeVersion;assert([1,2,3].includes(version));const run=new Floor({seed:s.seed,routeVersion:version}),nodeIds=run.nodes.map(n=>n.id),relicIds=Object.keys(R.relics);
       assert(ids(s.deck,Object.keys(R.cards),5,120)&&ids(s.relics,relicIds,0,16)&&new Set(s.relics).size===s.relics.length);
       assert(ids(s.visited,nodeIds,0,run.stations)&&new Set(s.visited).size===s.visited.length);
       s.visited.forEach((id,i)=>assert(i?run.linked(run.nodes.find(n=>n.id===s.visited[i-1]),run.nodes.find(n=>n.id===id)):run.nodes.find(n=>n.id===id).row===0));
@@ -192,6 +234,6 @@
       return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:old};
     }
   }
-  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,2);Floor.connects=connects;
+  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,3);Floor.connects=connects;
   root.EmberFloor=Floor;if(typeof module!=='undefined'&&module.exports)module.exports=Floor;
 })(typeof globalThis!=='undefined'?globalThis:this);

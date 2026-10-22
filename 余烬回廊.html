@@ -7,14 +7,23 @@
 /* Ember Corridor · hand-painted edition. Single responsive stylesheet. */
 /* Expanded floor artwork: URLs are resolved by art.js, room/sprite cells bound by game.js. */
 .scenery>img{width:100%;height:100%;display:block;object-fit:cover;object-position:50% 58%}
-.scene-room{position:absolute;inset:0;background-image:var(--art-rooms);background-size:300% 200%;background-position:var(--room-x) var(--room-y)}
-.room-illustration{height:118px;margin:-9px -9px 17px;border:1px solid #b58b6155;border-radius:4px;background-image:var(--art-rooms);background-size:300% 200%;background-position:var(--room-x) var(--room-y);box-shadow:inset 0 0 25px #110b1944}
+.atlas-frame{position:absolute;inset:0;display:block;overflow:hidden;pointer-events:none}
+.atlas-frame>.atlas-image{position:absolute;display:block;max-width:none;max-height:none;object-fit:fill;pointer-events:none;user-select:none}
+.scene-room{position:absolute;inset:0}
+.room-illustration{position:relative;overflow:hidden;height:118px;margin:-9px -9px 17px;border:1px solid #b58b6155;border-radius:4px;box-shadow:inset 0 0 25px #110b1944}
 .room-art-unavailable .scene-room,.room-art-unavailable .room-illustration{display:none!important}
 .enemy-figure{position:relative}
 #enemy-fallback{display:block;width:100%;height:100%;object-fit:contain;object-position:50% 100%}
-#enemy-atlas-sprite{position:absolute;height:100%;aspect-ratio:2/3;width:auto;max-width:100%;left:50%;bottom:0;transform:translateX(-50%);background-image:var(--art-enemies);background-size:400% 200%;background-position:var(--enemy-x) var(--enemy-y)}
-.painted-card-art.expanded-card-art{background-image:var(--art-cards-extra);background-size:500% 400%}
-.route-canvas.expanded-map{aspect-ratio:var(--map-ratio);container-type:inline-size}
+#enemy-atlas-sprite{position:absolute;height:100%;aspect-ratio:2/3;width:auto;max-width:100%;left:50%;bottom:0;transform:translateX(-50%)}
+.route-canvas.expanded-map{aspect-ratio:var(--map-ratio)}
+.route-map>.route-canvas,.route-preview>.route-canvas{flex:none;width:min(100%,var(--map-inline-size));height:auto}
+.route-preview{container-type:size;align-items:center}
+.route-paper{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;border-radius:4px}
+.route-canvas>svg,.route-canvas>.route-node{position:relative;z-index:1}
+.route-canvas>.route-node{position:absolute}
+.map-art-unavailable .route-paper{display:none}
+.map-shape-label{fill:#6a5140;font:19px Georgia,"Songti SC",serif;letter-spacing:5px}
+.art-placeholder{display:grid;position:absolute;inset:0;place-items:center;font-size:28px;color:#cfad74}
 .expanded-map .route-node{width:clamp(14px,8cqw,30px);height:clamp(14px,8cqw,30px)}
 .expanded-map .route-node .node-symbol{width:70%;height:70%}
 .expanded-map .route-node.type-boss{width:clamp(19px,11cqw,40px);height:clamp(19px,11cqw,40px)}
@@ -64,7 +73,7 @@ a{color:inherit;text-decoration:none}
 .save-button i{height:5px;width:5px;background:#abd0ac;border-radius:50%;box-shadow:0 0 5px #9bc59855}
 .save-error{color:#f0aa8c}.save-error i{background:#e99c7b}
 .arena{position:relative;isolation:isolate;min-height:0;overflow:hidden;container-type:size;background:#201b29}
-.scenery{position:absolute;inset:0;z-index:-4;background-image:var(--art-scene);background-position:center 58%;background-size:cover}
+.scenery{position:absolute;inset:0;z-index:-4;background:#24202b}
 .scene-vignette{position:absolute;inset:0;z-index:-3;background:linear-gradient(0deg,#17141ef0,transparent 32%,#16131c10 65%,#16131c70),linear-gradient(90deg,#13111988,transparent 27%,transparent 70%,#13111999)}
 .grain{position:absolute;inset:0;z-index:-2;pointer-events:none;box-shadow:inset 0 0 90px #09070c55}
 .encounter-title{position:absolute;left:28px;top:18px;max-width:43%;pointer-events:none}
@@ -169,7 +178,7 @@ a{color:inherit;text-decoration:none}
 .card-cost{position:absolute;top:-7px;left:-7px;width:29px;height:29px;display:grid;place-items:center;border:2px solid #e8c690;border-radius:50%;background:radial-gradient(circle at 40% 30%,#9d623d,#462e2e 75%);box-shadow:0 2px 5px #1b101b77;color:#ffedc7;font:20px Georgia;z-index:3}
 .card-heading{font:700 clamp(10px,1.15vw,16px)/22px Georgia,"Songti SC","SimSun",serif;letter-spacing:2px;padding-left:7px}
 .card-art{position:relative;display:block;width:100%;height:46%;min-height:35px;margin-top:5px;overflow:hidden;border:1px solid #60452d88;border-radius:3px;background:#312630;flex-shrink:0}
-.painted-card-art{position:absolute;inset:0;display:block;background-image:var(--art-cards);background-size:500% 200%;background-position:var(--art-x) var(--art-y)}
+.painted-card-art{position:absolute;inset:0;display:block}
 .card-shape-badge{position:absolute;bottom:4px;right:4px;display:grid;place-items:center;min-width:24px;min-height:24px;padding:4px;border:1px solid #dfc190bb;border-radius:3px;background:#211b2be8;box-shadow:0 1px 5px #05050a77}
 .card-shape-badge .shape-preview-grid{--shape-size:5px;gap:1px}
 .card-type{font-size:6px;letter-spacing:1px;margin-top:-5px;z-index:1;border:1px solid #a18056aa;border-radius:5px;background:#dfc69b;padding:2px 7px;color:#715336}
@@ -185,13 +194,14 @@ a{color:inherit;text-decoration:none}
 .end-turn kbd{position:absolute;bottom:-7px;right:-4px;border:1px solid #c7a57588;background:#382a31;color:#e7c38f;font:9px Georgia;display:grid;place-items:center;width:17px;height:17px;border-radius:2px}
 footer{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;padding:0 28px;background:#18161f;border-top:1px solid #b6966326;font-size:8px;color:#aa9781;letter-spacing:1px}
 footer>span:first-child{font-family:Georgia,"Songti SC",serif}footer button{display:flex;align-items:center;gap:7px;padding:0;border:0;background:none;color:#ccb48f;font-size:9px}footer button .icon{width:15px;height:15px}footer button b{font:12px Georgia;color:#edd09a}
-.expedition-view{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:22px max(28px,5vw) 13px;background:linear-gradient(100deg,#1a1522e6,#24202ce0),var(--art-scene) center/cover;overflow:hidden}
+.expedition-view{position:relative;isolation:isolate;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:22px max(28px,5vw) 13px;background:linear-gradient(100deg,#1a1522,#24202c);overflow:hidden}
+.expedition-backdrop{position:absolute;inset:0;z-index:-1;width:100%;height:100%;object-fit:cover;opacity:.16;pointer-events:none}
 .map-intro{display:flex;align-items:center;justify-content:space-between;gap:15px}
 .map-intro h1{font:34px Georgia,"Songti SC",serif;letter-spacing:7px;margin:7px 0;color:#eed5ad}.map-intro p{font-size:11px;color:#b9a58e;margin:0}.map-intro .eyebrow{font:8px Georgia;letter-spacing:2.2px}
 .map-instruction{font-size:10px;border:1px solid #a78a5e55;padding:8px 13px;color:#c2ae91;border-radius:3px}
 .expedition-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,31%);gap:35px;min-height:0;width:100%;max-width:1200px;margin:auto;height:100%}
 .route-map{display:flex;justify-content:center;align-items:center;min-width:0;min-height:0;container-type:size}
-.route-canvas{position:relative;height:100%;width:auto;max-width:100%;max-height:100%;aspect-ratio:540/710;background:var(--art-map) center/100% 100%;border:1px solid #bda68177;border-radius:5px;box-shadow:0 12px 35px #05030b66,inset 0 0 35px #402b3e33}
+.route-canvas{position:relative;isolation:isolate;height:100%;width:auto;max-width:100%;max-height:100%;aspect-ratio:540/710;background:linear-gradient(130deg,#e6d5ac,#baa181);border:1px solid #bda68177;border-radius:5px;box-shadow:0 12px 35px #05030b66,inset 0 0 35px #402b3e33}
 .route-canvas>svg{display:block;width:100%;height:100%}
 .route-edge{fill:none;stroke:#594740b3;stroke-width:2.5;stroke-dasharray:5 7}
 .route-edge.traveled{stroke:#934e39;stroke-width:3.5;stroke-dasharray:none}
@@ -209,7 +219,8 @@ footer>span:first-child{font-family:Georgia,"Songti SC",serif}footer button{disp
 .node-panel{position:relative;align-self:center;max-height:100%;overflow-y:auto;scrollbar-width:thin;padding:25px;background:linear-gradient(145deg,#352a34f2,#1d1a28fa);border:1px solid #b18b605e;border-radius:5px;box-shadow:0 12px 28px #09060e44}
 .node-panel h2{font:29px Georgia,"Songti SC",serif;letter-spacing:3px;margin:9px 0 15px;color:#ebcfaa}
 .node-panel p{font-size:11px;color:#bfae9b;line-height:1.9}.node-panel .eyebrow{font-size:8px;letter-spacing:2px}
-.journey-illustration{height:112px;margin:-10px -10px 14px;background:radial-gradient(ellipse at 50% 65%,#c9803c25,transparent 70%),var(--art-hero) center 41%/auto 150% no-repeat;border-bottom:1px solid var(--line)}
+.journey-illustration{position:relative;overflow:hidden;height:112px;margin:-10px -10px 14px;background:radial-gradient(ellipse at 50% 65%,#c9803c25,transparent 70%);border-bottom:1px solid var(--line)}
+.journey-illustration>img{position:absolute;top:-25%;width:100%;height:150%;object-fit:contain;pointer-events:none}
 .journey-meter{display:flex;flex-direction:column;gap:8px;border-block:1px solid var(--line);padding:16px 0;margin:16px 0}.journey-meter>b{font:39px Georgia;color:#e3c18f}.journey-meter small{font:12px system-ui;color:#a48d76}.journey-meter>span{font-size:10px;color:#b89b7c}
 .journey-health{display:flex;flex-direction:column;gap:10px;padding-top:15px;margin-top:17px;border-top:1px solid var(--line);font-size:11px;color:#b6c2a5}
 .journey-health>span:first-child{display:flex;justify-content:space-between}.journey-health button{font-size:11px;padding:8px}
@@ -332,12 +343,13 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
     <div class="top-actions"><button class="save-button" id="save-button"><i></i><span id="save-state">本地存档</span></button><button class="icon-button" id="sound-button" title="开启音效" aria-label="切换音效" aria-pressed="false"></button><button class="icon-button" id="help-button" title="玩法说明" aria-label="玩法说明"></button><button class="icon-button" id="restart-button" title="重新挑战" aria-label="重新挑战"></button></div>
   </header>
   <main class="expedition-view" id="expedition-view" hidden aria-label="第一层路线">
+    <img class="expedition-backdrop" id="expedition-backdrop" alt="" aria-hidden="true" draggable="false">
     <div class="map-intro"><div><span class="eyebrow">ACT I · THE ASHEN PATH</span><h1>残火之径</h1><p>选择你的路，带着余火走向灰冠。</p></div><span class="map-instruction">从下往上 · 点亮的节点可前往</span></div>
     <div class="expedition-layout"><section class="route-map" id="route-map" aria-label="分岔路线，十二站四十七个节点"></section><aside class="node-panel" id="node-panel"></aside></div>
     <div class="map-legend" id="map-legend"></div>
   </main>
   <main class="arena" id="arena" aria-label="石门守卫战斗场景">
-    <div class="scenery" aria-hidden="true"><img id="scene-image" alt="" decoding="async"><div class="scene-room" id="scene-room" hidden></div></div>
+    <div class="scenery" aria-hidden="true"><img id="scene-image" alt="" decoding="async"><div class="scene-room atlas-frame" id="scene-room" hidden><img class="atlas-image" id="scene-room-image" alt="" draggable="false"></div></div>
     <div class="scene-vignette"></div><div class="grain"></div>
     <div class="encounter-title"><div class="eyebrow" id="encounter-eyebrow">第一层 · 残火之径</div><h1 id="encounter-name">石门守卫</h1><p id="encounter-note">把攻击拼进生命格，由你决定破碎的位置。</p></div>
     <div class="round-display"><span>ROUND</span><b id="turn">01</b><i></i><strong id="phase-label">你的回合</strong></div>
@@ -361,7 +373,7 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
     <section class="actor enemy-actor" id="enemy-actor" aria-label="石门守卫">
       <div class="enemy-intent" id="enemy-intent" tabindex="0"><span class="intent-label" id="intent-label">碎门重锤</span><span class="intent-value" id="intent-value"></span><i></i></div>
       <div class="character-shadow"></div>
-      <div class="enemy-figure" id="enemy-figure" aria-hidden="true"><img id="enemy-fallback" alt="" decoding="async" draggable="false"><div id="enemy-atlas-sprite" hidden></div></div>
+      <div class="enemy-figure" id="enemy-figure" aria-hidden="true"><img id="enemy-fallback" alt="" decoding="async" draggable="false"><div id="enemy-atlas-sprite" hidden><span class="atlas-frame"><img class="atlas-image" id="enemy-atlas-image" alt="" draggable="false"></span></div></div>
       <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span><span id="enemy-name">石门守卫</span><span class="actor-role" id="enemy-role">古老构装体</span></div><div class="statuses" id="enemy-status"></div></div>
     </section>
     <section class="enemy-grid-panel" id="enemy-grid-panel" aria-label="守卫的可攻击生命方格">
@@ -687,7 +699,42 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
   const pick=(array,random)=>array[Math.floor(random()*array.length)];
   const shuffle=(array,random)=>{const a=[...array];for(let i=a.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
   const hash=text=>[...text].reduce((h,c)=>Math.imul(h^c.charCodeAt(0),16777619)>>>0,2166136261);
+  const routeStyle=seed=>Math.floor(rng(seed^0x510e527f)()*4);
+  const routeNames=['蜿蜒峡谷','双翼回廊','斜行长桥','收束深井'];
+  function wovenMap(seed){
+    const random=rng(seed^0xbb67ae85),content=rng(seed^0x6a09e667),style=routeStyle(seed),phase=random()*Math.PI*2;
+    // Interior counts sum to 43: variable narrow/wide rows, always 47 nodes in total.
+    const counts=[3,...shuffle([2,3,4,4,5,5,5,5,5,5],random),1],nodes=[];
+    const normals=Object.keys(R.enemies).filter(id=>R.enemies[id].kind==='battle');
+    counts.forEach((count,row)=>{
+      const t=row/11,kinds=shuffle(rows[row][1],content);
+      const anchor={1:'event',2:'shop',3:'elite',5:'treasure',10:'camp'}[row];
+      if(anchor){const i=kinds.indexOf(anchor);[kinds[0],kinds[i]]=[kinds[i],kinds[0]];}
+      const center=380+(style===0?Math.sin(t*Math.PI*2+phase)*78:style===1?Math.sin(t*Math.PI+phase)*42:style===2?(t-.5)*140:Math.sin(t*Math.PI*2+phase)*38);
+      const desired=style===1?110+Math.sin(t*Math.PI)*145:style===3?100+Math.abs(t-.5)*290:190+Math.sin(t*Math.PI+phase)*40;
+      const spread=Math.max((count-1)*52,desired);
+      for(let i=0;i<count;i++){
+        const type=kinds[i%kinds.length],pool=type==='event'?Object.keys(R.events):type==='battle'?(row<3?normals.slice(0,6):normals):Object.keys(R.enemies).filter(id=>R.enemies[id].kind===type);
+        nodes.push({id:'r'+row+'c'+i,row,lane:i,type,variant:pool.length?pick(pool,content):null,
+          x:Math.round(Math.max(70,Math.min(690,center+(count===1?0:(i/(count-1)*2-1)*spread)+(random()-.5)*18))),
+          y:Math.round(1080-row*90+(row===0||row===11?0:(random()-.5)*18)),next:[]});
+      }
+    });
+    for(let row=0;row<11;row++){
+      const from=nodes.filter(n=>n.row===row),to=nodes.filter(n=>n.row===row+1);
+      const nearest=(list,x)=>[...list].sort((a,b)=>Math.abs(a.x-x)-Math.abs(b.x-x)||a.lane-b.lane);
+      // Give every source an exit and every destination an entry; no orphan/dead-end nodes.
+      for(const a of from)a.next.push(nearest(to,a.x)[0].id);
+      for(const b of to)if(!from.some(a=>a.next.includes(b.id)))nearest(from,b.x)[0].next.push(b.id);
+      for(const a of from){
+        const second=nearest(to,a.x).find(b=>!a.next.includes(b.id));
+        if(second&&Math.abs(second.x-a.x)<280&&random()<.58)a.next.push(second.id);
+      }
+    }
+    return nodes;
+  }
   function makeMap(seed,version){
+    if(version===3)return wovenMap(seed);
     const random=rng(seed^0x6a09e667),normals=Object.keys(R.enemies).filter(id=>R.enemies[id].kind==='battle');
     const layout=version===1?legacyLayout:rows.map(([lanes,kinds])=>{const shuffled=shuffle(kinds,random);return lanes.map((lane,i)=>[lane,shuffled[i]]);});
     return layout.flatMap((row,r)=>row.map(([lane,type])=>{
@@ -695,7 +742,7 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
       return {id:'r'+r+'c'+lane,row:r,lane,type,variant:pool.length?pick(pool,random):null};
     }));
   }
-  const connects=(a,b,version=2)=>b.row===a.row+1&&(b.type==='boss'||Math.abs(a.lane-b.lane)<=(version===2&&[5,8].includes(a.row)?2:1));
+  const connects=(a,b,version=3)=>b.row===a.row+1&&(version===3?a.next.includes(b.id):(b.type==='boss'||Math.abs(a.lane-b.lane)<=(version===2&&[5,8].includes(a.row)?2:1)));
   const masks=[
     [7,8,9,10,6,11,1,2,3,4,13,14,15,16,19,20],
     [7,8,9,13,14,15,19,20,21],
@@ -717,12 +764,19 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
   const number=(v,min,max)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
   const ids=(v,allowed,min,max)=>Array.isArray(v)&&v.length>=min&&v.length<=max&&v.every(x=>typeof x==='string'&&allowed.includes(x));
   class Floor{
-    constructor({seed=(Date.now()>>>0)||1,routeVersion=2}={}){
+    constructor({seed=(Date.now()>>>0)||1,routeVersion=3}={}){
       this.seed=seed>>>0||1;this.rngState=this.seed;this.routeVersion=routeVersion;this.nodes=makeMap(this.seed,routeVersion);this.stations=routeVersion===1?8:12;
       this.gold=60;this.deck=[...R.deck];this.relics=[];this.hero=new Body();this.visited=[];this.nodeId=null;this.screen='map';this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.migrated=false;
     }
     random(){let x=this.rngState;x^=x<<13;x^=x>>>17;x^=x<<5;this.rngState=x>>>0;return this.rngState/4294967296;}
     get node(){return this.nodes.find(n=>n.id===this.nodeId);}
+    get mapName(){return this.routeVersion===1?'旧日石径':routeNames[routeStyle(this.seed)];}
+    point(node){
+      if(this.routeVersion===1)return{x:100+node.lane*170,y:650-node.row*82};
+      if(this.routeVersion===3)return{x:node.x,y:node.y};
+      const phase=(this.seed%628)/100,jitter=hash(this.seed+':'+node.id);
+      return{x:90+node.lane*145+Math.sin(node.row*.65+phase)*25+(jitter%17-8),y:1080-node.row*90+((jitter>>>8)%15-7)};
+    }
     linked(a,b){return connects(a,b,this.routeVersion);}
     get available(){if(this.screen!=='map')return[];const last=this.nodes.find(n=>n.id===this.visited.at(-1));return this.nodes.filter(n=>last?this.linked(last,n):n.row===0);}
     get event(){return R.events[this.node?.variant];}
@@ -808,7 +862,7 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
       assert(data&&data.format==='ember-corridor'&&[1,2].includes(data.version),'不是本游戏支持的存档版本。');
       const old=data.version===1,s=data.run;assert(s&&typeof s==='object');
       assert(integer(s.seed,1,4294967295)&&integer(s.rngState,1,4294967295)&&integer(s.gold,0,100000));
-      const version=old?1:s.routeVersion;assert([1,2].includes(version));const run=new Floor({seed:s.seed,routeVersion:version}),nodeIds=run.nodes.map(n=>n.id),relicIds=Object.keys(R.relics);
+      const version=old?1:s.routeVersion;assert([1,2,3].includes(version));const run=new Floor({seed:s.seed,routeVersion:version}),nodeIds=run.nodes.map(n=>n.id),relicIds=Object.keys(R.relics);
       assert(ids(s.deck,Object.keys(R.cards),5,120)&&ids(s.relics,relicIds,0,16)&&new Set(s.relics).size===s.relics.length);
       assert(ids(s.visited,nodeIds,0,run.stations)&&new Set(s.visited).size===s.visited.length);
       s.visited.forEach((id,i)=>assert(i?run.linked(run.nodes.find(n=>n.id===s.visited[i-1]),run.nodes.find(n=>n.id===id)):run.nodes.find(n=>n.id===id).row===0));
@@ -857,7 +911,7 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
       return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:old};
     }
   }
-  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,2);Floor.connects=connects;
+  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,3);Floor.connects=connects;
   root.EmberFloor=Floor;if(typeof module!=='undefined'&&module.exports)module.exports=Floor;
 })(typeof globalThis!=='undefined'?globalThis:this);
 
@@ -1022,10 +1076,11 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
 
   const $ = id => document.getElementById(id);
   const Floor = root.EmberFloor, A = root.EmberArt, SAVE_KEY = 'ember-corridor.save.v1', BACKUP_KEY = SAVE_KEY + '.backup';
-  for (const [key, value] of Object.entries({scene:A.scene,map:A.map,hero:A.hero,boss:A.boss,cards:A.cards,rooms:A.rooms,enemies:A.enemies,'cards-extra':A.cardsExtra})) document.documentElement.style.setProperty(`--art-${key}`,`url("${value}")`);
-  $('hero-figure').src = A.hero;
-  $('scene-image').src=A.scene;
-  const artErrors=new Set();
+  const artErrors=new Set(),artReady=new Set();
+  function setArtImage(element,key){element.hidden=artErrors.has(key);if(element.dataset.artKey!==key){element.dataset.artKey=key;element.src=A[key];}}
+  function cropAtlas(element,index,columns,rows){element.style.width=columns*100+'%';element.style.height=rows*100+'%';element.style.left=-(index%columns)*100+'%';element.style.top=-Math.floor(index/columns)*100+'%';}
+  setArtImage($('hero-figure'),'hero');setArtImage($('scene-image'),'scene');setArtImage($('expedition-backdrop'),'scene');
+  setArtImage($('scene-room-image'),'rooms');setArtImage($('enemy-atlas-image'),'enemies');
   const escapeHtml = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let run = new Floor(), battle = new Battle({hero:run.hero,deck:run.deck}), busy = false, sound = false, auto = false, context, modalOpen = false;
   let savedAt = null, saveError = '', memoryBackup = null, pendingImport = null, startupNotice = '';
@@ -1061,10 +1116,14 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
     const columns = Math.max(...points.map(p => p[0])) + 1, rows = Math.max(...points.map(p => p[1])) + 1;
     return `<span class="poly-art"><span class="shape-preview-grid" style="--shape-cols:${columns};--shape-rows:${rows}">${points.map(([x, y]) => `<i style="grid-column:${x + 1};grid-row:${y + 1}"></i>`).join('')}</span></span>`;
   }
+  function atlasArt(key,index,columns,rows,extra=''){
+    return `<span class="atlas-frame ${extra}" aria-hidden="true"><img class="atlas-image" data-art-key="${key}" src="${A[key]}" alt="" draggable="false" style="width:${columns*100}%;height:${rows*100}%;left:${-(index%columns)*100}%;top:${-Math.floor(index/columns)*100}%"></span>`;
+  }
   const art = id => {
     const index=['strike','guard','heavy','ember','insight','parry','focus','cross','sweep','wall'].indexOf(id);
-    const extra=['hook','zigzag','diagonal','spear','ring','burst','fork','cleave','needle','crescent','bulwark','retreat','channel','renew','suture','clarity','feint','brace','pulse','backstab'].indexOf(id),expanded=index<0&&!artErrors.has('cardsExtra'),i=expanded?extra:index<0?(R.cards[id].shape?2:4):index;
-    return `<span class="painted-card-art ${expanded?'expanded-card-art':''}" style="--art-x:${i%5*25}%;--art-y:${expanded?Math.floor(i/5)/3*100:Math.floor(i/5)*100}%"></span>${R.cards[id].shape?`<span class="card-shape-badge">${shapeArt(R.cards[id].shape)}</span>`:''}`;
+    const extra=['hook','zigzag','diagonal','spear','ring','burst','fork','cleave','needle','crescent','bulwark','retreat','channel','renew','suture','clarity','feint','brace','pulse','backstab'].indexOf(id),expanded=index<0&&extra>=0&&!artErrors.has('cardsExtra'),i=expanded?extra:index<0?(R.cards[id].shape?2:4):index;
+    const picture=expanded?atlasArt('cardsExtra',i,5,4,'painted-card-art'):!artErrors.has('cards')?atlasArt('cards',i,5,2,'painted-card-art'):'<span class="art-placeholder">✦</span>';
+    return picture+(R.cards[id].shape?`<span class="card-shape-badge">${shapeArt(R.cards[id].shape)}</span>`:'');
   };
   function tone(freq = 200, dur = .12, type = 'sine') {
     if (!sound) return;
@@ -1143,20 +1202,21 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
     openModal('旅途存档',`<p class="modal-note">每次出牌、回合结算、选择节点和领取奖励后自动保存。再次打开同一个本地网站会继续当前旅途；导出文件可在不同浏览器或电脑间转移。</p><div class="save-summary"><b>第一层 · ${run.visited.length}/${run.stations} 站</b><span>${run.gold} 金币 · ${run.deck.length} 张牌 · 身体 ${run.hero.hp}/${run.hero.maxHp}</span><span>${escapeHtml(saveError || (savedAt?'已保存于 '+new Date(savedAt).toLocaleString():'尚未保存'))}</span></div><div class="save-actions"><button class="gold-button" data-save-export>导出当前存档 ↓</button><button class="outline-button" data-save-import>导入存档 ↑</button>${backup?'<button class="outline-button" data-save-backup>导出替换前备份</button>':''}</div><p class="modal-note">导入会先校验并显示确认；替换前的当前进度会另存一份本机备份。浏览器清理数据或切换本地网址可能使自动存档不再可见，请用导出文件保留进度。</p>`);
   }
   function mapMarkup(interactive=true) {
-    const available=new Set(run.available.map(n=>n.id)),seen=new Set(run.visited),expanded=run.routeVersion===2,w=expanded?760:540,h=expanded?1160:710;
-    const point=n=>expanded?{x:90+n.lane*145,y:1080-n.row*90}:{x:100+n.lane*170,y:650-n.row*82};
+    const available=new Set(run.available.map(n=>n.id)),seen=new Set(run.visited),expanded=run.routeVersion!==1,w=expanded?760:540,h=expanded?1160:710;
+    const point=n=>run.point(n);
     const edges=run.nodes.flatMap(a=>run.nodes.filter(b=>run.linked(a,b)).map(b=>{
       const p=point(a),q=point(b),traveled=seen.has(a.id)&&(seen.has(b.id)||run.nodeId===b.id);
-      return '<path class="route-edge '+(traveled?'traveled':'')+'" d="M'+p.x+' '+p.y+' C'+p.x+' '+(p.y-40)+' '+q.x+' '+(q.y+40)+' '+q.x+' '+q.y+'"/>';
+      const middle=(p.y+q.y)/2;
+      return '<path class="route-edge '+(traveled?'traveled':'')+'" d="M'+p.x+' '+p.y+' C'+p.x+' '+middle+' '+q.x+' '+middle+' '+q.x+' '+q.y+'"/>';
     })).join('');
-    return '<div class="route-canvas '+(expanded?'expanded-map':'')+'" style="--map-ratio:'+w+'/'+h+'"><svg viewBox="0 0 '+w+' '+h+'" aria-hidden="true">'+edges+'<text x="'+w/2+'" y="'+(h-20)+'" text-anchor="middle" class="map-start-label">提灯的起点</text></svg>'+run.nodes.map(n=>{
+    return '<div class="route-canvas '+(expanded?'expanded-map':'')+' '+(run.routeVersion===3?'woven-map':'')+'" style="--map-ratio:'+w+'/'+h+';--map-inline-size:'+(w/h*100)+'cqh"><img class="route-paper" data-art-key="map" src="'+A.map+'" alt="" draggable="false" aria-hidden="true"><svg viewBox="0 0 '+w+' '+h+'" aria-hidden="true"><text x="'+w/2+'" y="37" text-anchor="middle" class="map-shape-label">'+run.mapName+'</text>'+edges+'<text x="'+w/2+'" y="'+(h-20)+'" text-anchor="middle" class="map-start-label">提灯的起点</text></svg>'+run.nodes.map(n=>{
       const p=point(n),type=Floor.types[n.type],enabled=interactive&&available.has(n.id),current=run.nodeId===n.id;
       const detail=['battle','elite','boss'].includes(n.type)?R.enemies[n.variant].name:n.type==='event'?R.events[n.variant].title:type.name;
       return '<button class="route-node type-'+n.type+' '+(seen.has(n.id)?'visited':'')+' '+(available.has(n.id)?'available':'')+' '+(current?'current':'')+'" style="left:'+p.x/w*100+'%;top:'+p.y/h*100+'%" data-node="'+n.id+'" '+(enabled?'':'disabled')+' title="第'+(n.row+1)+'站 · '+detail+(enabled?' · 点击前往':'')+'" aria-label="第'+(n.row+1)+'站 '+detail+(enabled?'，可前往':'')+'"><i>'+nodeIcon(n.type)+'</i><span>'+type.name+'</span>'+(seen.has(n.id)?'<b>✓</b>':'')+'</button>';
     }).join('')+'</div>';
   }
   function nodeAction(action,title,note,disabled=false) { return '<button class="node-choice" data-node-choice="'+action+'" '+(disabled?'disabled':'')+'><b>'+title+'</b><span>'+note+'</span><i>↗</i></button>'; }
-  function roomArt(cell) { return '<div class="room-illustration" style="--room-x:'+(cell%3*50)+'%;--room-y:'+Math.floor(cell/3)*100+'%" aria-hidden="true"></div>'; }
+  function roomArt(cell) { return '<div class="room-illustration" aria-hidden="true">'+atlasArt('rooms',cell,3,2)+'</div>'; }
   function relicMarkup(id) { const r=R.relics[id];return '<div class="loot-relic"><span>✦</span><div><b>'+r.name+'</b><p>'+r.description+'</p></div></div>'; }
   function showRelics() { if(busy)return;openModal('旅人遗物 · '+run.relics.length+' / '+Object.keys(R.relics).length,'<p class="modal-note">遗物效果在本次旅途中持续生效。精英和Boss胜利时保证掉落一件未拥有的遗物，结算自动领取。</p><div class="relic-collection">'+Object.keys(R.relics).map(id=>'<div class="'+(run.relics.includes(id)?'owned':'unowned')+'">'+relicMarkup(id)+'<small>'+(run.relics.includes(id)?'已拥有':'尚未获得')+'</small></div>').join('')+'</div>'); }
   function renderRoute() {
@@ -1174,7 +1234,7 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
         content+=nodeAction('leave','离开商店','保留剩余金币，继续选择路线。');
       }
       content+='</div>';
-    } else content='<div class="journey-illustration" aria-hidden="true"></div><span class="eyebrow">选择你的道路</span><h2>'+(run.visited.length?'余火仍在前方':'踏入回廊')+'</h2><p>沿连线选择下一站。'+(run.routeVersion===1?'当前保留旧存档路线，新旅途将启用十二站四十七节点。':'五条纵向道路，在岔口交汇；每次旅途的节点、敌人与事件都会变化。')+'</p><div class="journey-meter"><b>'+run.visited.length+'<small> / '+run.stations+' 站</small></b><span>终点 · '+R.enemies[boss.variant].name+'</span></div><p class="node-tip">普通战斗赚取卡牌，精英与Boss掉落遗物。营火、事件和商店可以修复伤势。</p>';
+    } else content='<div class="journey-illustration" aria-hidden="true"><img data-art-key="hero" src="'+A.hero+'" alt="" draggable="false"></div><span class="eyebrow">'+run.mapName+'</span><h2>'+(run.visited.length?'余火仍在前方':'踏入回廊')+'</h2><p>沿连线选择下一站。'+(run.routeVersion===3?'道路随旅途蜿蜒、张开或收束，岔口的位置与连接都会变化。':'当前保留旧存档的连接关系，新开旅途将生成不同形状的十二站路线。')+'</p><div class="journey-meter"><b>'+run.visited.length+'<small> / '+run.stations+' 站</small></b><span>终点 · '+R.enemies[boss.variant].name+'</span></div><p class="node-tip">普通战斗赚取卡牌，精英与Boss掉落遗物。营火、事件和商店可以修复伤势。</p>';
     $('node-panel').innerHTML=content+'<div class="journey-health"><span>旅人身体 <b>'+h.hp+'/'+h.maxHp+'</b></span><span>血容量 <b>'+Math.round(h.blood)+'%</b> · 意识 <b>'+Math.round(h.capacities.consciousness*100)+'%</b></span><button class="outline-button" data-open-health>身体与无限包扎 ↗</button></div><div class="journey-relics"><button class="outline-button" data-open-relics>✦ 遗物 '+run.relics.length+' / 16</button></div>';
     $('map-legend').innerHTML=Object.entries(Floor.types).map(([id,t])=>'<span><b>'+nodeIcon(id)+'</b>'+t.name+'</span>').join('');
   }
@@ -1192,12 +1252,12 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
     $('encounter-eyebrow').textContent=`第一层 · 第 ${(run.node?.row || 0)+1} / ${run.stations} 站${e?.kind==='boss'?' · BOSS':e?.kind==='elite'?' · 精英':''}`;
     $('encounter-note').textContent=e?.kind==='boss'?`半血后攻击额外+${e.enrage||0} · 胜利掉落遗物`:'鼠标居中放置 · 点击即攻击';
     $('arena').classList.toggle('boss-encounter',e?.kind==='boss'); $('arena').classList.toggle('elite-encounter',e?.kind==='elite');
-    const sprite=e?.sprite??'sentinel',atlas=typeof sprite==='number'&&!artErrors.has('enemies'),fallback=typeof sprite==='string'?A[sprite]:(e?.kind==='boss'?A.boss:e?.kind==='elite'?A.elite:A.sentinel);
-    if($('enemy-fallback').getAttribute('src')!==fallback) $('enemy-fallback').src=fallback;
+    const sprite=e?.sprite??'sentinel',atlas=typeof sprite==='number'&&artReady.has('enemies')&&!artErrors.has('enemies'),fallback=typeof sprite==='string'?sprite:(e?.kind==='boss'?'boss':e?.kind==='elite'?'elite':'sentinel');
+    setArtImage($('enemy-fallback'),artErrors.has(fallback)?'sentinel':fallback);
     $('enemy-fallback').style.visibility=atlas?'hidden':'visible';$('enemy-atlas-sprite').hidden=!atlas;
-    if(atlas){$('enemy-atlas-sprite').style.setProperty('--enemy-x',`${sprite%4/3*100}%`);$('enemy-atlas-sprite').style.setProperty('--enemy-y',`${Math.floor(sprite/4)*100}%`);}
+    if(atlas)cropAtlas($('enemy-atlas-image'),sprite,4,2);
     const cell=e?.sceneCell;$('scene-room').hidden=cell==null||artErrors.has('rooms');
-    if(cell!=null){$('scene-room').style.setProperty('--room-x',`${cell%3*50}%`);$('scene-room').style.setProperty('--room-y',`${Math.floor(cell/3)*100}%`);}
+    if(cell!=null)cropAtlas($('scene-room-image'),cell,3,2);
     $('arena').setAttribute('aria-label',`${e?.name || '回廊'}战斗场景`); $('enemy-actor').setAttribute('aria-label',e?.name || '敌人'); $('enemy-grid-panel').setAttribute('aria-label',`${e?.name || '敌人'}的生命方格`);
     $('enemy-grid-panel').querySelector('h2').textContent='生命方格';
     $('enemy-health').setAttribute('aria-label','敌人剩余总生命');
@@ -1431,7 +1491,7 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
     openModal(`${names[pile]} · ${cards.length} 张`, `<p class="modal-note">${pile === 'draw' ? '以下按类型展示，不代表抽取顺序。抽牌堆耗尽时，弃牌会重新洗入。' : pile === 'discard' ? '打出的牌和回合结束时的手牌会进入这里。' : pile === 'exhaust' ? '消耗的牌在本局战斗中不会再被抽到。' : '这一层的完整牌组。战斗奖励、商店和营火可加入新牌，下一场战斗会重新洗牌。'}</p><div class="pile-list">${Object.entries(counts).map(([id, count]) => { const d = battle.definition(id); return `<div class="pile-item"><span class="mini-art ${id}">${art(id)}</span><div><strong>${d.name} <small>×${count}</small></strong><p>${d.description}</p></div><span class="mini-cost">${d.cost}</span></div>`; }).join('') || '<p class="empty-pile">这里暂时没有牌。</p>'}</div>`);
   }
   function showHelp() {
-    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>十二站与交汇路线</h3><p>新旅途有47个节点、五条道路和交汇岔口。沿连接向上选择，最后挑战三种首领之一。旧存档保留八站路线，新开旅途进入扩展地图。</p></div><div>'+icon('sword')+'<h3>三十张卡牌</h3><p>包含钩形、折线、斜线、环形、九宫等攻击，以及格挡、抽牌、能量、治疗和止血。选牌后以鼠标居中放置，点格即出；R/滚轮旋转，右键取消。AUTO点牌自动攻击。</p></div><div>'+icon('shield')+'<h3>无限包扎与身体</h3><p>包扎没有次数上限，每次仍花1能量，修复一个存活部位并止血，缺失部位不能再生。强化剂每场1次，炼金试管增加至2次。能力与遗物都影响实际效果。</p></div><div>'+icon('flame')+'<h3>遗物与第一层难度</h3><p>普通敌人10–18生命、精英22–28、Boss34–42。精英和Boss获胜时自动获得一件未拥有的遗物，并保存结算。16种遗物可影响攻击、格挡、能量、抽牌、恢复、金币和商店价格。</p></div></div><p class="modal-note">每次完整动作后自动保存，导入支持v1/v2并保留替换前备份。旧存档当前敌人按剩余比例降低生命；继续旧路线即可使用新卡牌、无限包扎和遗物规则。新地图的敌人、事件、商店与首领随种子变化。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
+    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>十二站与交汇路线</h3><p>新旅途有47个节点，蜿蜒、双翼、斜行或收束四种走向；宽窄与实际分叉随旅途变化。沿连线选择，最终挑战三种首领之一。旧存档保留原连接，新开旅途生成变化的地图。</p></div><div>'+icon('sword')+'<h3>三十张卡牌</h3><p>包含钩形、折线、斜线、环形、九宫等攻击，以及格挡、抽牌、能量、治疗和止血。选牌后以鼠标居中放置，点格即出；R/滚轮旋转，右键取消。AUTO点牌自动攻击。</p></div><div>'+icon('shield')+'<h3>无限包扎与身体</h3><p>包扎没有次数上限，每次仍花1能量，修复一个存活部位并止血，缺失部位不能再生。强化剂每场1次，炼金试管增加至2次。能力与遗物都影响实际效果。</p></div><div>'+icon('flame')+'<h3>遗物与第一层难度</h3><p>普通敌人10–18生命、精英22–28、Boss34–42。精英和Boss获胜时自动获得一件未拥有的遗物，并保存结算。16种遗物可影响攻击、格挡、能量、抽牌、恢复、金币和商店价格。</p></div></div><p class="modal-note">每次完整动作后自动保存，导入支持v1/v2并保留替换前备份。旧存档当前敌人按剩余比例降低生命；继续旧路线即可使用新卡牌、无限包扎和遗物规则。新地图的敌人、事件、商店与首领随种子变化。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
   }
   function showResult() {
     if(!['reward','lost','cleared'].includes(run.screen))return;
@@ -1534,9 +1594,29 @@ footer{padding:0 10px;font-size:7px;letter-spacing:0}footer>span:first-child{dis
   } catch (_) { saveError='存档不可读，可导出或重开'; startupNotice='本地存档暂时无法读取，原记录尚未替换。你可在存档菜单导出备份，或开始新旅途。'; try { memoryBackup=localStorage.getItem(SAVE_KEY); if(memoryBackup) localStorage.setItem(BACKUP_KEY,memoryBackup); } catch (_) {} }
   $('sound-button').classList.toggle('active',sound); $('sound-button').setAttribute('aria-pressed',String(sound));
   render();
-  // Asset loading is part of the player's page; failures retain available local artwork.
+  // Browser load events update presentation only; they never advance or save the run.
+  let artRefresh=0;
+  function refreshArt(){
+    if(artRefresh)return;
+    artRefresh=root.requestAnimationFrame(()=>{artRefresh=0;render();if(modalOpen&&$('modal-panel').classList.contains('result-panel'))showResult();});
+  }
+  function artFailed(key){
+    if(!Object.hasOwn(A,key)||artErrors.has(key))return;
+    artErrors.add(key);artReady.delete(key);$('asset-warning').hidden=false;$('asset-warning').title=[...artErrors].join('、');
+    if(key==='rooms')document.documentElement.classList.add('room-art-unavailable');
+    if(key==='map')document.documentElement.classList.add('map-art-unavailable');
+    for(const img of document.querySelectorAll('img[data-art-key]'))if(img.dataset.artKey===key){
+      const frame=img.parentElement;
+      if(frame?.classList.contains('painted-card-art')){
+        if(key==='cardsExtra'&&!artErrors.has('cards'))frame.outerHTML=atlasArt('cards',2,5,2,'painted-card-art');
+        else frame.innerHTML='<span class="art-placeholder">✦</span>';
+      }else img.hidden=true;
+    }
+    refreshArt();
+  }
+  document.addEventListener('error',e=>{if(e.target instanceof HTMLImageElement)artFailed(e.target.dataset.artKey);},true);
   for(const [key,url] of Object.entries(A)){
-    const img=new Image();img.onerror=()=>{artErrors.add(key);$('asset-warning').hidden=false;$('asset-warning').title=[...artErrors].join('、');if(key==='rooms')document.documentElement.classList.add('room-art-unavailable');render();};img.src=url;
+    const img=new Image();img.onload=()=>{if(img.naturalWidth&&img.naturalHeight){artReady.add(key);refreshArt();}else artFailed(key);};img.onerror=()=>artFailed(key);img.src=url;
   }
   if(startupNotice) openModal('本地存档提示',`<p class="modal-note">${startupNotice}</p><button class="outline-button" data-save-backup>导出原始备份</button>`);
   else if(['reward','lost','cleared'].includes(run.screen)) showResult();

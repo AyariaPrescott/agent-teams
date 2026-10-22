@@ -11,10 +11,15 @@ $inline=New-Object Text.StringBuilder
 foreach($file in @('art.js','balance.js','body.js','floor.js','game.js')){
     $content=[IO.File]::ReadAllText((Join-Path $project ('dist\'+$file)))
     if($file -eq 'art.js'){
-        foreach($image in Get-ChildItem -LiteralPath (Join-Path $project 'dist\assets') -File -Filter '*.png'){
-            $uri='data:image/png;base64,'+[Convert]::ToBase64String([IO.File]::ReadAllBytes($image.FullName))
-            $content=$content.Replace(('assets/'+$image.Name),$uri)
+        $assetPaths=@([regex]::Matches($content,"'assets/([^']+\.png)'") | ForEach-Object {$_.Groups[1].Value} | Sort-Object -Unique)
+        if(-not $assetPaths.Count){throw 'No local image entries were found.'}
+        foreach($name in $assetPaths){
+            $imagePath=Join-Path $project ('dist\assets\'+$name)
+            if(-not [IO.File]::Exists($imagePath)){throw ('Missing local image: '+$name)}
+            $uri='data:image/png;base64,'+[Convert]::ToBase64String([IO.File]::ReadAllBytes($imagePath))
+            $content=$content.Replace(('assets/'+$name),$uri)
         }
+        if($content.Contains("'assets/")){throw 'A local image reference was left outside the standalone file.'}
     }
     $null=$inline.Append("<script>`n").Append($content).Append("`n</script>`n")
 }

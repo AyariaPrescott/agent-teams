@@ -1,6 +1,6 @@
 # 第一层与存档（v2）
 
-当前新旅途：12站47节点、5条纵向道路，在第6/9站之后有更宽交汇，最后汇聚到3种首领中的1位。节点位置固定，类型/敌人/事件/商店由种子决定。详细30卡牌、19敌人、16遗物、12事件与难度见CONTENT-EXPANSION.md。
+当前新旅途：12站47节点，四种走向与种子决定的宽窄位置、节点坐标及分叉汇合。中间十站每站2–5节点，最后汇聚到3种首领中的1位。所有节点有通向终点的出口，除起点外都有入口。类型/敌人/事件/商店亦由种子决定。详细30卡牌、19敌人、16遗物、12事件与难度见CONTENT-EXPANSION.md；地图生成细节见TEXTURES-MAP-SHAPES.md。
 
 旅途状态为map（选下站）、node（处理房间）、battle（战斗）、reward（领/跳过卡牌）、lost、cleared。不能在当前节点未完成时跳到另一节点。精英/Boss的金币与遗物在battle→reward/cleared时一次发放，并立即保存；结算重开不会再发。
 
@@ -10,7 +10,7 @@
 
 顶层format为ember-corridor，version为2，含savedAt、options及run。为自动发现旧存档，本地键继续使用ember-corridor.save.v1，最近替换前备份使用该键加.backup。
 
-run包含seed、rngState、routeVersion、金币、完整牌组、遗物、已走路径、当前节点/状态、待选卡牌、商店已购ID、宝箱roomRelics及结算lastLoot。routeVersion=2为新地图，=1保留旧八站图，地图按种子和版本重建。
+run包含seed、rngState、routeVersion、金币、完整牌组、遗物、已走路径、当前节点/状态、待选卡牌、商店已购ID、宝箱roomRelics及结算lastLoot。routeVersion=3为变化形状的新地图，=2保留固定十二站图（仅增加视觉偏移），=1保留旧八站图。地图按种子和路线版本重建；不把新形状的节点/连接应用到已有routeVersion=1/2的旅途，当前战斗与进度不重置。
 
 身体记录部位ID/HP/流血/缺失及父部位关系、血容量、格挡、强化与强化剂。bandages=3仅是兼容字段，当前治疗从不消耗或检查该字段。
 

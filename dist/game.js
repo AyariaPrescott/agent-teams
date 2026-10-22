@@ -157,10 +157,11 @@
 
   const $ = id => document.getElementById(id);
   const Floor = root.EmberFloor, A = root.EmberArt, SAVE_KEY = 'ember-corridor.save.v1', BACKUP_KEY = SAVE_KEY + '.backup';
-  for (const [key, value] of Object.entries({scene:A.scene,map:A.map,hero:A.hero,boss:A.boss,cards:A.cards,rooms:A.rooms,enemies:A.enemies,'cards-extra':A.cardsExtra})) document.documentElement.style.setProperty(`--art-${key}`,`url("${value}")`);
-  $('hero-figure').src = A.hero;
-  $('scene-image').src=A.scene;
-  const artErrors=new Set();
+  const artErrors=new Set(),artReady=new Set();
+  function setArtImage(element,key){element.hidden=artErrors.has(key);if(element.dataset.artKey!==key){element.dataset.artKey=key;element.src=A[key];}}
+  function cropAtlas(element,index,columns,rows){element.style.width=columns*100+'%';element.style.height=rows*100+'%';element.style.left=-(index%columns)*100+'%';element.style.top=-Math.floor(index/columns)*100+'%';}
+  setArtImage($('hero-figure'),'hero');setArtImage($('scene-image'),'scene');setArtImage($('expedition-backdrop'),'scene');
+  setArtImage($('scene-room-image'),'rooms');setArtImage($('enemy-atlas-image'),'enemies');
   const escapeHtml = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let run = new Floor(), battle = new Battle({hero:run.hero,deck:run.deck}), busy = false, sound = false, auto = false, context, modalOpen = false;
   let savedAt = null, saveError = '', memoryBackup = null, pendingImport = null, startupNotice = '';
@@ -196,10 +197,14 @@
     const columns = Math.max(...points.map(p => p[0])) + 1, rows = Math.max(...points.map(p => p[1])) + 1;
     return `<span class="poly-art"><span class="shape-preview-grid" style="--shape-cols:${columns};--shape-rows:${rows}">${points.map(([x, y]) => `<i style="grid-column:${x + 1};grid-row:${y + 1}"></i>`).join('')}</span></span>`;
   }
+  function atlasArt(key,index,columns,rows,extra=''){
+    return `<span class="atlas-frame ${extra}" aria-hidden="true"><img class="atlas-image" data-art-key="${key}" src="${A[key]}" alt="" draggable="false" style="width:${columns*100}%;height:${rows*100}%;left:${-(index%columns)*100}%;top:${-Math.floor(index/columns)*100}%"></span>`;
+  }
   const art = id => {
     const index=['strike','guard','heavy','ember','insight','parry','focus','cross','sweep','wall'].indexOf(id);
-    const extra=['hook','zigzag','diagonal','spear','ring','burst','fork','cleave','needle','crescent','bulwark','retreat','channel','renew','suture','clarity','feint','brace','pulse','backstab'].indexOf(id),expanded=index<0&&!artErrors.has('cardsExtra'),i=expanded?extra:index<0?(R.cards[id].shape?2:4):index;
-    return `<span class="painted-card-art ${expanded?'expanded-card-art':''}" style="--art-x:${i%5*25}%;--art-y:${expanded?Math.floor(i/5)/3*100:Math.floor(i/5)*100}%"></span>${R.cards[id].shape?`<span class="card-shape-badge">${shapeArt(R.cards[id].shape)}</span>`:''}`;
+    const extra=['hook','zigzag','diagonal','spear','ring','burst','fork','cleave','needle','crescent','bulwark','retreat','channel','renew','suture','clarity','feint','brace','pulse','backstab'].indexOf(id),expanded=index<0&&extra>=0&&!artErrors.has('cardsExtra'),i=expanded?extra:index<0?(R.cards[id].shape?2:4):index;
+    const picture=expanded?atlasArt('cardsExtra',i,5,4,'painted-card-art'):!artErrors.has('cards')?atlasArt('cards',i,5,2,'painted-card-art'):'<span class="art-placeholder">✦</span>';
+    return picture+(R.cards[id].shape?`<span class="card-shape-badge">${shapeArt(R.cards[id].shape)}</span>`:'');
   };
   function tone(freq = 200, dur = .12, type = 'sine') {
     if (!sound) return;
@@ -278,20 +283,21 @@
     openModal('旅途存档',`<p class="modal-note">每次出牌、回合结算、选择节点和领取奖励后自动保存。再次打开同一个本地网站会继续当前旅途；导出文件可在不同浏览器或电脑间转移。</p><div class="save-summary"><b>第一层 · ${run.visited.length}/${run.stations} 站</b><span>${run.gold} 金币 · ${run.deck.length} 张牌 · 身体 ${run.hero.hp}/${run.hero.maxHp}</span><span>${escapeHtml(saveError || (savedAt?'已保存于 '+new Date(savedAt).toLocaleString():'尚未保存'))}</span></div><div class="save-actions"><button class="gold-button" data-save-export>导出当前存档 ↓</button><button class="outline-button" data-save-import>导入存档 ↑</button>${backup?'<button class="outline-button" data-save-backup>导出替换前备份</button>':''}</div><p class="modal-note">导入会先校验并显示确认；替换前的当前进度会另存一份本机备份。浏览器清理数据或切换本地网址可能使自动存档不再可见，请用导出文件保留进度。</p>`);
   }
   function mapMarkup(interactive=true) {
-    const available=new Set(run.available.map(n=>n.id)),seen=new Set(run.visited),expanded=run.routeVersion===2,w=expanded?760:540,h=expanded?1160:710;
-    const point=n=>expanded?{x:90+n.lane*145,y:1080-n.row*90}:{x:100+n.lane*170,y:650-n.row*82};
+    const available=new Set(run.available.map(n=>n.id)),seen=new Set(run.visited),expanded=run.routeVersion!==1,w=expanded?760:540,h=expanded?1160:710;
+    const point=n=>run.point(n);
     const edges=run.nodes.flatMap(a=>run.nodes.filter(b=>run.linked(a,b)).map(b=>{
       const p=point(a),q=point(b),traveled=seen.has(a.id)&&(seen.has(b.id)||run.nodeId===b.id);
-      return '<path class="route-edge '+(traveled?'traveled':'')+'" d="M'+p.x+' '+p.y+' C'+p.x+' '+(p.y-40)+' '+q.x+' '+(q.y+40)+' '+q.x+' '+q.y+'"/>';
+      const middle=(p.y+q.y)/2;
+      return '<path class="route-edge '+(traveled?'traveled':'')+'" d="M'+p.x+' '+p.y+' C'+p.x+' '+middle+' '+q.x+' '+middle+' '+q.x+' '+q.y+'"/>';
     })).join('');
-    return '<div class="route-canvas '+(expanded?'expanded-map':'')+'" style="--map-ratio:'+w+'/'+h+'"><svg viewBox="0 0 '+w+' '+h+'" aria-hidden="true">'+edges+'<text x="'+w/2+'" y="'+(h-20)+'" text-anchor="middle" class="map-start-label">提灯的起点</text></svg>'+run.nodes.map(n=>{
+    return '<div class="route-canvas '+(expanded?'expanded-map':'')+' '+(run.routeVersion===3?'woven-map':'')+'" style="--map-ratio:'+w+'/'+h+';--map-inline-size:'+(w/h*100)+'cqh"><img class="route-paper" data-art-key="map" src="'+A.map+'" alt="" draggable="false" aria-hidden="true"><svg viewBox="0 0 '+w+' '+h+'" aria-hidden="true"><text x="'+w/2+'" y="37" text-anchor="middle" class="map-shape-label">'+run.mapName+'</text>'+edges+'<text x="'+w/2+'" y="'+(h-20)+'" text-anchor="middle" class="map-start-label">提灯的起点</text></svg>'+run.nodes.map(n=>{
       const p=point(n),type=Floor.types[n.type],enabled=interactive&&available.has(n.id),current=run.nodeId===n.id;
       const detail=['battle','elite','boss'].includes(n.type)?R.enemies[n.variant].name:n.type==='event'?R.events[n.variant].title:type.name;
       return '<button class="route-node type-'+n.type+' '+(seen.has(n.id)?'visited':'')+' '+(available.has(n.id)?'available':'')+' '+(current?'current':'')+'" style="left:'+p.x/w*100+'%;top:'+p.y/h*100+'%" data-node="'+n.id+'" '+(enabled?'':'disabled')+' title="第'+(n.row+1)+'站 · '+detail+(enabled?' · 点击前往':'')+'" aria-label="第'+(n.row+1)+'站 '+detail+(enabled?'，可前往':'')+'"><i>'+nodeIcon(n.type)+'</i><span>'+type.name+'</span>'+(seen.has(n.id)?'<b>✓</b>':'')+'</button>';
     }).join('')+'</div>';
   }
   function nodeAction(action,title,note,disabled=false) { return '<button class="node-choice" data-node-choice="'+action+'" '+(disabled?'disabled':'')+'><b>'+title+'</b><span>'+note+'</span><i>↗</i></button>'; }
-  function roomArt(cell) { return '<div class="room-illustration" style="--room-x:'+(cell%3*50)+'%;--room-y:'+Math.floor(cell/3)*100+'%" aria-hidden="true"></div>'; }
+  function roomArt(cell) { return '<div class="room-illustration" aria-hidden="true">'+atlasArt('rooms',cell,3,2)+'</div>'; }
   function relicMarkup(id) { const r=R.relics[id];return '<div class="loot-relic"><span>✦</span><div><b>'+r.name+'</b><p>'+r.description+'</p></div></div>'; }
   function showRelics() { if(busy)return;openModal('旅人遗物 · '+run.relics.length+' / '+Object.keys(R.relics).length,'<p class="modal-note">遗物效果在本次旅途中持续生效。精英和Boss胜利时保证掉落一件未拥有的遗物，结算自动领取。</p><div class="relic-collection">'+Object.keys(R.relics).map(id=>'<div class="'+(run.relics.includes(id)?'owned':'unowned')+'">'+relicMarkup(id)+'<small>'+(run.relics.includes(id)?'已拥有':'尚未获得')+'</small></div>').join('')+'</div>'); }
   function renderRoute() {
@@ -309,7 +315,7 @@
         content+=nodeAction('leave','离开商店','保留剩余金币，继续选择路线。');
       }
       content+='</div>';
-    } else content='<div class="journey-illustration" aria-hidden="true"></div><span class="eyebrow">选择你的道路</span><h2>'+(run.visited.length?'余火仍在前方':'踏入回廊')+'</h2><p>沿连线选择下一站。'+(run.routeVersion===1?'当前保留旧存档路线，新旅途将启用十二站四十七节点。':'五条纵向道路，在岔口交汇；每次旅途的节点、敌人与事件都会变化。')+'</p><div class="journey-meter"><b>'+run.visited.length+'<small> / '+run.stations+' 站</small></b><span>终点 · '+R.enemies[boss.variant].name+'</span></div><p class="node-tip">普通战斗赚取卡牌，精英与Boss掉落遗物。营火、事件和商店可以修复伤势。</p>';
+    } else content='<div class="journey-illustration" aria-hidden="true"><img data-art-key="hero" src="'+A.hero+'" alt="" draggable="false"></div><span class="eyebrow">'+run.mapName+'</span><h2>'+(run.visited.length?'余火仍在前方':'踏入回廊')+'</h2><p>沿连线选择下一站。'+(run.routeVersion===3?'道路随旅途蜿蜒、张开或收束，岔口的位置与连接都会变化。':'当前保留旧存档的连接关系，新开旅途将生成不同形状的十二站路线。')+'</p><div class="journey-meter"><b>'+run.visited.length+'<small> / '+run.stations+' 站</small></b><span>终点 · '+R.enemies[boss.variant].name+'</span></div><p class="node-tip">普通战斗赚取卡牌，精英与Boss掉落遗物。营火、事件和商店可以修复伤势。</p>';
     $('node-panel').innerHTML=content+'<div class="journey-health"><span>旅人身体 <b>'+h.hp+'/'+h.maxHp+'</b></span><span>血容量 <b>'+Math.round(h.blood)+'%</b> · 意识 <b>'+Math.round(h.capacities.consciousness*100)+'%</b></span><button class="outline-button" data-open-health>身体与无限包扎 ↗</button></div><div class="journey-relics"><button class="outline-button" data-open-relics>✦ 遗物 '+run.relics.length+' / 16</button></div>';
     $('map-legend').innerHTML=Object.entries(Floor.types).map(([id,t])=>'<span><b>'+nodeIcon(id)+'</b>'+t.name+'</span>').join('');
   }
@@ -327,12 +333,12 @@
     $('encounter-eyebrow').textContent=`第一层 · 第 ${(run.node?.row || 0)+1} / ${run.stations} 站${e?.kind==='boss'?' · BOSS':e?.kind==='elite'?' · 精英':''}`;
     $('encounter-note').textContent=e?.kind==='boss'?`半血后攻击额外+${e.enrage||0} · 胜利掉落遗物`:'鼠标居中放置 · 点击即攻击';
     $('arena').classList.toggle('boss-encounter',e?.kind==='boss'); $('arena').classList.toggle('elite-encounter',e?.kind==='elite');
-    const sprite=e?.sprite??'sentinel',atlas=typeof sprite==='number'&&!artErrors.has('enemies'),fallback=typeof sprite==='string'?A[sprite]:(e?.kind==='boss'?A.boss:e?.kind==='elite'?A.elite:A.sentinel);
-    if($('enemy-fallback').getAttribute('src')!==fallback) $('enemy-fallback').src=fallback;
+    const sprite=e?.sprite??'sentinel',atlas=typeof sprite==='number'&&artReady.has('enemies')&&!artErrors.has('enemies'),fallback=typeof sprite==='string'?sprite:(e?.kind==='boss'?'boss':e?.kind==='elite'?'elite':'sentinel');
+    setArtImage($('enemy-fallback'),artErrors.has(fallback)?'sentinel':fallback);
     $('enemy-fallback').style.visibility=atlas?'hidden':'visible';$('enemy-atlas-sprite').hidden=!atlas;
-    if(atlas){$('enemy-atlas-sprite').style.setProperty('--enemy-x',`${sprite%4/3*100}%`);$('enemy-atlas-sprite').style.setProperty('--enemy-y',`${Math.floor(sprite/4)*100}%`);}
+    if(atlas)cropAtlas($('enemy-atlas-image'),sprite,4,2);
     const cell=e?.sceneCell;$('scene-room').hidden=cell==null||artErrors.has('rooms');
-    if(cell!=null){$('scene-room').style.setProperty('--room-x',`${cell%3*50}%`);$('scene-room').style.setProperty('--room-y',`${Math.floor(cell/3)*100}%`);}
+    if(cell!=null)cropAtlas($('scene-room-image'),cell,3,2);
     $('arena').setAttribute('aria-label',`${e?.name || '回廊'}战斗场景`); $('enemy-actor').setAttribute('aria-label',e?.name || '敌人'); $('enemy-grid-panel').setAttribute('aria-label',`${e?.name || '敌人'}的生命方格`);
     $('enemy-grid-panel').querySelector('h2').textContent='生命方格';
     $('enemy-health').setAttribute('aria-label','敌人剩余总生命');
@@ -566,7 +572,7 @@
     openModal(`${names[pile]} · ${cards.length} 张`, `<p class="modal-note">${pile === 'draw' ? '以下按类型展示，不代表抽取顺序。抽牌堆耗尽时，弃牌会重新洗入。' : pile === 'discard' ? '打出的牌和回合结束时的手牌会进入这里。' : pile === 'exhaust' ? '消耗的牌在本局战斗中不会再被抽到。' : '这一层的完整牌组。战斗奖励、商店和营火可加入新牌，下一场战斗会重新洗牌。'}</p><div class="pile-list">${Object.entries(counts).map(([id, count]) => { const d = battle.definition(id); return `<div class="pile-item"><span class="mini-art ${id}">${art(id)}</span><div><strong>${d.name} <small>×${count}</small></strong><p>${d.description}</p></div><span class="mini-cost">${d.cost}</span></div>`; }).join('') || '<p class="empty-pile">这里暂时没有牌。</p>'}</div>`);
   }
   function showHelp() {
-    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>十二站与交汇路线</h3><p>新旅途有47个节点、五条道路和交汇岔口。沿连接向上选择，最后挑战三种首领之一。旧存档保留八站路线，新开旅途进入扩展地图。</p></div><div>'+icon('sword')+'<h3>三十张卡牌</h3><p>包含钩形、折线、斜线、环形、九宫等攻击，以及格挡、抽牌、能量、治疗和止血。选牌后以鼠标居中放置，点格即出；R/滚轮旋转，右键取消。AUTO点牌自动攻击。</p></div><div>'+icon('shield')+'<h3>无限包扎与身体</h3><p>包扎没有次数上限，每次仍花1能量，修复一个存活部位并止血，缺失部位不能再生。强化剂每场1次，炼金试管增加至2次。能力与遗物都影响实际效果。</p></div><div>'+icon('flame')+'<h3>遗物与第一层难度</h3><p>普通敌人10–18生命、精英22–28、Boss34–42。精英和Boss获胜时自动获得一件未拥有的遗物，并保存结算。16种遗物可影响攻击、格挡、能量、抽牌、恢复、金币和商店价格。</p></div></div><p class="modal-note">每次完整动作后自动保存，导入支持v1/v2并保留替换前备份。旧存档当前敌人按剩余比例降低生命；继续旧路线即可使用新卡牌、无限包扎和遗物规则。新地图的敌人、事件、商店与首领随种子变化。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
+    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>十二站与交汇路线</h3><p>新旅途有47个节点，蜿蜒、双翼、斜行或收束四种走向；宽窄与实际分叉随旅途变化。沿连线选择，最终挑战三种首领之一。旧存档保留原连接，新开旅途生成变化的地图。</p></div><div>'+icon('sword')+'<h3>三十张卡牌</h3><p>包含钩形、折线、斜线、环形、九宫等攻击，以及格挡、抽牌、能量、治疗和止血。选牌后以鼠标居中放置，点格即出；R/滚轮旋转，右键取消。AUTO点牌自动攻击。</p></div><div>'+icon('shield')+'<h3>无限包扎与身体</h3><p>包扎没有次数上限，每次仍花1能量，修复一个存活部位并止血，缺失部位不能再生。强化剂每场1次，炼金试管增加至2次。能力与遗物都影响实际效果。</p></div><div>'+icon('flame')+'<h3>遗物与第一层难度</h3><p>普通敌人10–18生命、精英22–28、Boss34–42。精英和Boss获胜时自动获得一件未拥有的遗物，并保存结算。16种遗物可影响攻击、格挡、能量、抽牌、恢复、金币和商店价格。</p></div></div><p class="modal-note">每次完整动作后自动保存，导入支持v1/v2并保留替换前备份。旧存档当前敌人按剩余比例降低生命；继续旧路线即可使用新卡牌、无限包扎和遗物规则。新地图的敌人、事件、商店与首领随种子变化。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
   }
   function showResult() {
     if(!['reward','lost','cleared'].includes(run.screen))return;
@@ -669,9 +675,29 @@
   } catch (_) { saveError='存档不可读，可导出或重开'; startupNotice='本地存档暂时无法读取，原记录尚未替换。你可在存档菜单导出备份，或开始新旅途。'; try { memoryBackup=localStorage.getItem(SAVE_KEY); if(memoryBackup) localStorage.setItem(BACKUP_KEY,memoryBackup); } catch (_) {} }
   $('sound-button').classList.toggle('active',sound); $('sound-button').setAttribute('aria-pressed',String(sound));
   render();
-  // Asset loading is part of the player's page; failures retain available local artwork.
+  // Browser load events update presentation only; they never advance or save the run.
+  let artRefresh=0;
+  function refreshArt(){
+    if(artRefresh)return;
+    artRefresh=root.requestAnimationFrame(()=>{artRefresh=0;render();if(modalOpen&&$('modal-panel').classList.contains('result-panel'))showResult();});
+  }
+  function artFailed(key){
+    if(!Object.hasOwn(A,key)||artErrors.has(key))return;
+    artErrors.add(key);artReady.delete(key);$('asset-warning').hidden=false;$('asset-warning').title=[...artErrors].join('、');
+    if(key==='rooms')document.documentElement.classList.add('room-art-unavailable');
+    if(key==='map')document.documentElement.classList.add('map-art-unavailable');
+    for(const img of document.querySelectorAll('img[data-art-key]'))if(img.dataset.artKey===key){
+      const frame=img.parentElement;
+      if(frame?.classList.contains('painted-card-art')){
+        if(key==='cardsExtra'&&!artErrors.has('cards'))frame.outerHTML=atlasArt('cards',2,5,2,'painted-card-art');
+        else frame.innerHTML='<span class="art-placeholder">✦</span>';
+      }else img.hidden=true;
+    }
+    refreshArt();
+  }
+  document.addEventListener('error',e=>{if(e.target instanceof HTMLImageElement)artFailed(e.target.dataset.artKey);},true);
   for(const [key,url] of Object.entries(A)){
-    const img=new Image();img.onerror=()=>{artErrors.add(key);$('asset-warning').hidden=false;$('asset-warning').title=[...artErrors].join('、');if(key==='rooms')document.documentElement.classList.add('room-art-unavailable');render();};img.src=url;
+    const img=new Image();img.onload=()=>{if(img.naturalWidth&&img.naturalHeight){artReady.add(key);refreshArt();}else artFailed(key);};img.onerror=()=>artFailed(key);img.src=url;
   }
   if(startupNotice) openModal('本地存档提示',`<p class="modal-note">${startupNotice}</p><button class="outline-button" data-save-backup>导出原始备份</button>`);
   else if(['reward','lost','cleared'].includes(run.screen)) showResult();

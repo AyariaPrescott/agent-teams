@@ -1,14 +1,23 @@
 /* Ember Corridor · hand-painted edition. Single responsive stylesheet. */
 /* Expanded floor artwork: URLs are resolved by art.js, room/sprite cells bound by game.js. */
 .scenery>img{width:100%;height:100%;display:block;object-fit:cover;object-position:50% 58%}
-.scene-room{position:absolute;inset:0;background-image:var(--art-rooms);background-size:300% 200%;background-position:var(--room-x) var(--room-y)}
-.room-illustration{height:118px;margin:-9px -9px 17px;border:1px solid #b58b6155;border-radius:4px;background-image:var(--art-rooms);background-size:300% 200%;background-position:var(--room-x) var(--room-y);box-shadow:inset 0 0 25px #110b1944}
+.atlas-frame{position:absolute;inset:0;display:block;overflow:hidden;pointer-events:none}
+.atlas-frame>.atlas-image{position:absolute;display:block;max-width:none;max-height:none;object-fit:fill;pointer-events:none;user-select:none}
+.scene-room{position:absolute;inset:0}
+.room-illustration{position:relative;overflow:hidden;height:118px;margin:-9px -9px 17px;border:1px solid #b58b6155;border-radius:4px;box-shadow:inset 0 0 25px #110b1944}
 .room-art-unavailable .scene-room,.room-art-unavailable .room-illustration{display:none!important}
 .enemy-figure{position:relative}
 #enemy-fallback{display:block;width:100%;height:100%;object-fit:contain;object-position:50% 100%}
-#enemy-atlas-sprite{position:absolute;height:100%;aspect-ratio:2/3;width:auto;max-width:100%;left:50%;bottom:0;transform:translateX(-50%);background-image:var(--art-enemies);background-size:400% 200%;background-position:var(--enemy-x) var(--enemy-y)}
-.painted-card-art.expanded-card-art{background-image:var(--art-cards-extra);background-size:500% 400%}
-.route-canvas.expanded-map{aspect-ratio:var(--map-ratio);container-type:inline-size}
+#enemy-atlas-sprite{position:absolute;height:100%;aspect-ratio:2/3;width:auto;max-width:100%;left:50%;bottom:0;transform:translateX(-50%)}
+.route-canvas.expanded-map{aspect-ratio:var(--map-ratio)}
+.route-map>.route-canvas,.route-preview>.route-canvas{flex:none;width:min(100%,var(--map-inline-size));height:auto}
+.route-preview{container-type:size;align-items:center}
+.route-paper{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;border-radius:4px}
+.route-canvas>svg,.route-canvas>.route-node{position:relative;z-index:1}
+.route-canvas>.route-node{position:absolute}
+.map-art-unavailable .route-paper{display:none}
+.map-shape-label{fill:#6a5140;font:19px Georgia,"Songti SC",serif;letter-spacing:5px}
+.art-placeholder{display:grid;position:absolute;inset:0;place-items:center;font-size:28px;color:#cfad74}
 .expanded-map .route-node{width:clamp(14px,8cqw,30px);height:clamp(14px,8cqw,30px)}
 .expanded-map .route-node .node-symbol{width:70%;height:70%}
 .expanded-map .route-node.type-boss{width:clamp(19px,11cqw,40px);height:clamp(19px,11cqw,40px)}
@@ -58,7 +67,7 @@ a{color:inherit;text-decoration:none}
 .save-button i{height:5px;width:5px;background:#abd0ac;border-radius:50%;box-shadow:0 0 5px #9bc59855}
 .save-error{color:#f0aa8c}.save-error i{background:#e99c7b}
 .arena{position:relative;isolation:isolate;min-height:0;overflow:hidden;container-type:size;background:#201b29}
-.scenery{position:absolute;inset:0;z-index:-4;background-image:var(--art-scene);background-position:center 58%;background-size:cover}
+.scenery{position:absolute;inset:0;z-index:-4;background:#24202b}
 .scene-vignette{position:absolute;inset:0;z-index:-3;background:linear-gradient(0deg,#17141ef0,transparent 32%,#16131c10 65%,#16131c70),linear-gradient(90deg,#13111988,transparent 27%,transparent 70%,#13111999)}
 .grain{position:absolute;inset:0;z-index:-2;pointer-events:none;box-shadow:inset 0 0 90px #09070c55}
 .encounter-title{position:absolute;left:28px;top:18px;max-width:43%;pointer-events:none}
@@ -163,7 +172,7 @@ a{color:inherit;text-decoration:none}
 .card-cost{position:absolute;top:-7px;left:-7px;width:29px;height:29px;display:grid;place-items:center;border:2px solid #e8c690;border-radius:50%;background:radial-gradient(circle at 40% 30%,#9d623d,#462e2e 75%);box-shadow:0 2px 5px #1b101b77;color:#ffedc7;font:20px Georgia;z-index:3}
 .card-heading{font:700 clamp(10px,1.15vw,16px)/22px Georgia,"Songti SC","SimSun",serif;letter-spacing:2px;padding-left:7px}
 .card-art{position:relative;display:block;width:100%;height:46%;min-height:35px;margin-top:5px;overflow:hidden;border:1px solid #60452d88;border-radius:3px;background:#312630;flex-shrink:0}
-.painted-card-art{position:absolute;inset:0;display:block;background-image:var(--art-cards);background-size:500% 200%;background-position:var(--art-x) var(--art-y)}
+.painted-card-art{position:absolute;inset:0;display:block}
 .card-shape-badge{position:absolute;bottom:4px;right:4px;display:grid;place-items:center;min-width:24px;min-height:24px;padding:4px;border:1px solid #dfc190bb;border-radius:3px;background:#211b2be8;box-shadow:0 1px 5px #05050a77}
 .card-shape-badge .shape-preview-grid{--shape-size:5px;gap:1px}
 .card-type{font-size:6px;letter-spacing:1px;margin-top:-5px;z-index:1;border:1px solid #a18056aa;border-radius:5px;background:#dfc69b;padding:2px 7px;color:#715336}
@@ -179,13 +188,14 @@ a{color:inherit;text-decoration:none}
 .end-turn kbd{position:absolute;bottom:-7px;right:-4px;border:1px solid #c7a57588;background:#382a31;color:#e7c38f;font:9px Georgia;display:grid;place-items:center;width:17px;height:17px;border-radius:2px}
 footer{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;padding:0 28px;background:#18161f;border-top:1px solid #b6966326;font-size:8px;color:#aa9781;letter-spacing:1px}
 footer>span:first-child{font-family:Georgia,"Songti SC",serif}footer button{display:flex;align-items:center;gap:7px;padding:0;border:0;background:none;color:#ccb48f;font-size:9px}footer button .icon{width:15px;height:15px}footer button b{font:12px Georgia;color:#edd09a}
-.expedition-view{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:22px max(28px,5vw) 13px;background:linear-gradient(100deg,#1a1522e6,#24202ce0),var(--art-scene) center/cover;overflow:hidden}
+.expedition-view{position:relative;isolation:isolate;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:22px max(28px,5vw) 13px;background:linear-gradient(100deg,#1a1522,#24202c);overflow:hidden}
+.expedition-backdrop{position:absolute;inset:0;z-index:-1;width:100%;height:100%;object-fit:cover;opacity:.16;pointer-events:none}
 .map-intro{display:flex;align-items:center;justify-content:space-between;gap:15px}
 .map-intro h1{font:34px Georgia,"Songti SC",serif;letter-spacing:7px;margin:7px 0;color:#eed5ad}.map-intro p{font-size:11px;color:#b9a58e;margin:0}.map-intro .eyebrow{font:8px Georgia;letter-spacing:2.2px}
 .map-instruction{font-size:10px;border:1px solid #a78a5e55;padding:8px 13px;color:#c2ae91;border-radius:3px}
 .expedition-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,31%);gap:35px;min-height:0;width:100%;max-width:1200px;margin:auto;height:100%}
 .route-map{display:flex;justify-content:center;align-items:center;min-width:0;min-height:0;container-type:size}
-.route-canvas{position:relative;height:100%;width:auto;max-width:100%;max-height:100%;aspect-ratio:540/710;background:var(--art-map) center/100% 100%;border:1px solid #bda68177;border-radius:5px;box-shadow:0 12px 35px #05030b66,inset 0 0 35px #402b3e33}
+.route-canvas{position:relative;isolation:isolate;height:100%;width:auto;max-width:100%;max-height:100%;aspect-ratio:540/710;background:linear-gradient(130deg,#e6d5ac,#baa181);border:1px solid #bda68177;border-radius:5px;box-shadow:0 12px 35px #05030b66,inset 0 0 35px #402b3e33}
 .route-canvas>svg{display:block;width:100%;height:100%}
 .route-edge{fill:none;stroke:#594740b3;stroke-width:2.5;stroke-dasharray:5 7}
 .route-edge.traveled{stroke:#934e39;stroke-width:3.5;stroke-dasharray:none}
@@ -203,7 +213,8 @@ footer>span:first-child{font-family:Georgia,"Songti SC",serif}footer button{disp
 .node-panel{position:relative;align-self:center;max-height:100%;overflow-y:auto;scrollbar-width:thin;padding:25px;background:linear-gradient(145deg,#352a34f2,#1d1a28fa);border:1px solid #b18b605e;border-radius:5px;box-shadow:0 12px 28px #09060e44}
 .node-panel h2{font:29px Georgia,"Songti SC",serif;letter-spacing:3px;margin:9px 0 15px;color:#ebcfaa}
 .node-panel p{font-size:11px;color:#bfae9b;line-height:1.9}.node-panel .eyebrow{font-size:8px;letter-spacing:2px}
-.journey-illustration{height:112px;margin:-10px -10px 14px;background:radial-gradient(ellipse at 50% 65%,#c9803c25,transparent 70%),var(--art-hero) center 41%/auto 150% no-repeat;border-bottom:1px solid var(--line)}
+.journey-illustration{position:relative;overflow:hidden;height:112px;margin:-10px -10px 14px;background:radial-gradient(ellipse at 50% 65%,#c9803c25,transparent 70%);border-bottom:1px solid var(--line)}
+.journey-illustration>img{position:absolute;top:-25%;width:100%;height:150%;object-fit:contain;pointer-events:none}
 .journey-meter{display:flex;flex-direction:column;gap:8px;border-block:1px solid var(--line);padding:16px 0;margin:16px 0}.journey-meter>b{font:39px Georgia;color:#e3c18f}.journey-meter small{font:12px system-ui;color:#a48d76}.journey-meter>span{font-size:10px;color:#b89b7c}
 .journey-health{display:flex;flex-direction:column;gap:10px;padding-top:15px;margin-top:17px;border-top:1px solid var(--line);font-size:11px;color:#b6c2a5}
 .journey-health>span:first-child{display:flex;justify-content:space-between}.journey-health button{font-size:11px;padding:8px}
