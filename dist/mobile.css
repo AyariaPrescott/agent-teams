@@ -1,0 +1,209 @@
+/* Phone-specific composition. Shared component art/rules remain in style.css/game.js. */
+html[data-ui="phone"]{background:#13121b;-webkit-text-size-adjust:100%}
+body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(safe-area-inset-top,0px));--phone-bottom:calc(56px + env(safe-area-inset-bottom,0px));height:100dvh;overflow:hidden;overscroll-behavior:none;background:radial-gradient(ellipse at top,#3c2e39,#13121b 70%)}
+.phone button,.phone summary,.phone a{touch-action:manipulation}
+.phone select,.phone input{font-size:16px}
+.phone .game-shell{height:100dvh;width:100%;max-width:600px;margin:0 auto;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);grid-template-rows:var(--phone-top) minmax(0,1fr) var(--phone-hand) var(--phone-bottom);box-shadow:0 0 70px #0008}
+.phone .game-shell.map-mode{grid-template-rows:var(--phone-top) minmax(0,1fr) var(--phone-bottom)}
+.phone .topbar{padding:env(safe-area-inset-top,0px) 14px 0;gap:8px}
+.phone .brand{font-size:17px;letter-spacing:2px;gap:7px}
+.phone .brand small{display:block;font:8px system-ui;letter-spacing:1px;margin-top:3px}
+.phone-brand-flame{font-size:26px;color:#e7b77d;filter:drop-shadow(0 0 8px #d89045)}
+.phone .run-resources{gap:6px;font-size:11px;display:flex}
+.phone .run-resources>b,.phone .gold-resource b{font-size:18px}
+.phone .run-resources>small{font-size:10px;color:#a99a87}
+.phone .gold-resource{display:block!important;margin-left:5px}
+.phone .arena{display:flex;flex-direction:column;gap:8px;overflow-x:hidden;overflow-y:auto;container-type:normal;padding:9px 12px 14px;overscroll-behavior:contain;scrollbar-width:thin;touch-action:pan-y}
+.phone-combat-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:31px;flex:none}
+.phone .encounter-title{position:static;max-width:none;min-width:0}
+.phone .encounter-title .eyebrow,.phone .encounter-title p{display:none}
+.phone .encounter-title h1{font-size:19px;line-height:1.35;letter-spacing:2px;margin:0}
+.phone .round-display{position:static;transform:none;gap:6px;white-space:nowrap}
+.phone .round-display>span,.phone .round-display i{display:none}
+.phone .round-display b{font-size:20px}
+.phone .round-display strong{font-size:10px;letter-spacing:0}
+.phone-duel{display:grid;grid-template-columns:1fr 1fr;gap:18px;height:93px;flex:none;align-items:end}
+.phone .actor{position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none;width:100%;max-width:none;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
+.phone .hero-figure,.phone .enemy-figure,.phone .boss-encounter .enemy-figure{display:block;height:62px;width:100%;margin:0;flex:none}
+.phone .actor-caption{width:100%;min-height:28px}
+.phone .hero-actor .actor-name,.phone .actor-role,.phone .character-shadow{display:none}
+.phone .actor-name{font-size:12px;line-height:15px;margin:0;letter-spacing:1px}
+.phone .health-track{height:15px}
+.phone .health-track b{line-height:13px;font-size:10px}
+.phone .statuses{height:16px;gap:4px;margin:2px 0 0}
+.phone .status,.phone .subtle-status{font-size:10px;line-height:15px}
+.phone .status .icon{height:11px;width:11px}
+.phone .enemy-intent{position:static;transform:none;display:flex;flex-direction:row;justify-content:space-between;gap:8px;min-width:0;max-width:none;width:100%;min-height:35px;padding:6px 10px;flex:none}
+.phone .enemy-intent i{display:none}
+.phone .intent-label{font-size:12px;letter-spacing:0}
+.phone .intent-value{display:flex;gap:5px}
+.phone .intent-value b{font-size:20px}
+.phone .intent-value small{display:block;font-size:10px}
+.phone .intent-value .icon{height:16px;width:16px}
+.phone .enemy-grid-panel{position:relative;inset:auto;transform:none;width:100%;max-width:360px;margin:0 auto;padding:10px;flex:none}
+.phone .grid-eyebrow{display:none}
+.phone .grid-panel-header{margin:0 0 7px;gap:8px}
+.phone .grid-panel-header h2{font-size:14px;margin:0;letter-spacing:1px}
+.phone .grid-hp b{font-size:22px}
+.phone .grid-hp small{display:none}
+.phone .hp-grid{gap:4px;padding:5px;touch-action:pan-y}
+.phone .hp-cell{aspect-ratio:1;min-height:0;font-size:17px;border-radius:4px}
+.phone .hp-cell:disabled{opacity:.8}
+.phone .cell-forecast{font-size:10px;padding:2px 3px}
+.phone .layer-legend,.phone .grid-legend{display:none}
+.phone .placement-summary{min-height:38px;padding-top:7px;margin-top:7px;gap:8px}
+.phone .placement-summary strong{font-size:12px;line-height:1.4}
+.phone .placement-summary p{font-size:11px;line-height:1.45;min-height:0;margin-top:3px}
+.phone #placement-preview{height:31px;width:29px;min-width:29px}
+.phone .placement-actions{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:6px;margin-top:8px}
+.phone .placement-actions>button{min-height:44px;padding:8px 5px;font-size:12px}
+.phone .auto-button b{font-size:11px}
+.phone kbd{display:none}
+.phone .body-panel{display:none}
+.phone .hand-zone{padding:0 10px 8px;min-height:0;overflow:hidden}
+.phone .hand-zone:before{display:none}
+.phone .hand-heading{left:13px;right:13px;top:5px;font-size:10px;letter-spacing:0;line-height:16px}
+.phone .hand-heading #hand-shortcuts{display:block;font-size:9px;color:#c5b391}
+.phone .hand-heading #exhaust-count{display:none}
+.phone .hand-layout{height:100%;padding-top:24px;grid-template-columns:52px 52px minmax(40px,1fr) 108px;grid-template-rows:minmax(0,1fr) 44px;gap:8px}
+.phone .left-controls,.phone .right-controls{display:contents}
+.phone .hand{grid-column:1/-1;grid-row:1;height:100%;min-height:0;display:flex;justify-content:flex-start;align-items:flex-end;overflow-x:auto;overflow-y:hidden;gap:10px;padding:6px 5px 2px;scrollbar-width:none;scroll-snap-type:x proximity;scroll-padding-inline:5px;overscroll-behavior-x:contain;touch-action:pan-x}
+.phone .hand::-webkit-scrollbar{display:none}
+.phone .card{flex:0 0 118px;min-width:118px;max-width:118px;height:calc(100% - 5px);min-height:0;padding:5px 5px 4px;scroll-snap-align:start;border-radius:8px;user-select:none;-webkit-touch-callout:none}
+.phone .card:hover:not(:disabled),.phone .card:focus-visible{transform:none}
+.phone .card.selected{transform:translateY(-3px);z-index:8;box-shadow:0 0 0 2px #f5d49e,0 0 16px #e4ad5a66}
+.phone .card.selected:before{display:none}
+.phone .card-heading{font-size:14px;line-height:18px;letter-spacing:1px;padding-left:7px}
+.phone .card-cost{width:25px;height:25px;font-size:18px;top:-4px;left:-4px}
+.phone .card-art{height:35%;min-height:32px;margin-top:3px}
+.phone .card-type,.phone .card-key,.phone .card-corner{display:none}
+.phone .card-description{font-size:11px;line-height:1.3;padding-top:3px}
+.phone .card-description b{font-size:12px}
+.phone .card-description small{font-size:9px;line-height:1.3}
+.phone .card-shape-badge{min-width:19px;min-height:19px;padding:3px;right:3px;bottom:3px}
+.phone .card-shape-badge .shape-preview-grid{--shape-size:4px;gap:1px}
+.phone .pile-control{grid-row:2;height:44px;display:grid;grid-template-columns:18px 18px;grid-template-rows:21px 12px;gap:1px 3px;justify-content:center;align-content:center;padding:0;border:1px solid #b29a6144;border-radius:5px;background:#18151f55}
+.phone #draw-pile{grid-column:1}
+.phone #discard-pile{grid-column:2}
+.phone .pile-symbol{display:grid;height:18px;width:18px;transform:none;box-shadow:none}
+.phone .pile-symbol .icon{height:13px;width:13px}
+.phone .pile-control>b{height:19px;width:19px;font-size:12px}
+.phone .pile-control>span:last-child{display:block;grid-column:1/-1;font-size:9px;line-height:12px}
+.phone .pile-control:after{display:none}
+.phone .energy-orb{grid-row:2;grid-column:3;display:flex;flex-direction:row;gap:4px;height:40px;width:100%;border-width:1px;border-radius:20px;box-shadow:inset 0 0 12px #ffc77d22}
+.phone .energy-orb:before,.phone .energy-orb:after{display:none}
+.phone .energy-orb b{font-size:22px}
+.phone .energy-orb div>span{font-size:10px;margin-left:2px}
+.phone .energy-orb small{display:none}
+.phone .end-turn{grid-row:2;grid-column:4;height:44px;width:100%;padding:8px 5px;font-size:13px;letter-spacing:0}
+.phone .end-turn .icon{height:14px;width:14px}
+.phone .phone-nav{position:relative;z-index:50;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:4px 7px calc(4px + env(safe-area-inset-bottom,0px));font-size:12px;letter-spacing:0}
+.phone .phone-nav>.phone-nav-button,.phone .phone-menu>summary{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;width:100%;padding:4px 2px;border:0;border-radius:5px;background:transparent;color:#e2cba8;font-size:13px;line-height:17px;box-shadow:none;text-align:center}
+.phone .phone-nav>.phone-nav-button:active,.phone .phone-menu[open]>summary{background:#a77c3c26}
+.phone .phone-nav .icon{display:none}
+.phone .save-button>b{font-weight:400;font-size:13px}
+.phone .save-button #save-state{font-size:8px;line-height:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phone .save-button i{position:absolute;right:8px;top:6px;height:4px;width:4px}
+.phone .phone-hidden{display:none!important}
+.phone .phone-menu{position:relative;align-self:stretch;z-index:2}
+.phone .phone-menu>summary{list-style:none;cursor:pointer}
+.phone .phone-menu>summary::-webkit-details-marker{display:none}
+.phone .phone-menu>summary:after{content:'⌃';font-size:9px;line-height:10px}
+.phone .phone-menu-items{position:absolute;right:0;bottom:calc(100% + 11px);width:210px;padding:7px;display:flex;flex-direction:column;gap:3px;border:1px solid #c49c6b99;border-radius:10px;background:#29222ff7;box-shadow:0 12px 45px #0008}
+.phone .phone-menu:not([open]) .phone-menu-items{display:none}
+.phone .phone-menu-items>button,.phone .phone-menu-items>a{position:static;display:flex;align-items:center;justify-content:flex-start;gap:9px;min-height:46px;width:100%;max-width:none;margin:0;padding:10px;border:0;border-radius:5px;background:#ffffff04;color:#ecd7b6;text-align:left;font-family:inherit;font-size:13px;line-height:1.5;box-shadow:none;letter-spacing:0}
+.phone .phone-menu-items .icon{display:block;width:18px;height:18px}
+.phone .phone-menu-items [data-phone-label]:after{content:attr(data-phone-label)}
+.phone .phone-menu-items .active{background:#a77c3c26}
+.phone-menu-scrim{position:fixed;inset:0;z-index:45;background:#08061180;border:0;width:100%;height:100%;padding:0}
+.phone #asset-warning{position:absolute;left:12px;right:12px;bottom:calc(100% + 5px);justify-content:center;min-height:32px;padding:5px;border:1px solid #c49a6a;border-radius:4px;background:#37252cf2;font-size:11px;color:#f4b79c}
+.phone .expedition-view{display:flex;flex-direction:column;gap:10px;min-height:0;padding:12px;overflow:hidden}
+.phone .map-intro{flex:none;display:block}
+.phone .map-intro .eyebrow,.phone .map-instruction{display:none}
+.phone .map-intro h1{font-size:23px;letter-spacing:3px;margin:0 0 5px}
+.phone .map-intro p{display:block;font-size:11px;line-height:1.5;margin:0;color:#c0ab8e}
+.phone .expedition-layout{position:relative;display:block;min-height:0;flex:1;height:auto;max-width:none;width:100%}
+.phone .route-map{display:block;width:100%;height:100%;overflow:auto;container-type:inline-size;overscroll-behavior:contain;touch-action:pan-x pan-y;scrollbar-width:thin}
+.phone .route-map>.route-canvas,.phone .route-preview>.route-canvas{width:100%;min-width:360px;height:840px;max-height:none;aspect-ratio:auto;margin:0 auto;flex:none}
+.phone .route-preview{height:62dvh;display:block;overflow:auto;container-type:normal;touch-action:pan-x pan-y;overscroll-behavior:contain}
+.phone .route-canvas>svg{height:100%;width:100%}
+.phone .route-canvas>svg text{display:none}
+.phone .route-node,.phone .expanded-map .route-node{width:40px;height:40px;border-width:1px}
+.phone .route-node .node-symbol,.phone .expanded-map .route-node .node-symbol{width:25px;height:25px}
+.phone .route-node>span,.phone .expanded-map .route-node>span{display:none}
+.phone .route-node.type-boss,.phone .expanded-map .route-node.type-boss{height:46px;width:46px}
+.phone .route-node.type-boss .node-symbol{width:29px;height:29px}
+.phone .route-node>b{height:13px;width:13px;top:-2px;right:-2px;font-size:8px}
+.phone .node-panel{display:none;position:relative;align-self:auto;max-height:none;height:100%;width:100%;overflow:auto;padding:16px;overscroll-behavior:contain;touch-action:pan-y}
+.phone[data-screen="node"] .node-panel{display:block}
+.phone[data-screen="node"] .route-map{display:none}
+.phone[data-screen="node"] .map-intro p{display:none}
+.phone .node-panel h2{font-size:24px;letter-spacing:2px}
+.phone .node-panel p{font-size:13px;line-height:1.8}
+.phone .node-choice{min-height:62px;padding:13px 28px 13px 13px;gap:6px}
+.phone .node-choice>b{font-size:14px}
+.phone .node-choice>span{font-size:12px;line-height:1.7}
+.phone .node-choice>i{top:14px}
+.phone .room-illustration{height:120px;margin:-5px -5px 16px}
+.phone .journey-health{font-size:12px}
+.phone .journey-health button,.phone .journey-relics button{min-height:44px;font-size:13px}
+.phone .map-legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 8px;font-size:9px;flex:none;padding:3px 0}
+.phone .map-legend span{gap:4px;white-space:nowrap}
+.phone .map-legend .node-symbol{width:14px;height:14px}
+.phone .modal-backdrop{padding:calc(env(safe-area-inset-top,0px) + 12px) 0 0;align-items:flex-end}
+.phone .modal-panel{width:100%;max-width:600px;max-height:100%;padding:15px 16px calc(22px + env(safe-area-inset-bottom,0px));border-radius:16px 16px 0 0;scrollbar-width:thin;overscroll-behavior:contain;touch-action:pan-y}
+.phone .modal-close{position:sticky;float:right;top:0;right:auto;display:block;height:44px;width:44px;margin:-4px -3px -40px 0;z-index:10;background:#29222ff2;font-size:26px;border-radius:50%}
+.phone .modal-ornament{margin-bottom:9px}
+.phone .modal-panel h2{font-size:22px;line-height:1.5;letter-spacing:2px;margin:0 34px 18px}
+.phone .modal-note{font-size:13px;line-height:1.8}
+.phone .outline-button,.phone .modal-panel .gold-button{min-height:46px;padding:11px 14px;font-size:13px}
+.phone .save-actions{gap:9px;margin:18px 0}
+.phone .save-summary{font-size:13px;gap:11px}
+.phone .health-anatomy{display:none}
+.phone .health-capacities{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.phone .capacity-card{font-size:12px;padding:10px 9px 14px}
+.phone .capacity-card>b{font-size:19px}
+.phone .health-part-list{grid-template-columns:1fr;gap:8px}
+.phone .health-part-row{min-height:66px;padding:12px;font-size:13px}
+.phone .health-part-row small{font-size:11px;line-height:1.6}
+.phone .health-modal-actions{position:sticky;bottom:-1px;z-index:4;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 0 4px;margin-top:12px;background:#28212ff5;border-top:1px solid #b28f6055}
+.phone .health-modal-actions button{font-size:12px;min-height:48px;padding:10px 5px;letter-spacing:0}
+.phone .help-grid,.phone .relic-collection{grid-template-columns:1fr}
+.phone .help-grid p{font-size:13px;line-height:1.8}
+.phone .pile-item{gap:9px;padding:10px}
+.phone .pile-item strong{font-size:16px}
+.phone .pile-item p{font-size:12px;line-height:1.6}
+.phone .mini-art{width:61px;height:57px}
+.phone .card-rewards{display:grid;grid-template-columns:1fr;gap:10px}
+.phone .reward-card{display:grid;grid-template-columns:67px 1fr;gap:7px 12px;min-height:100px;padding:13px;text-align:left}
+.phone .reward-card .mini-art{grid-row:1/3;width:67px;height:67px}
+.phone .reward-card>b{font-size:15px;align-self:end}
+.phone .reward-card>span:last-child{font-size:12px;line-height:1.6}
+.phone .loot-relic b{font-size:17px}
+.phone .loot-relic p{font-size:12px}
+.phone .toast{position:fixed;bottom:calc(var(--phone-hand) + var(--phone-bottom) + 10px);max-width:calc(100vw - 28px);width:max-content;font-size:12px;line-height:1.6;padding:10px 13px;z-index:90;letter-spacing:0}
+.phone[data-screen="map"] .toast,.phone[data-screen="node"] .toast{bottom:calc(var(--phone-bottom) + 14px)}
+.phone .combat-effects{position:fixed;inset:0;z-index:75;pointer-events:none}
+.phone .combat-banner{position:fixed;left:50%;top:26dvh;max-width:85vw;z-index:80}
+.phone .combat-banner>b{font-size:42px}
+.phone .combat-banner>small{font-size:11px}
+.phone .float-text{font-size:31px}
+.phone .float-text.block{font-size:18px}
+@media(max-height:720px){.phone-duel{height:66px}.phone .hero-figure,.phone .enemy-figure,.phone .boss-encounter .enemy-figure{height:39px}.phone .arena{gap:6px;padding-top:7px}.phone .enemy-grid-panel{padding:8px}.phone .placement-summary p{font-size:10px}.phone .placement-summary strong{font-size:11px}.phone .hand-heading #hand-shortcuts{font-size:8px}}
+@media(orientation:landscape) and (max-height:560px){
+  .phone .game-shell{max-width:none;grid-template-columns:minmax(0,1fr) minmax(260px,37%);grid-template-rows:var(--phone-top) minmax(0,1fr) var(--phone-bottom)}
+  .phone .game-shell.map-mode{grid-template-rows:var(--phone-top) minmax(0,1fr) var(--phone-bottom)}
+  .phone .topbar,.phone .phone-nav{grid-column:1/-1}
+  .phone .arena{grid-column:1;grid-row:2}
+  .phone .hand-zone{grid-column:2;grid-row:2;height:100%;border-left:1px solid #b28f6055;border-top:0}
+  .phone .hand-layout{grid-template-columns:40px 40px minmax(35px,1fr) 92px;gap:6px}
+  .phone .card{flex-basis:126px;min-width:126px;max-width:126px;height:calc(100% - 7px);max-height:220px}
+  .phone .hand-heading #hand-shortcuts{display:none}
+  .phone .expedition-view{grid-column:1/-1;grid-row:2}
+  .phone .map-intro h1{font-size:19px}
+  .phone .expedition-layout{min-height:0}
+  .phone .node-panel{padding:14px}
+  .phone .route-map>.route-canvas{max-width:620px}
+  .phone .toast{bottom:calc(var(--phone-bottom) + 12px)}
+}
+@media(prefers-reduced-motion:reduce){.phone .hero-figure,.phone .enemy-figure{animation:none}.phone .card{transition:none}}
