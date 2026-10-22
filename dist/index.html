@@ -90,9 +90,10 @@
       <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span>石门守卫<span class="actor-role">古老构装体</span></div><div class="statuses" id="enemy-status"></div></div>
     </section>
     <section class="enemy-grid-panel" id="enemy-grid-panel" aria-label="守卫的可攻击生命方格">
-      <div class="grid-panel-header"><div><span class="grid-eyebrow">VITALITY MATRIX</span><h2>守卫生命格</h2></div><span class="grid-hp" id="enemy-health" role="progressbar" aria-label="守卫剩余生命格" aria-valuemin="0" aria-valuemax="24" aria-valuenow="24"><b id="enemy-hp">24 / 24</b><small>每格 1 生命</small></span></div>
+      <div class="grid-panel-header"><div><span class="grid-eyebrow">VITALITY MATRIX</span><h2>守卫生命层</h2></div><span class="grid-hp" id="enemy-health" role="progressbar" aria-label="守卫剩余总生命" aria-valuemin="0" aria-valuemax="24" aria-valuenow="24"><b id="enemy-hp">24 / 24</b><small id="enemy-cell-count">每格最多 9 层</small></span></div>
       <div class="hp-grid" id="enemy-grid" role="group" aria-label="点击生命方格放置攻击"></div>
-      <div class="grid-legend"><span><i class="legend-live"></i>生命</span><span><i class="legend-hit"></i>将移除</span><span><i class="legend-armor"></i>护甲 / 破甲</span></div>
+      <div class="layer-legend" id="layer-legend" aria-label="1至9层生命颜色图例"></div>
+      <div class="grid-legend"><span><i class="legend-live"></i>每层 1 生命</span><span><i class="legend-hit"></i>削 1 层</span><span><i class="legend-armor"></i>护甲 / 破甲</span></div>
       <div class="placement-summary"><div id="placement-preview" aria-hidden="true"></div><div><strong id="placement-title">选择攻击形状</strong><p id="placement-status" role="status" aria-live="polite">先选择一张攻击牌。</p></div></div>
       <div class="placement-actions"><button id="rotate-attack" disabled title="顺时针旋转90度">旋转 <kbd>R</kbd></button><button id="cancel-attack" disabled title="取消选牌，不消耗能量">取消 <kbd>Esc</kbd></button><button id="auto-button" class="auto-button" aria-pressed="false" title="开启后点攻击牌直接出牌，自动选择落点；快捷键A"><i></i><span>AUTO</span><b id="auto-state">关</b></button></div>
     </section>

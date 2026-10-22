@@ -6,7 +6,8 @@ test('opening hand, energy and card conservation are deterministic', () => {
   const b = new Battle({ rng: fixed });
   assert.deepEqual(b.hand.map(c => c.id), ['strike', 'guard', 'ember', 'insight', 'heavy']);
   assert.equal(b.energy, 3); assert.equal(b.hero.hp, 50); assert.equal(b.enemy.hp, 24);
-  assert.equal(b.enemy.cells.length, 24); assert.equal(b.enemy.cells.filter(Boolean).length, 24);
+  assert.equal(b.enemy.cells.length, 24); assert.equal(b.enemy.cells.reduce((sum, layers) => sum + layers, 0), 24);
+  assert.ok(b.enemy.cells.every(layers => Number.isInteger(layers) && layers >= 0 && layers <= rules.maxCellLayers));
   assert.equal(b.hand.length + b.drawPile.length + b.discardPile.length + b.exhaustPile.length, rules.deck.length);
 });
 test('unaffordable cards preserve energy, HP and hand', () => {
@@ -21,7 +22,7 @@ test('block absorbs attacks and clears on the next player turn', () => {
   assert.equal(b.hero.block, 0); assert.equal(b.energy, 3); assert.equal(b.turn, 2); assert.equal(b.hand.length, 5);
 });
 test('shape attacks require placement and removing the last cells finishes combat', () => {
-  const b = new Battle({ rng: fixed }); b.enemy.cells = b.enemy.cells.map((_, i) => i < 3); b.syncEnemy();
+  const b = new Battle({ rng: fixed }); b.enemy.cells = b.enemy.cells.map((_, i) => i < 3 ? 1 : 0); b.syncEnemy();
   const strike = b.hand.find(c => c.id === 'strike'); const energy = b.energy;
   assert.equal(b.play(strike.uid).requiresPlacement, true); assert.equal(b.energy, energy);
   assert.equal(b.play(strike.uid, { x: 5, y: 0 }).ok, false); assert.equal(b.energy, energy);
@@ -73,7 +74,7 @@ test('a sensible card policy wins the encounter across varied shuffles', () => {
 test('reward relics have their displayed effects on a new battle', () => {
   const heart = new Battle({ relic: 'heart' }); assert.equal(heart.hero.maxHp, 60);
   const blade = new Battle({ relic: 'blade' }); assert.equal(blade.definition('strike').damage, 3); assert.equal(blade.definition('strike').pierce, true);
-  blade.grantArmor(3); const strike = blade.hand.find(c => c.id === 'strike'); const hit = blade.play(strike.uid, { x: 0, y: 0 });
+  blade.grantArmor(3); const strike = blade.hand.find(c => c.id === 'strike'); const hit = blade.play(strike.uid, { x: 1, y: 0 });
   assert.equal(hit.hit.lost, 3); assert.equal(hit.hit.blocked, 0);
   assert.equal(blade.definition('guard').damage, 0);
 });

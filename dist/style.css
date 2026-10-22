@@ -69,3 +69,24 @@
 @media(max-width:1100px) and (min-width:761px){.combat-banner{left:43%;top:32%}.combat-banner>b{font-size:48px}.placement-actions .auto-button{gap:4px;font-size:9px}}
 @media(max-width:760px){.combat-banner{left:50%;top:247px}.combat-banner>b{font-size:39px}.combat-banner>span{font-size:10px;letter-spacing:2px}.combat-banner>small{font-size:8px;padding:4px 8px}.float-text{font-size:33px;top:20%}.float-text.block{font-size:18px}.float-text.secondary{font-size:14px}.placement-actions .auto-button{font-size:10px;min-height:31px}.first-hint{font-size:8px;letter-spacing:0}}
 @media(prefers-reduced-motion:reduce){.combat-banner.visible{opacity:1;transform:translateX(-50%)}.attack-trail,.impact-ring,.cell-shard,.cell-flash{display:none}.hp-cell.cell-shattered:before,.hp-cell.cell-cracked:before{opacity:0}.float-text{opacity:1}.hero-figure.hit,.enemy-figure.hit{filter:brightness(1.4)}}
+
+/* Each cell stores 0–9 life layers; color always represents remaining layers. */
+.game-shell{min-height:844px;grid-template-rows:76px minmax(468px,1fr) 265px 35px}
+.hp-cell.alive{background:linear-gradient(135deg,#ffffff22,#071b2266),var(--layer-color);border-color:var(--layer-color);color:#10272c}
+.hp-cell.alive>span{opacity:1;font:700 16px/1 Georgia,"Microsoft YaHei",serif;text-shadow:0 1px 1px #ffffff33}
+.hp-cell.layered{box-shadow:inset 0 -4px 0 #07171d44,inset 0 -6px 0 #ffffff22,0 2px 3px #0003}
+.hp-cell.alive.armored{border:2px solid #b3e8f2;box-shadow:inset 0 0 0 1px #102c36aa,0 0 6px #9fddea44}
+.cell-armor{position:absolute;top:0;right:1px;font:700 9px/1 Georgia;color:#e6faff;text-shadow:0 1px 2px #102c36,0 0 3px #102c36;pointer-events:none}
+.hp-cell.alive.preview-hit{background:linear-gradient(135deg,#ffffff22,#071b2266),var(--layer-color);border-color:#ffe0b4;outline:2px solid #e58c64;outline-offset:1px;box-shadow:0 0 12px #ee936877;color:#10272c}
+.hp-cell.alive.preview-block{background:linear-gradient(135deg,#ffffff22,#071b2266),var(--layer-color);border-color:#e1f9ff;outline:2px solid #7bdaef;outline-offset:1px;box-shadow:0 0 12px #7bdaef88;color:#10272c}
+.hp-cell.preview-invalid{outline:2px dashed #ef948a;outline-offset:1px;box-shadow:0 0 8px #d66b6355}
+.layer-legend{display:grid;grid-template-columns:auto repeat(9,minmax(0,1fr));align-items:center;gap:3px;margin:8px 0 0}
+.layer-legend-label{font-size:7px;color:#9caf9d;padding-right:2px;white-space:nowrap}
+.layer-swatch{display:grid;place-items:center;min-width:0;height:17px;border-radius:2px;background:var(--layer-color);border:1px solid #ffffff22;font:700 10px Georgia;color:#10272c;box-shadow:inset 0 -2px 0 #0a202833}
+.grid-hp small{font-size:7px;letter-spacing:0;white-space:nowrap}
+.layer-shard{background:var(--layer-color);border-color:#f5ffeb;box-shadow:0 0 8px var(--layer-color)}
+.hp-cell.cell-peeled:before{content:'';position:absolute;inset:-1px;background:#efffdf;box-shadow:0 0 12px var(--layer-color);animation:grid-hit .45s ease-out both;pointer-events:none}
+@media(max-width:1100px) and (min-width:761px){.hp-cell.alive>span{font-size:14px}.layer-legend{gap:2px}.layer-swatch{height:15px;font-size:9px}.grid-hp small{font-size:6px}}
+@media(max-width:760px){.game-shell{grid-template-rows:65px 728px 275px 36px}.layer-legend{width:208px;margin:7px auto 0;gap:3px}.layer-swatch{height:16px;font-size:9px}.hp-cell.alive>span{font-size:15px}.cell-armor{font-size:8px}.grid-hp small{font-size:8px}.card-description small{line-height:1.25}}
+@media(max-width:390px){.game-shell{grid-template-rows:62px 708px 270px 33px}}
+@media(prefers-reduced-motion:reduce){.hp-cell.cell-peeled:before{opacity:0}}
