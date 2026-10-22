@@ -61,8 +61,19 @@
         <path d="m81 213 72 2" fill="none" stroke="#dab37b" stroke-width="4"/><circle cx="119" cy="215" r="5" fill="#c9a574"/>
         <path d="m87 267 11-25m35 26 3-30M108 45l9-8 18 6" fill="none" stroke="#e0a56e" stroke-opacity=".45" stroke-width="2"/>
       </svg>
-      <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span>提灯旅人<span class="actor-role">流浪者</span></div><div class="health-track hero-health" id="hero-health" role="progressbar" aria-label="旅人生命" aria-valuemin="0" aria-valuemax="50" aria-valuenow="50"><span id="hero-hp-fill"></span><b>♥ <span id="hero-hp">50 / 50</span></b></div><div class="statuses" id="hero-status"></div></div>
+      <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span>提灯旅人<span class="actor-role">流浪者</span></div><div class="health-track hero-health" id="hero-health" role="progressbar" aria-label="旅人各部位完好度合计" title="各部位生命之和；要害失效或失去意识仍会导致失败" aria-valuemin="0"><span id="hero-hp-fill"></span><b>身体 <span id="hero-hp"></span></b></div><div class="statuses" id="hero-status"></div></div>
     </section>
+    <aside class="body-panel" id="body-panel" aria-label="己方部位健康与能力">
+      <div class="body-panel-heading"><div><span class="grid-eyebrow">BODY &amp; CAPACITIES</span><h2>旅人 · 健康</h2></div><button id="health-button" title="查看全部22个部位、命中权重和能力影响">详情 ↗</button></div>
+      <p class="body-condition" id="body-condition">身体机能正常</p>
+      <div class="body-overview"><div class="body-diagram" id="body-diagram"></div><div class="body-vitals" id="body-vitals"></div></div>
+      <div class="body-section-label">身体能力 <small>100% 为正常 · 绿色为增益</small></div>
+      <div class="capacity-grid" id="capacity-grid"></div>
+      <div class="capacity-effects" id="capacity-effects"></div>
+      <label class="treatment-label" for="treatment-part">治疗部位 <select id="treatment-part"></select></label>
+      <p class="part-description" id="part-description"></p>
+      <div class="medical-actions"><button id="bandage-button">包扎 · 1能量</button><button id="boost-button">强化 · 1能量</button></div>
+    </aside>
     <section class="actor enemy-actor" id="enemy-actor" aria-label="石门守卫">
       <div class="enemy-intent" id="enemy-intent" tabindex="0"><span class="intent-label" id="intent-label">碎门重锤</span><span class="intent-value" id="intent-value"></span><i></i></div>
       <div class="character-shadow"></div>
@@ -105,10 +116,10 @@
   </main>
   <section class="hand-zone" aria-label="手牌区域">
     <div class="hand-heading"><span>你的手牌 <b id="hand-count">5</b></span><span id="hand-shortcuts">选牌 1–9 · 点格攻击 · R 旋转</span><span id="exhaust-count"></span></div>
-    <div class="hand-layout"><div class="left-controls"><div class="energy-orb" id="energy-orb" title="每回合恢复3点能量"><div><b id="energy">3</b><span>/ 3</span></div><small>能 量</small></div><button class="pile-control" id="draw-pile"><span class="pile-symbol" id="draw-symbol"></span><b id="draw-count">5</b><span>抽牌堆</span></button></div><div class="hand" id="hand"></div><div class="right-controls"><button class="gold-button end-turn" id="end-turn"></button><button class="pile-control discard-control" id="discard-pile"><span class="pile-symbol" id="discard-symbol"></span><b id="discard-count">0</b><span>弃牌堆</span></button></div></div>
+    <div class="hand-layout"><div class="left-controls"><div class="energy-orb" id="energy-orb" title="每回合能量恢复受行动与呼吸影响"><div><b id="energy">3</b><span id="energy-max">/ 3</span></div><small>能 量</small></div><button class="pile-control" id="draw-pile"><span class="pile-symbol" id="draw-symbol"></span><b id="draw-count">5</b><span>抽牌堆</span></button></div><div class="hand" id="hand"></div><div class="right-controls"><button class="gold-button end-turn" id="end-turn"></button><button class="pile-control discard-control" id="discard-pile"><span class="pile-symbol" id="discard-symbol"></span><b id="discard-count">0</b><span>弃牌堆</span></button></div></div>
   </section>
   <footer><span>✦ 余烬之后，仍有前路。</span><span>形状攻击 · 方格生命 <i>·</i> 单关原型</span><button id="deck-button"></button></footer>
 </div>
 <div class="modal-backdrop" id="modal" hidden><section class="modal-panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="关闭弹窗">×</button><div class="modal-ornament">— ✦ —</div><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
-<script src="balance.js"></script><script src="game.js"></script>
+<script src="balance.js"></script><script src="body.js"></script><script src="game.js"></script>
 </body></html>

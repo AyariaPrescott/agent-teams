@@ -1,7 +1,7 @@
 /* Initial balance proposal: DeepSeek. Grid-combat redesign and current values: Codex. */
 (function (root) {
   const rules = {
-    heroHp: 50, enemyHp: 24, gridColumns: 6, gridRows: 4,
+    enemyHp: 24, gridColumns: 6, gridRows: 4,
     maxCellLayers: 9,
     enemyLayers: [
       0, 1, 1, 1, 1, 0,
