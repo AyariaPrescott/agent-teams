@@ -8,7 +8,7 @@
 <body>
 <div class="game-shell">
   <header class="topbar">
-    <a class="brand" href="#" aria-label="余烬回廊首页"><span class="brand-mark">♜</span><span>余烬回廊<small>THE EMBER CORRIDOR</small></span></a>
+    <a class="brand" href="#" aria-label="余烬回廊首页"><span class="brand-mark"><svg viewBox="0 0 32 40" fill="none" aria-hidden="true"><path d="M18 2c5 11-7 13-4 22 3-2 6-6 6-10 14 16 6 24-4 24S1 29 6 20c1 5 3 6 5 7-3-10 9-15 7-25Z" fill="currentColor"/><path d="M16 25c-7 7-4 11 1 10s8-6-1-10Z" fill="#fff2cf"/></svg></span><span>余烬回廊<small>THE EMBER CORRIDOR</small></span></a>
     <div class="run-resources"><span>Ⅰ · 残火之径</span><b id="run-progress">0 / 8</b><span class="gold-resource">¤ <b id="run-gold">60</b></span><button id="route-button">路线</button></div>
     <div class="top-actions"><button class="save-button" id="save-button"><i></i><span id="save-state">本地存档</span></button><button class="icon-button" id="sound-button" title="开启音效" aria-label="切换音效" aria-pressed="false"></button><button class="icon-button" id="help-button" title="玩法说明" aria-label="玩法说明"></button><button class="icon-button" id="restart-button" title="重新挑战" aria-label="重新挑战"></button></div>
   </header>
@@ -18,58 +18,18 @@
     <div class="map-legend" id="map-legend"></div>
   </main>
   <main class="arena" id="arena" aria-label="石门守卫战斗场景">
-    <svg class="scenery" viewBox="0 0 1600 630" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs>
-        <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#0f2026"/><stop offset=".65" stop-color="#244143"/><stop offset="1" stop-color="#27312d"/></linearGradient>
-        <radialGradient id="moonlight"><stop stop-color="#96b8a6" stop-opacity=".25"/><stop offset="1" stop-color="#568d85" stop-opacity="0"/></radialGradient>
-        <linearGradient id="pillar" x2="1"><stop stop-color="#182a2d"/><stop offset=".5" stop-color="#2f4644"/><stop offset="1" stop-color="#1d3031"/></linearGradient>
-        <linearGradient id="ground" x2="0" y2="1"><stop stop-color="#273b36"/><stop offset="1" stop-color="#111c20"/></linearGradient>
-        <radialGradient id="firelight"><stop stop-color="#f49a4e" stop-opacity=".26"/><stop offset="1" stop-color="#d97a35" stop-opacity="0"/></radialGradient>
-        <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
-      </defs>
-      <path fill="url(#sky)" d="M0 0h1600v630H0Z"/>
-      <ellipse fill="url(#moonlight)" cx="830" cy="220" rx="440" ry="370"/>
-      <circle cx="847" cy="130" r="62" fill="#a5bb9c" opacity=".16"/><circle cx="858" cy="119" r="58" fill="#193038" opacity=".7"/>
-      <g fill="#152b30" opacity=".7"><path d="M0 310 110 240l55 20 90-90 56 63 90-57 115 120 109-77 63 77 127-89 104 103 128-127 56 67 128-58 94 100 99-74 126 118v180H0Z"/></g>
-      <g fill="none" stroke="#46615a" stroke-width="13" opacity=".23"><path d="M623 411V209a190 190 0 0 1 380 0v202M667 413V214a146 146 0 0 1 292 0v199"/><path stroke-width="4" d="m695 184 45-38m152 0 38 38M701 267h227M722 356h184"/></g>
-      <path d="M551 465h520l-29-28H580Zm42-34h437l-26-24H615Zm36-31h364l-24-20H652Z" fill="#526351" opacity=".25"/>
-      <g fill="url(#pillar)" stroke="#516157" stroke-opacity=".3"><path d="M188 56h95l-8 67-9 318H198l-7-318Z"/><path d="M168 48h135v30H168Zm14 71h108v25H182Zm-6 311h111v27H176Z"/><path d="m1276 0 107 5-6 101-9 341h-83l-8-341Z"/><path d="M1258 95h135v28h-135Zm-5 339h143v33h-143Z"/><path d="m374 242 65-16-8 29-9 188h-56l7-188Zm780-152 52 5 6 24-13 316h-52l10-316Z"/></g>
-      <g stroke="#101f24" fill="none" stroke-linecap="round"><path stroke-width="28" d="M72 0 85 100 51 178 66 273 15 378m69-270 71-59m-99 130 75 23M1494 0l-31 102 28 126-8 190m-19-314-64-42m91 164 79-45"/><path stroke-width="10" d="M147 51 172 8m-43 194 35-28M1401 62l-5-53m97 211 49 29"/></g>
-      <g fill="#456449" opacity=".6"><path d="m181 55 12 60 20-27 15 48 8-80Zm89 91-9 67-22-25-13 43-11-85Zm997-30 15 74 18-24 16 49 18-99Z"/><path d="m365 438 31-39 12 39 24-25 13 30Zm803-6 13-43 20 31 14-9 20 29Z"/></g>
-      <path d="M0 469c160-29 280 10 437-8 228-25 301 12 450-5 196-21 447-12 713 26v148H0Z" fill="url(#ground)"/>
-      <g stroke="#73806b" stroke-opacity=".15" fill="none"><path d="M0 532h1600M35 583h1500M270 476l-59 154m256-156-23 156m295-160 3 160m251-158 43 158m214-153 81 153"/><path d="m48 531 38 13 51-8m346 46 40-16 33 17m563-51 31 11 23-12m228 52 33-17 44 18"/></g>
-      <g fill="#0c191f"><path d="m0 530 50-22 35 25 47-5 26 53-5 49H0Zm1600-30-63 23-34-11-44 52 18 66h123Z"/><path d="m131 617 55-44 47 5 20 52Zm1286 13 30-48 26 4 24 44Z"/></g>
-      <ellipse cx="492" cy="453" rx="260" ry="200" fill="url(#firelight)"/>
-      <g fill="#82958b" opacity=".055" filter="url(#soft)"><ellipse cx="523" cy="458" rx="450" ry="24"/><ellipse cx="1267" cy="498" rx="430" ry="27"/></g>
-      <g fill="#d7ad68" opacity=".45"><circle cx="485" cy="189" r="2"/><circle cx="1099" cy="212" r="1.5"/><circle cx="692" cy="338" r="1.6"/><circle cx="1263" cy="297" r="2"/><circle cx="332" cy="347" r="1.3"/><circle cx="920" cy="362" r="1"/></g>
-    </svg>
+    <div class="scenery" aria-hidden="true"></div>
     <div class="scene-vignette"></div><div class="grain"></div>
     <div class="encounter-title"><div class="eyebrow" id="encounter-eyebrow">第一层 · 残火之径</div><h1 id="encounter-name">石门守卫</h1><p id="encounter-note">把攻击拼进生命格，由你决定破碎的位置。</p></div>
     <div class="round-display"><span>ROUND</span><b id="turn">01</b><i></i><strong id="phase-label">你的回合</strong></div>
     <div class="relic-badge" id="relic-badge" hidden></div>
     <section class="actor hero-actor" id="hero-actor" aria-label="提灯旅人">
       <div class="character-shadow"></div>
-      <svg class="hero-figure" id="hero-figure" viewBox="0 0 260 330" aria-hidden="true">
-        <defs><linearGradient id="cloak" x2="1" y2="1"><stop stop-color="#c0774a"/><stop offset=".4" stop-color="#8c4b39"/><stop offset="1" stop-color="#392e31"/></linearGradient><linearGradient id="hood" x2=".7" y2="1"><stop stop-color="#b56844"/><stop offset="1" stop-color="#5e3933"/></linearGradient><radialGradient id="lantern-glow"><stop stop-color="#ffda87" stop-opacity=".6"/><stop offset="1" stop-color="#e99d45" stop-opacity="0"/></radialGradient></defs>
-        <ellipse cx="184" cy="156" rx="66" ry="79" fill="url(#lantern-glow)"/>
-        <path d="m92 238-9 60-16 13 34 2 15-66m19-6 9 56-9 16 33-2-9-77" fill="#202b2c" stroke="#75614b" stroke-width="3"/>
-        <path d="m105 95-24 47-29 133 25-4 9 13 19-10 14 7 14-12 16 9 11-11 23 5-26-133-19-44Z" fill="url(#cloak)" stroke="#d69961" stroke-opacity=".32" stroke-width="2"/>
-        <path d="m108 119-15 72-12 70m42-121 2 125m15-113 20 104" fill="none" stroke="#dfa16a" stroke-opacity=".25" stroke-width="3"/>
-        <path d="m102 121 26-13 24 29-23 28Z" fill="#d3a66b" opacity=".52"/>
-        <path d="m93 92 2-33 22-26 23 7 17 24-8 39-25 22Z" fill="url(#hood)" stroke="#e7ab70" stroke-opacity=".4" stroke-width="2"/>
-        <path d="m107 65 20-12 17 14-5 34-16 13-16-17Z" fill="#1c282b"/>
-        <path d="m118 79 8-2 8 2m-12 13 7 2" fill="none" stroke="#e9b576" stroke-opacity=".6" stroke-width="2"/>
-        <path d="m96 125-24 36 7 29 13-3 2-25 19-23m34-14 24 26 18-8 6 12-26 16-31-25" fill="#784936" stroke="#bd8054" stroke-width="3"/>
-        <path d="m80 181-28 79m-7-5 17 5m-14 8-5 9" stroke="#c4bda1" stroke-width="6" stroke-linecap="round"/>
-        <path d="m183 153 7-13 8 8-2 9" fill="none" stroke="#d5ae6b" stroke-width="3"/>
-        <path d="m177 163 27-3-3 36-20 3Z" fill="#4a3a2c" stroke="#c5a568" stroke-width="3"/><path d="m184 170 13-1-2 22-10 1Z" fill="#efc878"/><path d="m190 174-3 12 7-3Z" fill="#fff1be"/>
-        <path d="m81 213 72 2" fill="none" stroke="#dab37b" stroke-width="4"/><circle cx="119" cy="215" r="5" fill="#c9a574"/>
-        <path d="m87 267 11-25m35 26 3-30M108 45l9-8 18 6" fill="none" stroke="#e0a56e" stroke-opacity=".45" stroke-width="2"/>
-      </svg>
+      <img class="hero-figure" id="hero-figure" alt="" aria-hidden="true" decoding="async" draggable="false">
       <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span>提灯旅人<span class="actor-role">流浪者</span></div><div class="health-track hero-health" id="hero-health" role="progressbar" aria-label="旅人各部位完好度合计" title="各部位生命之和；要害失效或失去意识仍会导致失败" aria-valuemin="0"><span id="hero-hp-fill"></span><b>身体 <span id="hero-hp"></span></b></div><div class="statuses" id="hero-status"></div></div>
     </section>
     <aside class="body-panel" id="body-panel" aria-label="己方部位健康与能力">
-      <div class="body-panel-heading"><div><span class="grid-eyebrow">BODY &amp; CAPACITIES</span><h2>旅人 · 健康</h2></div><button id="health-button" title="查看全部22个部位、命中权重和能力影响">详情 ↗</button></div>
+      <div class="body-panel-heading"><div><span class="grid-eyebrow">身 体 机 能</span><h2>旅人 · 健康</h2></div><button id="health-button" title="查看全部22个部位、命中权重和能力影响">详情 ↗</button></div>
       <p class="body-condition" id="body-condition">身体机能正常</p>
       <div class="body-overview"><div class="body-diagram" id="body-diagram"></div><div class="body-vitals" id="body-vitals"></div></div>
       <div class="body-section-label">身体能力 <small>100% 为正常 · 绿色为增益</small></div>
@@ -82,31 +42,11 @@
     <section class="actor enemy-actor" id="enemy-actor" aria-label="石门守卫">
       <div class="enemy-intent" id="enemy-intent" tabindex="0"><span class="intent-label" id="intent-label">碎门重锤</span><span class="intent-value" id="intent-value"></span><i></i></div>
       <div class="character-shadow"></div>
-      <svg class="enemy-figure" id="enemy-figure" viewBox="0 0 390 360" aria-hidden="true">
-        <defs><linearGradient id="stone" x2="1" y2="1"><stop stop-color="#748271"/><stop offset=".45" stop-color="#4a5d56"/><stop offset="1" stop-color="#2b3b39"/></linearGradient><linearGradient id="stone-dark" x2="1" y2="1"><stop stop-color="#52665b"/><stop offset="1" stop-color="#243632"/></linearGradient><linearGradient id="stone-light" x2="1" y2="1"><stop stop-color="#8e9278"/><stop offset="1" stop-color="#4c6053"/></linearGradient><radialGradient id="core-glow"><stop stop-color="#f1b862" stop-opacity=".7"/><stop offset="1" stop-color="#ec843f" stop-opacity="0"/></radialGradient></defs>
-        <g stroke="#1e302d" stroke-width="4" stroke-linejoin="round">
-          <path d="m120 248-13 53-17 13 7 15 65-1 9-66m47-9 9 55-1 19 65-1 7-14-30-13-11-52" fill="url(#stone-dark)"/>
-          <path d="m111 301 49 3m73-2 35-3" fill="none" stroke="#9a9d7e" stroke-opacity=".3"/>
-          <path d="m121 123-34 9-27 45 17 46 33-8 21-45m123-44 39 12 26 39-15 43-37-5-21-47" fill="url(#stone)"/>
-          <path d="m70 185-31 19-8 46 20 23 38-10 20-36-15-29m197-13 36 17 19 45-16 29-38-9-21-36 4-30" fill="url(#stone-light)"/>
-          <path d="m126 116-14 46 13 74 35 34 69-1 37-38 12-66-20-47-66-17Z" fill="url(#stone)"/>
-          <path d="m124 176 47-12 25 12 25-12 42 13-12 39-32 14-46-2-41-15Z" fill="url(#stone-dark)"/>
-          <path d="m149 110-13-33 13-35 49-10 45 15 12 39-20 30-44 10Z" fill="url(#stone-light)"/>
-          <path d="m150 77 25 4 9 12-23 1Zm55 6 29-7-10 18-22-1Z" fill="#e7b268" stroke="#493c2c" stroke-width="2"/>
-          <path d="m176 108 15-5 18 4" fill="none" stroke="#202f2c" stroke-width="5"/>
-          <path d="m189 42 4 21-8 8 10 12-3 17m53-40-20 4-3 12M148 55l17 6m-38 98 22 13-5 22m105-65-12 22 14 9m-92 75 22-7 10 19-8 21m49-32-8 21 11 15M63 214l11 16-4 22m240-35-5 20 13 12" fill="none" stroke="#162d29" stroke-width="3"/>
-          <path d="m173 178 17-14 19 14-3 29-15 12-17-17Z" fill="#453c2d" stroke="#27372e"/>
-          <path d="m188 174 9 11-4 24-9-15Z" fill="#f3be6c" stroke="none"/>
-        </g>
-        <ellipse cx="190" cy="189" rx="50" ry="52" fill="url(#core-glow)" opacity=".5"/>
-        <g fill="#61764b"><path d="m116 119 18 12-8 27-12-11-11 20-3-29Zm121-77 11 17-17-6-5 16-9-21ZM270 139l19 7 13 18-21-6-4 22-11-23ZM105 248l17 8-4 19-13-11-6 14-8-19Z"/><path d="m153 46 20-8-6 17-18 3Z" fill="#89925b"/></g>
-        <g fill="none" stroke="#63774f" stroke-width="3"><path d="m138 49-15-29-16 4m23 15 16-9m135 117 18-32 16 3m-25 13-11-11m-164 142-8 22-13 4"/></g>
-        <g fill="#bbbc90" opacity=".6"><path d="m145 123 12-6 5 5-12 7Zm101 44 9 3-5 10-8-4ZM46 223l10-10 6 5-8 11ZM253 306l9-2 7 8-14 3Z"/></g>
-      </svg>
+      <img class="enemy-figure" id="enemy-figure" alt="" aria-hidden="true" decoding="async" draggable="false">
       <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span><span id="enemy-name">石门守卫</span><span class="actor-role" id="enemy-role">古老构装体</span></div><div class="statuses" id="enemy-status"></div></div>
     </section>
     <section class="enemy-grid-panel" id="enemy-grid-panel" aria-label="守卫的可攻击生命方格">
-      <div class="grid-panel-header"><div><span class="grid-eyebrow">VITALITY MATRIX</span><h2>守卫生命层</h2></div><span class="grid-hp" id="enemy-health" role="progressbar" aria-label="守卫剩余总生命" aria-valuemin="0" aria-valuemax="24" aria-valuenow="24"><b id="enemy-hp">24 / 24</b><small id="enemy-cell-count">每格最多 9 层</small></span></div>
+      <div class="grid-panel-header"><div><span class="grid-eyebrow">ENEMY VITALITY</span><h2>生命方格</h2></div><span class="grid-hp" id="enemy-health" role="progressbar" aria-label="守卫剩余总生命" aria-valuemin="0" aria-valuemax="24" aria-valuenow="24"><b id="enemy-hp">24 / 24</b><small id="enemy-cell-count">每格最多 9 层</small></span></div>
       <div class="hp-grid" id="enemy-grid" role="group" aria-label="攻击图案以鼠标为中心吸附，点击棋盘立即出牌"></div>
       <span class="placement-reticle" id="placement-reticle" aria-hidden="true" hidden></span>
       <div class="layer-legend" id="layer-legend" aria-label="1至9层生命颜色图例"></div>
@@ -128,5 +68,5 @@
 </div>
 <div class="modal-backdrop" id="modal" hidden><section class="modal-panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="关闭弹窗">×</button><div class="modal-ornament">— ✦ —</div><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
 <input type="file" id="save-file" accept=".json,application/json" hidden>
-<script src="balance.js"></script><script src="body.js"></script><script src="floor.js"></script><script src="game.js"></script>
+<script src="art.js"></script><script src="balance.js"></script><script src="body.js"></script><script src="floor.js"></script><script src="game.js"></script>
 </body></html>

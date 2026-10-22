@@ -1,0 +1,83 @@
+# 美术方向、资产与生成提示词
+
+用户要求：“游戏的ui和贴图不好看，由你自己重新生成”。需求ID：`user-2026-10-22-art-ui-redesign`。
+
+本轮使用内置 **image_gen** 生成工具，不使用CLI/API回退。Codex负责提示词、资产选择、接入代码和界面；图像像素由image_gen生成。没有调用DeepSeek，也没有发送凭据或私有快照。
+
+## 最终资产
+
+资产根目录：`dist/assets/`。表中PNG为生成器原始输出的逐字节副本，未做裁切、重采样、重绘或背景替换。4项角色贴图为32位RGBA，文件角点透明度为0；其余为不透明RGB。图片本身已目视审阅，非游戏截图或运行验证。
+
+| 最终路径 | 用途 | 尺寸 | 字节数 | SHA-256 |
+| --- | --- | --- | --- | --- |
+| `dist/assets/ashen-hall.png` | 战斗背景 | 1672×941 | 2846328 | `b093e39c7467a24015850b9eb1a8c1d823af69390d430f70ff5dd0f67fbac91e` |
+| `dist/assets/lantern-wanderer.png` | 提灯旅人 | 1024×1536 | 2412413 | `a5274fb2bbc9f250235d9f79e7c8804f0ebd14045759ae6a5ac010adfe0a6bfc` |
+| `dist/assets/moss-sentinel.png` | 普通敌人 | 1024×1536 | 2669668 | `8a555209ee702cdc113da7ef170429ede5141b7fb49f55a9759dd5c1be4aa5db` |
+| `dist/assets/thorn-executioner.png` | 精英敌人 | 1024×1536 | 2310271 | `9a0afa77f9ab11c45313710bf4faa915e16e81583eff387d2175b9f9149d536c` |
+| `dist/assets/ash-crown.png` | 灰冠门主 | 1024×1536 | 3097675 | `ac2739232d13b29b2473b2f723455d441a3aa728a47b257a1db7c11e8e5c95f8` |
+| `dist/assets/route-parchment.png` | 路线羊皮纸底图 | 1086×1448 | 3280236 | `c167b78543577c6007b33ab23803e19ee67569539765800439f9df7c99002e4d` |
+| `dist/assets/card-atlas.png` | 十张卡牌插画图集 | 1983×793 | 3510508 | `ffecaa4923b45b6fe078728a13ad25ca3d9454ce1c021a0930e8bb2b671fffba` |
+
+`dist/art.js`统一声明本地图片路径；游戏通过CSS变量、图片元素和5×2图集位置引用。十张卡牌依次为：首行直击、举盾、重砸、余烬、洞察；第二行招架、专注、十字斩、横扫、坚守。卡牌形状用独立网格徽标呈现，选中后的实际放置预览仍由现有战斗逻辑绘制，不依赖插画判断命中。
+
+`余烬回廊.html`将全部7项图片内嵌为data URI，并合并五个模块和样式，保留单文件离线使用。由于保留原始PNG，独立文件体积会增加；通过本地网站运行时，图片作为本地静态资源加载，无远程运行请求。
+
+## 界面选择
+
+手绘暗黑幻想，以午夜靛蓝、炭黑、暖羊皮纸和旧金铜搭配暖橙余烬。战斗保留清晰的健康摘要、敌人意图、方格生命与底部手牌；场景和角色成为主要视觉。地图使用羊皮纸底图，节点以原生SVG印章图标绘制。卡牌改为插画、暖纸牌面和金铜边框，医疗、结算与存档弹窗使用同一套颜色和字级。
+
+整合此前叠加的样式为单一响应式样式表；继续使用窗口高度分配、详情内部滚动和窄屏横向手牌。玩法数值、部位公式、节点内容、随机状态和存档版本不变；旧的本层存档继续使用同一恢复逻辑。此处是实施意图和代码范围，不宣称完成浏览器实测。
+
+## 完整提示词
+
+下列文本就是本轮每项资产提交给内置工具的提示词；人物生成时传入`transparent_background=true`，其余为false。没有输入参考图片，全部为新生成。
+
+### ashen-hall.png · 战斗背景
+
+```text
+Use case: stylized-concept. Asset type: final background illustration for a local 2D deckbuilding battle game, wide 16:9 landscape. Original hand-painted dark storybook fantasy, richly textured gouache and restrained oil brushwork, strong readable silhouettes, elegant muted midnight indigo and charcoal with worn bronze, amber firelight, ivory mist. Scene: the interior courtyard of a ruined cathedral in an ashen forest, tall broken gothic arches, twisted roots and a distant sealed doorway. Wide side-on battle stage: empty stone floor across the lower third, open central area where two separate character sprites will stand. Architecture recedes in layered atmospheric depth. A few glowing cinders, a small warm lantern niche on the left, subtle desaturated violet sky. Painterly, carefully composed, premium indie card game key art, not photorealistic or 3D. Keep upper corners and central fighting area fairly quiet for readable interface overlays. No characters, no monsters, no text, no letters, no UI, no frame, no watermark. Make the scene luminous enough to see its hand-painted details, with soft peripheral darkness.
+```
+
+### lantern-wanderer.png · 提灯旅人
+
+```text
+Use case: stylized-concept. Asset type: a single game-ready full-body character sprite on a truly transparent background, portrait 2:3 composition. Original hand-painted dark storybook fantasy, textured gouache and restrained oil brushwork, clear inked edges and strong silhouette. A mysterious travelling swordswoman wearing a weathered burnt-orange hooded cloak, dark indigo leather layers, narrow boots, a brass belt and an ivory scarf; hood shadows her face but hints at determined eyes. One hand holds a short worn sword low, the other lifts a brass lantern with a vivid warm amber flame. Standing grounded in a confident combat-ready three-quarter side view, facing RIGHT, head slightly turned right. Elegant stylized proportions, readable at 250px tall, warm rim light and cool indigo shadows. Complete body including head, both feet, sword and lantern, all fully inside image with a little breathing room. Single character only. No scenery, no floor, no cast ground shadow, no text, no labels, no UI, no watermark. Genuine transparent alpha around the character, not a checkerboard painted into the image.
+```
+
+### moss-sentinel.png · 普通敌人
+
+```text
+Use case: stylized-concept. Asset type: a single game-ready enemy sprite on a truly transparent background, portrait 2:3 composition. Original hand-painted dark storybook fantasy, textured gouache and restrained oil brushwork, strong carved silhouettes and inked edge accents. A squat ancient moss-covered stone sentinel, asymmetrical cracked slabs, one huge hammer-like stone forearm, tangled dry roots around its shoulders, sparse pale lichen, small amber eyes and a glowing ember in its chest cavity. Expressive grumpy guardian rather than generic robot. Worn blue-grey stone, muted olive moss, indigo recesses, warm copper light. Standing combat-ready in three-quarter side view facing LEFT, entire body and both broad feet visible, hands held low with room to swing. Premium 2D indie deckbuilder enemy concept made into a clean isolated sprite, readable silhouette at 240px tall. No other characters, no scenery, no floor, no ground shadow, no UI, no text, no watermark. All extremities inside the image. Genuine transparent alpha.
+```
+
+### thorn-executioner.png · 精英敌人
+
+```text
+Use case: stylized-concept. Asset type: a single game-ready elite enemy sprite on a genuinely transparent background, portrait 2:3. Same cohesive original hand-painted dark storybook fantasy language: textured gouache, restrained oil paint, clear inked edges, midnight indigo shadows and aged bronze highlights. The Thorn Executioner: a tall ominous articulated bronze knight, hunched armour wrapped in thorny brambles, pointed pauldrons, a narrow hollow visor with two dim amber slits, a ragged deep burgundy tabard. Holds a brutal chipped cleaver in its RIGHT hand pointing low toward the LEFT, heavy left gauntlet clenched. Three-quarter combat stance facing LEFT. Distinct silhouette from a rock golem and from a crowned boss, lean threatening torso and long arms. Full body, both feet, complete cleaver and all thorns inside frame with small clear margins, no parts cropped. Premium painterly 2D deckbuilding game sprite, readable at 280px tall. No background, scenery, floor, cast ground shadow, text, logos, frame or UI. True transparent alpha.
+```
+
+### ash-crown.png · 灰冠门主
+
+```text
+Use case: stylized-concept. Asset type: single final-boss full-body game sprite on a genuinely transparent background, portrait 2:3. Original hand-painted dark storybook fantasy, textured gouache and restrained oil brushwork, strong readable inked silhouette; midnight indigo and charcoal, antique gold and intense amber embers. The Ash-Crowned Gate Lord: a massive regal hollow armour monarch, wide weathered charcoal stone-and-bronze shoulders, a distinctive tall jagged golden crown hovering just above a dark helm, glowing ember face and chest. Cracked chest ribs reveal warm fire, long shredded ivory-grey royal mantle, a great chipped gate-shaped sword resting diagonally toward the LEFT, heavy armoured feet planted apart. Facing LEFT in three-quarter battle view, menacing but dignified. Entire full body, crown, sword and mantle completely inside image with comfortable margins. Designed to read as an imposing unique boss at 320px tall. No other figures, no scenery, no floor, no cast ground shadow, no UI, no text, no letters, no watermark. True transparent alpha, not a painted checkerboard.
+```
+
+### route-parchment.png · 路线羊皮纸底图
+
+```text
+Use case: stylized-concept. Asset type: a portrait 3:4 background texture illustration for a branching travel map in an original fantasy deckbuilding game. Hand-painted antique parchment, textured warm ash-grey paper with muted umber edge wear, subtle midnight violet vignette and bronze pigment accents. Almost empty central 75 percent: fine soft paper grain and pale smoky washes only, plenty of calm space for separate UI route nodes and dashed connections. Along the distant edges, delicate ink-and-gouache silhouettes of an ashen forest, a broken bridge near the bottom corners, ruined cathedral spires near the top corners and faint contour-like terrain strokes. Premium atmospheric illustrated travel journal, dark storybook fantasy, luminous parchment rather than black or muddy. No pre-drawn routes, no nodes, no markers, no grid, no words, no lettering, no numbers, no readable symbols, no compass, no characters, no interface, no heavy decorative frame, no watermark.
+```
+
+### card-atlas.png · 十张卡牌插画图集
+
+```text
+Use case: stylized-concept. Asset type: one production-ready sprite atlas containing EXACTLY 10 card art illustrations, arranged in an EXACT regular 5-COLUMN by 2-ROW grid, wide 5:2 aspect ratio. Every cell exactly equal size; images meet edge-to-edge with NO gutters, NO gaps, NO frames, NO rounded corners and NO text. Each cell a separate square miniature hand-painted dark storybook fantasy painting, textured gouache with strong readable central motifs, indigo/charcoal shadows, antique gold, warm ivory and embers. TOP ROW left to right: (1) a worn silver short sword cutting a glowing diagonal arc; (2) a sturdy bronze round shield with an amber rune-like central boss but no writing; (3) a heavy stone war hammer smashing rock shards; (4) a bright orange ember flame cupped in a dark gauntlet; (5) an opened luminous mystical eye amid curling pale smoke. BOTTOM ROW left to right: (6) a short sword parrying across a small shield with sparks; (7) a focused ivory star of light hovering over a hand; (8) two crossing golden blades creating a cross-shaped slash; (9) one long sweeping curved blade with a broad horizontal golden trail; (10) a massive rectangular iron tower shield planted firmly in stone. Keep each main object centered and entirely within its own cell, never crossing grid boundaries. Each cell has its own fully painted atmospheric background. Consistent premium painterly game illustration, readable at 100px. Strict 5 by 2 equal grid so CSS background positioning can address cells. No UI, no card text, no labels, no borders, no watermark.
+```
+
+## 审计与验证范围
+
+主项目事务：`2ea4ed32dc324cac9a7ad3f3aadc4f25`，在任何项目资产复制与源码修改前登记目标。生成器自己的输出路径由工具返回，得到真实路径后另按客观文件哈希、尺寸、创建时间元数据补录，并标为retrospective；不把文件创建时间冒充精确生成时刻，也不宣称代理能拦截生成器任意文件写入。生成器原输出保留，未删除。
+
+本机私有审计保存原输出位置与项目目标之间的关联。项目PNG与HTML、源码有修改前后快照，可通过事务或Git提交回滚；发现后续编辑冲突时不强制覆盖。
+
+按用户持续要求，没有运行游戏测试、语法检查、浏览器自动化或试玩。只审阅生成图片、PNG元数据、源码、差异、资源引用和待提交内容，视觉适配与手感由用户实际游玩确认。

@@ -149,7 +149,9 @@
   if (typeof document === 'undefined') return;
 
   const $ = id => document.getElementById(id);
-  const Floor = root.EmberFloor, SAVE_KEY = 'ember-corridor.save.v1', BACKUP_KEY = SAVE_KEY + '.backup';
+  const Floor = root.EmberFloor, A = root.EmberArt, SAVE_KEY = 'ember-corridor.save.v1', BACKUP_KEY = SAVE_KEY + '.backup';
+  for (const [key, value] of Object.entries({scene:A.scene,map:A.map,hero:A.hero,boss:A.boss,cards:A.cards})) document.documentElement.style.setProperty(`--art-${key}`,`url("${value}")`);
+  $('hero-figure').src = A.hero;
   const escapeHtml = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let run = new Floor(), battle = new Battle({hero:run.hero,deck:run.deck}), busy = false, sound = false, auto = false, context, modalOpen = false;
   let savedAt = null, saveError = '', memoryBackup = null, pendingImport = null, startupNotice = '';
@@ -172,23 +174,22 @@
     arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
     chevron: '<path d="m9 5 7 7-7 7"/>'
   }[kind] || ''}</svg>`;
+  const nodeIcon = type => `<svg class="node-symbol" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${{
+    battle:'<path d="m8 24 15-17 3-1-1 4L10 26M6 18l8 7m-7-2-3 4M24 22 9 7 6 6l1 4 15 15m-4-1 7-7m-2 6 4 4"/>',
+    elite:'<path d="m6 12 4-6 6 3 6-3 4 6-3 10-7 6-7-6Z"/><path d="m10 15 4 2m8-2-4 2m-4 5h4m-2-5v3M10 6l-1-4m13 4 1-4"/>',
+    event:'<path d="M10 10c0-8 14-8 14 0 0 5-8 5-8 10m0 6v1"/><path d="m5 6-2 3m23 15 3-2"/>',
+    shop:'<path d="M8 12h16l3 16H5Z"/><path d="M11 12V8a5 5 0 0 1 10 0v4m-5 5v7m-3-5c0-3 6-3 6 0s-6 0-6 3 6 3 6 0"/>',
+    camp:'<path d="M17 3c3 7-5 9-2 15 3-1 5-4 5-7 9 10 3 15-4 15S4 20 9 13c0 4 2 5 3 5-2-6 6-9 5-15Z"/><path d="m7 28 18-1m-18-1 18 3"/>',
+    treasure:'<path d="M5 14h22v13H5Zm0 0 3-8h16l3 8M9 6v21m14-21v21"/><path d="M14 13h4v7h-4Z"/>',
+    boss:'<path d="m4 9 6 5 6-9 6 9 6-5-3 15H7Z"/><path d="M8 28h16m-14-9 2 1m10-1-2 1m-6 3h4"/>'
+  }[type] || ''}</svg>`;
   function shapeArt(points) {
     const columns = Math.max(...points.map(p => p[0])) + 1, rows = Math.max(...points.map(p => p[1])) + 1;
     return `<span class="poly-art"><span class="shape-preview-grid" style="--shape-cols:${columns};--shape-rows:${rows}">${points.map(([x, y]) => `<i style="grid-column:${x + 1};grid-row:${y + 1}"></i>`).join('')}</span></span>`;
   }
   const art = id => {
-    if (R.cards[id].shape) return shapeArt(R.cards[id].shape);
-    const common = 'fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"';
-    const drawings = {
-      strike: '<path d="m38 83 46-55 9-4-3 12-45 55Z" fill="currentColor" opacity=".18"/><path d="m38 83 46-55 9-4-3 12-45 55M31 72l21 17m-17-8-9 14m4-28L18 75m73-25 13-1M67 21l-4-9"/>',
-      guard: '<path d="m64 20 31 12-4 37c-3 12-18 23-27 29-9-6-24-17-27-29l-4-37Z" fill="currentColor" opacity=".12"/><path d="m64 20 31 12-4 37c-3 12-18 23-27 29-9-6-24-17-27-29l-4-37ZM64 31v53M44 44l20-9 20 9M45 53h38M25 39l-9-4m86 4 9-4"/>',
-      heavy: '<path d="m65 27 23 10 7 17-17 8-22-8-6-15Z" fill="currentColor" opacity=".2"/><path d="m65 27 23 10 7 17-17 8-22-8-6-15Zm-9 27-21 40 8 4 22-39M63 34l18 8m-50 3-11-9m69 48 14 7m-36-8-3 15M35 23l-3-7"/>',
-      ember: '<path d="M66 16c3 20-12 27-10 44 7-6 15-10 15-20 23 25 23 48-6 55-36 2-44-26-26-47-1 16 5 20 9 21-5-23 18-27 18-53Z" fill="currentColor" opacity=".22"/><path d="M66 16c3 20-12 27-10 44 7-6 15-10 15-20 23 25 23 48-6 55-36 2-44-26-26-47-1 16 5 20 9 21-5-23 18-27 18-53ZM62 75c-9 10-4 18 5 13M27 31l-3-9m70 12 4-8m-2 44 10-1"/>',
-      insight: '<path d="M17 59s19-28 47-28 47 28 47 28-19 27-47 27S17 59 17 59Z" fill="currentColor" opacity=".12"/><path d="M17 59s19-28 47-28 47 28 47 28-19 27-47 27S17 59 17 59Z"/><circle cx="64" cy="59" r="17"/><circle cx="64" cy="59" r="5"/><path d="M64 17v-8M36 23l-5-7m61 7 5-7M64 99v8"/>',
-      parry: '<path d="m56 24 28 11-4 30c-2 9-14 18-24 24-10-6-22-15-24-24l-4-30Z" fill="currentColor" opacity=".12"/><path d="m56 24 28 11-4 30c-2 9-14 18-24 24-10-6-22-15-24-24l-4-30ZM56 36v37m13 20 34-55 5-3-1 10-32 51m-10-13 17 9M93 20l3-9"/>',
-      focus: '<circle cx="64" cy="57" r="28" opacity=".4"/><path d="m64 18 8 29 28 10-28 8-8 30-8-30-28-8 28-10 8-29Z" fill="currentColor" opacity=".2"/><path d="m64 18 8 29 28 10-28 8-8 30-8-30-28-8 28-10 8-29ZM25 27l-6-6m84 6 6-6M26 87l-7 7m84-7 6 7"/>'
-    };
-    return `<svg viewBox="0 0 128 112" ${common} stroke-width="2" aria-hidden="true"><circle cx="64" cy="57" r="43" opacity=".12"/>${drawings[id] || drawings.guard}</svg>`;
+    const index=['strike','guard','heavy','ember','insight','parry','focus','cross','sweep','wall'].indexOf(id);
+    return `<span class="painted-card-art" style="--art-x:${index%5*25}%;--art-y:${Math.floor(index/5)*100}%"></span>${R.cards[id].shape?`<span class="card-shape-badge">${shapeArt(R.cards[id].shape)}</span>`:''}`;
   };
   function tone(freq = 200, dur = .12, type = 'sine') {
     if (!sound) return;
@@ -275,7 +276,7 @@
     })).join('');
     return `<div class="route-canvas"><svg viewBox="0 0 540 710" aria-hidden="true">${edges}<text x="270" y="699" text-anchor="middle" class="map-start-label">提灯的起点</text></svg>${Floor.nodes.map(n=>{
       const p=point(n),type=Floor.types[n.type],current=run.nodeId===n.id,enabled=interactive && available.has(n.id);
-      return `<button class="route-node type-${n.type} ${seen.has(n.id)?'visited':''} ${available.has(n.id)?'available':''} ${current?'current':''}" style="left:${p.x/540*100}%;top:${p.y/710*100}%" data-node="${n.id}" ${enabled?'':'disabled'} title="第${n.row+1}站 · ${type.name}${current?' · 当前':seen.has(n.id)?' · 已完成':enabled?' · 点击前往':''}" aria-label="第${n.row+1}站 ${type.name}${enabled?'，可前往':''}"><i>${type.mark}</i><span>${type.name}</span>${seen.has(n.id)?'<b>✓</b>':''}</button>`;
+      return `<button class="route-node type-${n.type} ${seen.has(n.id)?'visited':''} ${available.has(n.id)?'available':''} ${current?'current':''}" style="left:${p.x/540*100}%;top:${p.y/710*100}%" data-node="${n.id}" ${enabled?'':'disabled'} title="第${n.row+1}站 · ${type.name}${current?' · 当前':seen.has(n.id)?' · 已完成':enabled?' · 点击前往':''}" aria-label="第${n.row+1}站 ${type.name}${enabled?'，可前往':''}"><i>${nodeIcon(n.type)}</i><span>${type.name}</span>${seen.has(n.id)?'<b>✓</b>':''}</button>`;
     }).join('')}</div>`;
   }
   function nodeAction(action,title,note,disabled=false) { return `<button class="node-choice" data-node-choice="${action}" ${disabled?'disabled':''}><b>${title}</b><span>${note}</span><i>↗</i></button>`; }
@@ -285,7 +286,7 @@
     let content='';
     if(run.screen==='node') {
       const n=run.node;
-      content=`<span class="room-emblem">${type.mark}</span><span class="eyebrow">第 ${n.row+1} / 8 站</span><h2>${type.name}</h2><p>${type.note}</p><div class="node-choices">`;
+      content=`<span class="room-emblem">${nodeIcon(n.type)}</span><span class="eyebrow">第 ${n.row+1} / 8 站</span><h2>${type.name}</h2><p>${type.note}</p><div class="node-choices">`;
       if(n.type==='camp') content+=nodeAction('rest','靠近营火','存活部位各修复40%，止血，血容量+45%。')+nodeAction('train','磨练技艺','把一张「十字斩」加入牌组。');
       if(n.type==='event') content+=nodeAction('spring','饮下余温泉水','存活部位各修复25%，止血，血容量+35%。')+nodeAction('coins','拾起古老钱币','获得50金币，继续前进。');
       if(n.type==='treasure') content+=nodeAction('heart','残火之心','躯干上限+6、心脏上限+4，并恢复新增生命。',run.relics.includes('heart'))+nodeAction('blade','淬火刀锋','所有形状攻击穿过生命格护甲。',run.relics.includes('blade'))+nodeAction('gold','带走钱币','获得60金币。');
@@ -295,9 +296,9 @@
         content+=nodeAction('leave','离开商店','保留剩余金币，继续选择路线。');
       }
       content+='</div>';
-    } else content=`<span class="eyebrow">CHOOSE YOUR PATH</span><h2>${run.visited.length?'余火仍在前方':'踏入回廊'}</h2><p>从底部亮起的节点出发。每完成一站，只能沿连接的道路向上走。</p><div class="journey-meter"><b>${run.visited.length}<small> / 8 站</small></b><span>终点 · 灰冠门主</span></div><p class="node-tip">普通战斗赚取卡牌与金币，精英更危险。营火和商店能够修复伤势，宝箱会给予遗物。</p>`;
+    } else content=`<div class="journey-illustration" aria-hidden="true"></div><span class="eyebrow">选择你的道路</span><h2>${run.visited.length?'余火仍在前方':'踏入回廊'}</h2><p>从底部亮起的节点出发。每完成一站，只能沿连接的道路向上走。</p><div class="journey-meter"><b>${run.visited.length}<small> / 8 站</small></b><span>终点 · 灰冠门主</span></div><p class="node-tip">普通战斗赚取卡牌与金币，精英更危险。营火和商店能够修复伤势，宝箱会给予遗物。</p>`;
     $('node-panel').innerHTML=content+`<div class="journey-health"><span>旅人身体 <b>${h.hp}/${h.maxHp}</b></span><span>血容量 <b>${Math.round(h.blood)}%</b> · 意识 <b>${Math.round(h.capacities.consciousness*100)}%</b></span><button class="outline-button" data-open-health>身体与能力 ↗</button></div><div class="journey-relics">${run.relics.map(id=>`✦ ${id==='heart'?'残火之心':'淬火刀锋'}`).join(' · ')||'尚未获得遗物'}</div>`;
-    $('map-legend').innerHTML=Object.entries(Floor.types).map(([,t])=>`<span><b>${t.mark}</b>${t.name}</span>`).join('');
+    $('map-legend').innerHTML=Object.entries(Floor.types).map(([id,t])=>`<span><b>${nodeIcon(id)}</b>${t.name}</span>`).join('');
   }
   function renderRun() {
     const inCombat=['battle','reward','lost','cleared'].includes(run.screen);
@@ -312,6 +313,8 @@
     $('encounter-eyebrow').textContent=`第一层 · 第 ${(run.node?.row || 0)+1} / 8 站${e?.kind==='boss'?' · BOSS':e?.kind==='elite'?' · 精英':''}`;
     $('encounter-note').textContent=e?.kind==='boss'?'半血狂怒：攻击额外+3，留意下一次意图。':'鼠标居中放置 · 点击即攻击';
     $('arena').classList.toggle('boss-encounter',e?.kind==='boss'); $('arena').classList.toggle('elite-encounter',e?.kind==='elite');
+    const sprite=e?.kind==='boss'?A.boss:e?.kind==='elite'?A.elite:A.sentinel;
+    if($('enemy-figure').getAttribute('src')!==sprite) $('enemy-figure').src=sprite;
     $('arena').setAttribute('aria-label',`${e?.name || '回廊'}战斗场景`); $('enemy-actor').setAttribute('aria-label',e?.name || '敌人'); $('enemy-grid-panel').setAttribute('aria-label',`${e?.name || '敌人'}的生命方格`);
     $('enemy-grid-panel').querySelector('h2').textContent='生命方格';
     $('enemy-health').setAttribute('aria-label','敌人剩余总生命');

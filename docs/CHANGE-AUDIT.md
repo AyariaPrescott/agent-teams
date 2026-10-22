@@ -218,3 +218,37 @@ Codex实施选择：版本化本地JSON存档，保存确定性随机状态、�
 项目事务：`45ebc5cd14c64369aec43f34806a20ff`；用户要求记录：`e435698def6f4eceb625557a157f7a85`；实施选择记录：`5509b8c2959d4ae5945d6c3b9584b62b`。修改前后字节与哈希保留于本机全局审计，Git记录可供回滚；后续编辑冲突时不强制覆盖。私密快照、凭据与模型原始响应不进入仓库。
 
 继续遵守用户“交给我测试”：未运行游戏、测试、语法检查、浏览器自动化或试玩，只做源码、引用、差异和敏感内容审阅；不宣称通过运行或视觉验证。既有测试文件本轮未修改。
+
+## 2026-10-22 · 重新生成美术与重做UI
+
+用户要求：“游戏的ui和贴图不好看，由你自己重新生成”。需求ID：`user-2026-10-22-art-ui-redesign`。用户要求记录：`5c255fd4e45b4dd99c83a744b4e0cbc9`。
+
+Codex选择手绘暗黑幻想，以午夜靛蓝、旧金铜、暖羊皮纸和余烬色统一游戏。内置image_gen生成7项PNG（包含4种不同角色和10卡图集），Codex编写提示词、目视选择和接入；本轮没有DeepSeek调用。重写单一响应式样式，替换场景/角色SVG与占位卡图，保留原生可交互身体示意和节点SVG图标。数值、部位规则、路线内容、放置/Auto和存档版本未修改。
+
+本轮全部17个项目文件纳入PR：
+
+| 文件 | 内容及作者/执行者 |
+| --- | --- |
+| `dist/assets/ashen-hall.png`（新增） | 废墟战斗场景，image_gen生成；Codex提示、选择与复制。 |
+| `dist/assets/route-parchment.png`（新增） | 羊皮纸路线底图，同上。 |
+| `dist/assets/lantern-wanderer.png`（新增） | 提灯旅人透明PNG，同上。 |
+| `dist/assets/moss-sentinel.png`（新增） | 普通敌人透明PNG，同上。 |
+| `dist/assets/thorn-executioner.png`（新增） | 精英透明PNG，同上。 |
+| `dist/assets/ash-crown.png`（新增） | Boss透明PNG，同上。 |
+| `dist/assets/card-atlas.png`（新增） | 十卡插画5×2图集，同上。 |
+| `dist/art.js`（新增） | Codex/Codex；本地资产入口清单。 |
+| `dist/index.html` | Codex/Codex；场景/角色图片容器、品牌和美术模块。 |
+| `dist/style.css` | Codex/Codex；重写统一界面、卡牌、地图、详情和响应式样式。 |
+| `dist/game.js` | Codex/Codex；图片接入、插画图集、形状徽标、SVG节点图标；未修改战斗数值或存档逻辑。 |
+| `preview-server.cjs` | Codex/Codex；本地PNG响应类型。 |
+| `余烬回廊.html` | Codex/Codex；合并新样式、五个模块，内嵌全部7项PNG。 |
+| `README.md` | Codex/Codex；新美术、资源目录和离线文件说明。 |
+| `AGENTS.md` | Codex/Codex；新要求、实施选择与生成器来源记录约定。 |
+| `docs/ART-DIRECTION.md`（新增） | Codex/Codex；全部原始提示词、资产尺寸/哈希与范围。 |
+| `docs/CHANGE-AUDIT.md` | Codex/Codex；本轮逐文件贡献及审计关联。 |
+
+项目资产/源码事务：`2ea4ed32dc324cac9a7ad3f3aadc4f25`；本地服务器事务：`bd475e3e57b64662a5fe573e844fdf33`。美术实施选择：`3ba63f1d331541a896d4cf8e923d2042`；接受图片与补充MIME选择：`0431cdb95f5545e7953d9af6ca857216`；生成器客观来源补录事件：`117af94af9dd45ec818f437a3fc977c6`。
+
+图片生成器管理的输出路径在调用前未知，收到后据真实路径、SHA-256、尺寸、透明通道及文件创建时间元数据补录并标记retrospective，不编造生成时刻或中间版本；图片复制入项目的每个目标均已事先登记。原生成文件保留，项目资产是原始字节副本。主代理已查看全部生成图片；未打开游戏、未运行游戏测试、语法检查、浏览器自动化或试玩。原图像素检查与源码审阅不等同于浏览器适配验证。
+
+全部项目文件保留修改前后快照和Git提交。私有审计与生成器源路径留在本机，公开项目只提交最终图片及必要来源说明，不上传凭据、私有快照或模型原始响应。
