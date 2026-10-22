@@ -94,14 +94,16 @@
       <div class="hp-grid" id="enemy-grid" role="group" aria-label="点击生命方格放置攻击"></div>
       <div class="grid-legend"><span><i class="legend-live"></i>生命</span><span><i class="legend-hit"></i>将移除</span><span><i class="legend-armor"></i>护甲 / 破甲</span></div>
       <div class="placement-summary"><div id="placement-preview" aria-hidden="true"></div><div><strong id="placement-title">选择攻击形状</strong><p id="placement-status" role="status" aria-live="polite">先选择一张攻击牌。</p></div></div>
-      <div class="placement-actions"><button id="rotate-attack" disabled title="顺时针旋转90度">旋转 <kbd>R</kbd></button><button id="cancel-attack" disabled title="取消放置，不消耗能量">取消 <kbd>Esc</kbd></button><button id="confirm-attack" class="gold-button" disabled>放下攻击 <kbd>↵</kbd></button></div>
+      <div class="placement-actions"><button id="rotate-attack" disabled title="顺时针旋转90度">旋转 <kbd>R</kbd></button><button id="cancel-attack" disabled title="取消选牌，不消耗能量">取消 <kbd>Esc</kbd></button><button id="auto-button" class="auto-button" aria-pressed="false" title="开启后点攻击牌直接出牌，自动选择落点；快捷键A"><i></i><span>AUTO</span><b id="auto-state">关</b></button></div>
     </section>
-    <div class="first-hint" id="first-hint"><span>✧</span> 选攻击牌 → 点生命格 → 确认落点 <i>↓</i></div>
+    <div class="first-hint" id="first-hint"><span>✧</span> 选攻击牌 → 点格即出 / 开启 AUTO 免放置 <i>↓</i></div>
+    <div class="combat-effects" id="combat-effects" aria-hidden="true"></div>
+    <div class="combat-banner" id="combat-banner" role="status" aria-live="polite" aria-atomic="true"><span id="impact-name"></span><b id="impact-value"></b><small id="impact-detail"></small></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div class="scene-bottom"><span>遗忘者的石门</span><button id="log-button">战斗记录 <span>↗</span></button></div>
   </main>
   <section class="hand-zone" aria-label="手牌区域">
-    <div class="hand-heading"><span>你的手牌 <b id="hand-count">5</b></span><span>选牌 1–9 <i>·</i> 旋转 R <i>·</i> 放置 Enter</span><span id="exhaust-count"></span></div>
+    <div class="hand-heading"><span>你的手牌 <b id="hand-count">5</b></span><span id="hand-shortcuts">选牌 1–9 · 点格攻击 · R 旋转</span><span id="exhaust-count"></span></div>
     <div class="hand-layout"><div class="left-controls"><div class="energy-orb" id="energy-orb" title="每回合恢复3点能量"><div><b id="energy">3</b><span>/ 3</span></div><small>能 量</small></div><button class="pile-control" id="draw-pile"><span class="pile-symbol" id="draw-symbol"></span><b id="draw-count">5</b><span>抽牌堆</span></button></div><div class="hand" id="hand"></div><div class="right-controls"><button class="gold-button end-turn" id="end-turn"></button><button class="pile-control discard-control" id="discard-pile"><span class="pile-symbol" id="discard-symbol"></span><b id="discard-count">0</b><span>弃牌堆</span></button></div></div>
   </section>
   <footer><span>✦ 余烬之后，仍有前路。</span><span>形状攻击 · 方格生命 <i>·</i> 单关原型</span><button id="deck-button"></button></footer>

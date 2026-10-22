@@ -41,6 +41,15 @@
       return { ok, cells, hits, blocked, x, y, rotation, reason: !fits ? '形状超出棋盘，请向内移动或旋转。' : !ok ? '这里已经全空，请换一个仍有生命格的位置。' : '' };
     }
     syncEnemy() { this.enemy.hp = this.enemy.cells.filter(Boolean).length; this.enemy.block = this.enemy.armor.filter((a, i) => a && this.enemy.cells[i]).length; }
+    autoPlacement(card) {
+      let best = null, score = -1;
+      for (let rotation = 0; rotation < 4; rotation++) for (let y = 0; y < this.rows; y++) for (let x = 0; x < this.columns; x++) {
+        const plan = this.planAttack(card, { x, y, rotation });
+        const value = plan.hits.length * (this.enemy.cells.length + 1) + plan.blocked.length;
+        if (plan.ok && value > score) { best = { x, y, rotation }; score = value; }
+      }
+      return best;
+    }
     grantArmor(count) {
       this.enemy.armor.fill(false);
       for (let i = 0; i < this.enemy.cells.length && count > 0; i++) if (this.enemy.cells[i]) { this.enemy.armor[i] = true; count--; }
@@ -108,9 +117,10 @@
   if (typeof document === 'undefined') return;
 
   const $ = id => document.getElementById(id);
-  let battle = new Battle(), busy = false, sound = false, context, modalOpen = false, reward = null;
+  let battle = new Battle(), busy = false, sound = false, auto = false, context, modalOpen = false, reward = null;
   let selectedUid = null, rotation = 0, anchor = { x: 1, y: 1 }, anchorChosen = false;
-  let toastTimer, battleSerial = 0;
+  let toastTimer, impactTimer, battleSerial = 0;
+  const shakeTimers = new WeakMap();
   const icon = (kind, cls = '') => `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">${{
     sword: '<path d="m5 19 4-4m-3-2 5 5M8 15l9-11 3-1-1 4-10 9M4 20l2-2"/>',
     shield: '<path d="m12 3 8 3v6c0 4-5 7-8 9-3-2-8-5-8-9V6l8-3Z"/><path d="M12 7v9M8 11h8"/>',
@@ -147,8 +157,44 @@
     try { context ||= new (root.AudioContext || root.webkitAudioContext)(); context.resume(); const o = context.createOscillator(), g = context.createGain(); o.type = type; o.frequency.setValueAtTime(freq, context.currentTime); o.frequency.exponentialRampToValueAtTime(freq * .55, context.currentTime + dur); g.gain.setValueAtTime(.035, context.currentTime); g.gain.exponentialRampToValueAtTime(.001, context.currentTime + dur); o.connect(g).connect(context.destination); o.start(); o.stop(context.currentTime + dur); } catch (_) { sound = false; }
   }
   function toast(text) { $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 2400); }
-  function floatText(target, text, kind = '') { const e = document.createElement('span'); e.className = `float-text ${kind}`; e.textContent = text; $(target).appendChild(e); setTimeout(() => e.remove(), 1000); }
-  function shake(target, cls = 'hit') { $(target).classList.remove(cls); void $(target).offsetWidth; $(target).classList.add(cls); setTimeout(() => $(target).classList.remove(cls), 500); }
+  function floatText(target, text, kind = '') { const e = document.createElement('span'); e.className = `float-text ${kind}`; e.textContent = text; $(target).appendChild(e); setTimeout(() => e.remove(), 1300); }
+  function shake(target, cls = 'hit') { const e = $(target); clearTimeout(shakeTimers.get(e)); e.classList.remove('hit', 'attacking', 'shield-up', 'impact-pulse'); void e.offsetWidth; e.classList.add(cls); shakeTimers.set(e, setTimeout(() => e.classList.remove(cls), 650)); }
+  function effectPoint(element) {
+    const a = $('arena').getBoundingClientRect(), b = element.getBoundingClientRect();
+    return { x: b.left + b.width / 2 - a.left, y: b.top + b.height / 2 - a.top };
+  }
+  function effect(className, point, styles = {}) {
+    const e = document.createElement('span'); e.className = className; e.style.left = `${point.x}px`; e.style.top = `${point.y}px`;
+    Object.entries(styles).forEach(([key, value]) => e.style.setProperty(key, value));
+    $('combat-effects').appendChild(e); setTimeout(() => e.remove(), 1000); return e;
+  }
+  function strikeEffect(from, to, blocked = false) {
+    const a = effectPoint($(from)), b = effectPoint($(to));
+    const beam = effect(`attack-trail ${blocked ? 'armor-effect' : ''}`, a, { '--trail-length': `${Math.hypot(b.x - a.x, b.y - a.y)}px`, '--trail-angle': `${Math.atan2(b.y - a.y, b.x - a.x)}rad` });
+    beam.appendChild(document.createElement('i'));
+    effect(`impact-ring ${blocked ? 'armor-effect' : ''}`, b);
+  }
+  function announceImpact(name, value, detail, kind = '') {
+    const banner = $('combat-banner'); clearTimeout(impactTimer);
+    $('impact-name').textContent = name; $('impact-value').textContent = value; $('impact-detail').textContent = detail;
+    banner.className = `combat-banner ${kind}`; void banner.offsetWidth; banner.classList.add('visible');
+    impactTimer = setTimeout(() => banner.classList.remove('visible'), 1500);
+  }
+  function attackFeedback(result) {
+    const { hit, plan, definition: d } = result;
+    shake('hero-figure', 'attacking'); shake('enemy-figure'); shake('enemy-grid-panel', 'impact-pulse');
+    strikeEffect('hero-figure', 'enemy-figure', !hit.lost);
+    for (const cell of [...plan.hits, ...plan.blocked]) {
+      const element = $('enemy-grid').children[cell.index], blocked = !plan.hits.some(c => c.index === cell.index);
+      element.classList.add(blocked ? 'cell-cracked' : 'cell-shattered');
+      const point = effectPoint(element);
+      effect(`cell-flash ${blocked ? 'armor-effect' : ''}`, point);
+      for (let i = 0; i < 5; i++) effect(`cell-shard ${blocked ? 'armor-effect' : ''}`, point, { '--dx': `${Math.cos(i * Math.PI * .4) * (22 + i * 3)}px`, '--dy': `${Math.sin(i * Math.PI * .4) * 25 - 16}px`, '--spin': `${i * 87 + 45}deg` });
+    }
+    floatText('enemy-actor', hit.lost ? `−${hit.lost}` : `破甲 ${hit.blocked}`, hit.lost ? 'damage' : 'block');
+    announceImpact(d.name, hit.lost ? `−${hit.lost}` : '破甲', `${hit.lost ? `移除 ${hit.lost} 格生命` : '护甲碎裂'}${hit.blocked ? ` · 破甲 ${hit.blocked} 格` : ''}`, hit.lost ? 'damage' : 'block');
+    tone(hit.lost ? 150 : 360, .2, hit.lost ? 'sawtooth' : 'triangle');
+  }
   function selectedCard() { return battle.hand.find(c => c.uid === selectedUid); }
   function clearPlacement() { selectedUid = null; rotation = 0; anchorChosen = false; }
   function renderGrid() {
@@ -157,7 +203,7 @@
     paintPlacement();
   }
   function paintPlacement() {
-    const card = selectedCard(), pending = !!card && !busy && battle.status === 'playing';
+    const card = selectedCard(), pending = !!card && !auto && !busy && battle.status === 'playing';
     const plan = pending ? battle.planAttack(card, { ...anchor, rotation }) : null;
     const cells = [...$('enemy-grid').children];
     cells.forEach(e => e.classList.remove('preview-hit', 'preview-block', 'preview-empty', 'preview-invalid', 'is-anchor'));
@@ -167,16 +213,23 @@
     }
     $('enemy-grid-panel').classList.toggle('placing', pending);
     $('rotate-attack').disabled = !pending; $('cancel-attack').disabled = !pending;
-    $('confirm-attack').disabled = !pending || !anchorChosen || !plan.ok;
-    $('placement-title').textContent = pending ? `${battle.definition(card).name} · ${battle.definition(card).shapeName} · ${rotation * 90}°` : '点击攻击牌，选择你的攻击形状';
+    $('placement-title').textContent = pending ? `${battle.definition(card).name} · ${battle.definition(card).shapeName} · ${rotation * 90}°` : auto ? 'AUTO 已开启 · 点攻击牌直接打出' : '选攻击牌 → 点格子立即攻击';
     $('placement-preview').innerHTML = pending ? shapeArt(battle.shapeFor(card, rotation)) : '<span class="idle-crosshair">⌖</span>';
-    $('placement-status').textContent = !pending ? '每个亮格是1点生命。先选牌，再点格子。' : !anchorChosen ? '点击棋盘设定形状左上角，再确认攻击。' : !plan.ok ? plan.reason : `将移除 ${plan.hits.length} 格生命${plan.blocked.length ? ` · 破甲 ${plan.blocked.length} 格` : ''}${plan.cells.some(c => !c.alive) ? ' · 空格不会重复扣血' : ''}`;
-    $('confirm-attack').innerHTML = pending && anchorChosen && plan.ok ? `放下攻击 · ${plan.hits.length}格 <kbd>↵</kbd>` : '放下攻击 <kbd>↵</kbd>';
+    $('placement-status').textContent = !pending ? auto ? '自动选择落点和旋转；优先扣血，其次破甲。' : '每个亮格是1点生命，点击即出牌，无需确认。' : !plan.ok ? plan.reason : `点击即移除 ${plan.hits.length} 格生命${plan.blocked.length ? ` · 破甲 ${plan.blocked.length} 格` : ''} · R旋转`;
+    $('auto-button').setAttribute('aria-pressed', String(auto)); $('auto-button').classList.toggle('active', auto);
+    $('auto-button').disabled = busy || battle.status !== 'playing';
+    $('auto-state').textContent = auto ? '开' : '关';
+    $('hand-shortcuts').textContent = auto ? 'AUTO · 点牌直接攻击  /  A 切换' : '选牌 1–9 · 点格攻击 · R 旋转';
     document.querySelectorAll('.card').forEach(e => e.classList.toggle('selected', e.dataset.uid === selectedUid));
   }
   function setAnchor(index, chosen = false) { if (!selectedCard() || busy || modalOpen) return; anchor = { x: index % battle.columns, y: Math.floor(index / battle.columns) }; if (chosen) anchorChosen = true; paintPlacement(); }
   function rotateAttack() { if (!selectedCard() || busy || modalOpen) return; rotation = (rotation + 1) % 4; paintPlacement(); tone(320, .06); }
   function cancelAttack() { if (!selectedUid) return; clearPlacement(); paintPlacement(); toast('已取消放置，未消耗卡牌或能量。'); }
+  function toggleAuto() {
+    if (busy || modalOpen || battle.status !== 'playing') return;
+    auto = !auto; clearPlacement(); render(); tone(auto ? 520 : 300, .08);
+    toast(auto ? 'AUTO 开启 · 点击攻击牌，自动选落点并打出' : 'AUTO 关闭 · 选牌后点击格子立即攻击');
+  }
   function render() {
     $('turn').textContent = String(battle.turn).padStart(2, '0'); $('energy').textContent = battle.energy;
     $('energy-orb').classList.toggle('empty', battle.energy === 0);
@@ -198,8 +251,8 @@
     $('hand').style.setProperty('--cards', battle.hand.length);
     $('hand').innerHTML = battle.hand.map((card, i) => {
       const d = battle.definition(card), affordable = d.cost <= battle.energy;
-      const desc = (d.shape ? `<span><b>${d.shape.length}</b> 格${d.shapeName} · 自选落点</span>` : '') + (d.block ? `<span>获得 <b>${d.block}</b> 点格挡。</span>` : '') + (d.pierce ? '<small>穿甲 · 直接移除护甲格生命</small>' : '') + (d.draw ? `抽 <b>${d.draw}</b> 张牌。` : '') + (d.energy ? `获得 <b>1</b> 点能量。<small>消耗 · 本局不再洗回</small>` : '');
-      return `<button class="card card-${card.id} ${!affordable ? 'unaffordable' : ''}" style="--r:${(i - (battle.hand.length - 1) / 2) * 2.5}deg;--i:${i}" data-uid="${card.uid}" ${busy ? 'disabled' : ''} aria-label="${i + 1}号牌 ${d.name}，消耗${d.cost}能量，${d.description}" title="${affordable ? d.shape ? '选择后在生命方格放置' : '点击打出' : '能量不足'}"><span class="card-cost">${d.cost}</span><span class="card-heading">${d.name}</span><span class="card-art">${art(card.id)}</span><span class="card-type">${d.type === 'attack' ? '形 状 攻 击' : '技 能'}</span><span class="card-description">${desc}</span><span class="card-key">${i + 1}</span><span class="card-corner">✦</span></button>`;
+      const desc = (d.shape ? `<span><b>${d.shape.length}</b> 格${d.shapeName} · ${auto ? '自动落点' : '点格即出'}</span>` : '') + (d.block ? `<span>获得 <b>${d.block}</b> 点格挡。</span>` : '') + (d.pierce ? '<small>穿甲 · 直接移除护甲格生命</small>' : '') + (d.draw ? `抽 <b>${d.draw}</b> 张牌。` : '') + (d.energy ? `获得 <b>1</b> 点能量。<small>消耗 · 本局不再洗回</small>` : '');
+      return `<button class="card card-${card.id} ${!affordable ? 'unaffordable' : ''}" style="--r:${(i - (battle.hand.length - 1) / 2) * 2.5}deg;--i:${i}" data-uid="${card.uid}" ${busy ? 'disabled' : ''} aria-label="${i + 1}号牌 ${d.name}，消耗${d.cost}能量，${d.description}" title="${affordable ? d.shape ? auto ? '点击自动攻击' : '选中后点击格子立即攻击' : '点击打出' : '能量不足'}"><span class="card-cost">${d.cost}</span><span class="card-heading">${d.name}</span><span class="card-art">${art(card.id)}</span><span class="card-type">${d.type === 'attack' ? '形 状 攻 击' : '技 能'}</span><span class="card-description">${desc}</span><span class="card-key">${i + 1}</span><span class="card-corner">✦</span></button>`;
     }).join('');
     $('arena').classList.toggle('victory', battle.status === 'won'); $('enemy-figure').classList.toggle('defeated', battle.status === 'won');
     $('relic-badge').hidden = !battle.relic; $('relic-badge').textContent = battle.relic === 'heart' ? '✦ 残火之心 · 生命 +10' : '✦ 淬火刀锋 · 形状攻击穿甲';
@@ -211,36 +264,50 @@
     const d = battle.definition(card);
     if (d.cost > battle.energy) { toast('能量不足，可以结束回合恢复能量。'); return; }
     if (d.shape) {
+      if (auto) {
+        const placement = battle.autoPlacement(card);
+        if (!placement) { toast('没有可命中的位置，未消耗卡牌或能量。'); return; }
+        resolvePlay(uid, placement); return;
+      }
       if (selectedUid === uid) { cancelAttack(); return; }
       selectedUid = uid; rotation = 0; anchor = { x: 1, y: 1 }; anchorChosen = false; render(); tone(300, .08);
-      toast(`${d.name}已选中 · 点击生命格选择落点，R旋转`); return;
+      toast(`${d.name}已选中 · 点击生命格立即攻击，R旋转`); return;
     }
     clearPlacement(); resolvePlay(uid);
   }
   function resolvePlay(uid, placement = null) {
     const result = battle.play(uid, placement); if (!result.ok) { tone(90); toast(result.reason); return; }
     clearPlacement();
-    $('first-hint').classList.add('dismissed'); tone(result.definition.type === 'attack' ? 180 : 440, .15, result.definition.type === 'attack' ? 'triangle' : 'sine');
-    if (result.plan) { shake('enemy-figure'); floatText('enemy-actor', result.hit.lost ? `−${result.hit.lost} 格` : '破甲', 'damage'); }
-    if (result.definition.block) floatText('hero-actor', `+${result.definition.block}`, 'block');
-    render(); if (battle.status === 'won') setTimeout(showResult, 650);
+    $('first-hint').classList.add('dismissed'); render();
+    if (result.plan) attackFeedback(result); else tone(440, .15);
+    if (result.definition.block) { floatText('hero-actor', `+${result.definition.block} 格挡`, 'block'); if (!result.plan) shake('hero-figure', 'shield-up'); }
+    if (battle.status === 'won') { const serial = battleSerial; setTimeout(() => { if (serial === battleSerial) showResult(); }, 1000); }
   }
   function confirmAttack() { const card = selectedCard(); if (!card || busy || modalOpen || !anchorChosen) return; const plan = battle.planAttack(card, { ...anchor, rotation }); if (!plan.ok) { toast(plan.reason); return; } resolvePlay(card.uid, { ...anchor, rotation }); }
   function endTurn() {
     if (busy || modalOpen || battle.status !== 'playing') return;
-    clearPlacement(); const serial = battleSerial; busy = true; $('first-hint').classList.add('dismissed'); render(); toast('石门守卫正在行动…');
+    clearPlacement(); const serial = battleSerial; busy = true; $('first-hint').classList.add('dismissed'); render();
+    if (battle.intent.damage) shake('enemy-figure', 'attacking');
+    toast(`${battle.intent.name} · ${battle.intent.damage ? `${battle.intent.damage}点攻击来袭` : '守卫正在覆甲'}`);
     setTimeout(() => {
       if (serial !== battleSerial) return;
       const result = battle.endTurn();
-      if (result.hit?.lost) { shake('hero-figure'); floatText('hero-actor', `−${result.hit.lost}`, 'damage'); tone(80, .25, 'triangle'); }
-      else if (result.hit?.blocked) { floatText('hero-actor', '已格挡', 'block'); tone(360); }
       busy = false; render();
-      if (battle.status !== 'playing') setTimeout(showResult, 550); else toast(`第 ${battle.turn} 回合 · 能量恢复，抽取 5 张牌`);
+      if (result.intent.damage) {
+        strikeEffect('enemy-figure', 'hero-figure', !result.hit.lost);
+        if (result.hit.lost) { shake('hero-figure'); shake('hero-health', 'impact-pulse'); floatText('hero-actor', `−${result.hit.lost}`, 'damage'); tone(75, .28, 'sawtooth'); }
+        else { shake('hero-figure', 'shield-up'); floatText('hero-actor', `格挡 ${result.hit.blocked}`, 'block'); tone(360, .2); }
+        announceImpact(result.intent.name, result.hit.lost ? `−${result.hit.lost}` : '格挡', `受到 ${result.hit.lost} 点伤害${result.hit.blocked ? ` · 格挡吸收 ${result.hit.blocked}` : ''}`, result.hit.lost ? 'hero-damage' : 'block');
+        if (result.hit.blocked && result.hit.lost) floatText('hero-actor', `格挡 ${result.hit.blocked}`, 'block secondary');
+      } else {
+        shake('enemy-grid-panel', 'shield-up'); announceImpact(result.intent.name, `+${battle.enemy.block}`, '生命格覆甲', 'block'); tone(360, .2);
+      }
+      if (battle.status !== 'playing') setTimeout(() => { if (serial === battleSerial) showResult(); }, 1000); else toast(`第 ${battle.turn} 回合 · 能量恢复，抽取 5 张牌`);
     }, 650);
   }
   function openModal(title, content, className = '') { modalOpen = true; $('modal-title').textContent = title; $('modal-body').innerHTML = content; $('modal-panel').className = `modal-panel ${className}`; $('modal').hidden = false; $('modal-close').focus(); }
   function closeModal() { modalOpen = false; $('modal').hidden = true; $('end-turn').focus(); }
-  function restart(relic = null) { battleSerial++; battle = new Battle({ relic }); reward = null; busy = false; clearPlacement(); closeModal(); render(); toast(relic ? '带着遗物，再次踏入回廊。' : '新的挑战开始了。'); }
+  function restart(relic = null) { battleSerial++; battle = new Battle({ relic }); reward = null; busy = false; clearPlacement(); clearTimeout(impactTimer); $('combat-effects').replaceChildren(); $('combat-banner').classList.remove('visible'); closeModal(); render(); toast(relic ? '带着遗物，再次踏入回廊。' : '新的挑战开始了。'); }
   function showPile(pile) {
     const names = { draw: '抽牌堆', discard: '弃牌堆', deck: '初始牌组', exhaust: '消耗区' };
     const cards = pile === 'draw' ? battle.drawPile : pile === 'discard' ? battle.discardPile : pile === 'exhaust' ? battle.exhaustPile : battle.allCards;
@@ -248,7 +315,7 @@
     openModal(`${names[pile]} · ${cards.length} 张`, `<p class="modal-note">${pile === 'draw' ? '以下按类型展示，不代表抽取顺序。抽牌堆耗尽时，弃牌会重新洗入。' : pile === 'discard' ? '打出的牌和回合结束时的手牌会进入这里。' : pile === 'exhaust' ? '消耗的牌在本局战斗中不会再被抽到。' : '这是一场独立遭遇战。击败守卫后，可选择遗物重试。'}</p><div class="pile-list">${Object.entries(counts).map(([id, count]) => { const d = battle.definition(id); return `<div class="pile-item"><span class="mini-art ${id}">${art(id)}</span><div><strong>${d.name} <small>×${count}</small></strong><p>${d.description}</p></div><span class="mini-cost">${d.cost}</span></div>`; }).join('') || '<p class="empty-pile">这里暂时没有牌。</p>'}</div>`);
   }
   function showHelp() {
-    openModal('提灯旅人的战斗手册', `<div class="help-grid"><div>${icon('star')}<h3>每回合 3 能量</h3><p>技能牌直接打出；攻击牌先选中、再放置。确认攻击前不会消耗卡牌或能量。</p></div><div>${icon('eye')}<h3>24 格生命，由你选落点</h3><p>每个亮方格是1点生命。直线、L、T和方块攻击会移除其覆盖的生命格，空洞不会重复扣血。</p></div><div>${icon('shield')}<h3>旋转、预览，再确认</h3><p>点击生命格设置形状左上角，按R旋转，再点“放下攻击”。红色预览扣生命，蓝色预览先破甲。形状不能越界。</p></div><div>${icon('flame')}<h3>护甲与格挡</h3><p>守卫壁垒给3个亮格覆甲，命中时先去护甲，再次命中才扣生命。刀锋遗物可穿甲；你的格挡在下回合清空。</p></div></div><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 选牌 <span>·</span> <kbd>R</kbd> 旋转 <span>·</span> <kbd>↑↓←→</kbd> 移动 <span>·</span> <kbd>Enter</kbd> 放置</div><p class="modal-note">Esc 取消放置或关闭弹窗，E结束回合。守卫循环：9点攻击 → 3格覆甲 → 5点攻击后力量+3。余烬现为2×2直接形状攻击，不再自动灼烧。</p>`);
+    openModal('提灯旅人的战斗手册', `<div class="help-grid"><div>${icon('star')}<h3>点击即出牌</h3><p>每回合3能量。选攻击牌，悬停预览，再点击生命格立即攻击，无需二次确认。无效落点不会消耗卡牌或能量。</p></div><div>${icon('eye')}<h3>AUTO · 免放置</h3><p>打开棋盘下方的AUTO开关，再点击攻击牌即可直接打出。系统自动选择落点和旋转，优先消除最多生命格；出牌、技能和结束回合仍由你决定。</p></div><div>${icon('shield')}<h3>旋转与生命格</h3><p>每格1生命。直线、L、T和方块攻击移除覆盖的格子。手动模式可按R旋转，红色预览扣生命，蓝色先破甲；形状不能越界。</p></div><div>${icon('flame')}<h3>护甲与格挡</h3><p>守卫给3个生命格覆甲，先破甲再扣生命，刀锋遗物可穿甲。你的格挡在下回合清空。斩击、碎格和数字显示本次实际伤害。</p></div></div><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 <span>·</span> <kbd>R</kbd> 旋转 <span>·</span> <kbd>A</kbd> AUTO <span>·</span> <kbd>E</kbd> 结束回合</div><p class="modal-note">手动模式支持方向键移动预览、Enter直接攻击；Esc取消选牌或关闭弹窗。守卫循环：9点攻击 → 3格覆甲 → 5点攻击后力量+3。</p>`);
   }
   function showResult() {
     if (battle.status === 'playing') return;
@@ -263,8 +330,8 @@
   $('end-turn').addEventListener('click', endTurn); $('help-button').addEventListener('click', showHelp);
   $('enemy-grid').addEventListener('pointerover', e => { const cell = e.target.closest('[data-cell]'); if (cell) setAnchor(Number(cell.dataset.cell)); });
   $('enemy-grid').addEventListener('focusin', e => { const cell = e.target.closest('[data-cell]'); if (cell) setAnchor(Number(cell.dataset.cell), true); });
-  $('enemy-grid').addEventListener('click', e => { const cell = e.target.closest('[data-cell]'); if (!cell || busy || modalOpen) return; if (!selectedCard()) { toast('先选择一张攻击牌，再决定形状的落点。'); return; } setAnchor(Number(cell.dataset.cell), true); });
-  $('rotate-attack').addEventListener('click', rotateAttack); $('cancel-attack').addEventListener('click', cancelAttack); $('confirm-attack').addEventListener('click', confirmAttack);
+  $('enemy-grid').addEventListener('click', e => { const cell = e.target.closest('[data-cell]'); if (!cell || busy || modalOpen || battle.status !== 'playing') return; if (auto) { toast('AUTO已开启，点击攻击牌即可出牌。'); return; } if (!selectedCard()) { toast('先选择一张攻击牌，再点击格子立即攻击。'); return; } setAnchor(Number(cell.dataset.cell), true); confirmAttack(); });
+  $('rotate-attack').addEventListener('click', rotateAttack); $('cancel-attack').addEventListener('click', cancelAttack); $('auto-button').addEventListener('click', toggleAuto);
   $('draw-pile').addEventListener('click', () => showPile('draw')); $('discard-pile').addEventListener('click', () => showPile('discard'));
   $('deck-button').addEventListener('click', () => showPile('deck'));
   $('log-button').addEventListener('click', () => openModal('战斗记录', `<ol class="battle-log">${battle.log.map(l => `<li>${l}</li>`).join('')}</ol>`));
@@ -277,6 +344,7 @@
     if (modalOpen) { if (e.key === 'Tab') { const list = [...$('modal').querySelectorAll('button:not([disabled])')]; if (e.shiftKey && document.activeElement === list[0]) { e.preventDefault(); list.at(-1).focus(); } else if (!e.shiftKey && document.activeElement === list.at(-1)) { e.preventDefault(); list[0].focus(); } } return; }
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     if (e.key === 'Escape' && selectedUid) { e.preventDefault(); cancelAttack(); return; }
+    if (e.key.toLowerCase() === 'a') { e.preventDefault(); toggleAuto(); return; }
     if (selectedCard() && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); anchor.x = Math.max(0, Math.min(battle.columns - 1, anchor.x + (e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0))); anchor.y = Math.max(0, Math.min(battle.rows - 1, anchor.y + (e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0))); anchorChosen = true; paintPlacement(); return; }
     if (e.key.toLowerCase() === 'r' && selectedUid) { e.preventDefault(); rotateAttack(); return; }
     if (e.key === 'Enter' && selectedUid) { e.preventDefault(); confirmAttack(); return; }
@@ -287,6 +355,6 @@
   $('deck-button').innerHTML = `${icon('cards')} <span>牌组</span> <b>10</b>`;
   $('draw-symbol').innerHTML = icon('cards'); $('discard-symbol').innerHTML = icon('cards');
   $('end-turn').innerHTML = `结束回合 ${icon('arrow')}<kbd>E</kbd>`;
-  root.emberGame = { get battle() { return battle; }, restart, play, endTurn, showResult, confirmAttack, rotateAttack, cancelAttack };
+  root.emberGame = { get battle() { return battle; }, get auto() { return auto; }, restart, play, endTurn, showResult, confirmAttack, rotateAttack, cancelAttack, toggleAuto };
   render();
 })(typeof globalThis !== 'undefined' ? globalThis : this);
