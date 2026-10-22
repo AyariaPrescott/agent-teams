@@ -5,13 +5,14 @@ const fixed = () => .4;
 test('opening hand, energy and card conservation are deterministic', () => {
   const b = new Battle({ rng: fixed });
   assert.deepEqual(b.hand.map(c => c.id), ['strike', 'guard', 'ember', 'insight', 'heavy']);
-  assert.equal(b.energy, 3); assert.equal(b.hero.hp, 50); assert.equal(b.enemy.hp, 48);
+  assert.equal(b.energy, 3); assert.equal(b.hero.hp, 50); assert.equal(b.enemy.hp, 24);
+  assert.equal(b.enemy.cells.length, 24); assert.equal(b.enemy.cells.filter(Boolean).length, 24);
   assert.equal(b.hand.length + b.drawPile.length + b.discardPile.length + b.exhaustPile.length, rules.deck.length);
 });
 test('unaffordable cards preserve energy, HP and hand', () => {
   const b = new Battle({ rng: fixed }); b.energy = 1;
   const heavy = b.hand.find(c => c.id === 'heavy');
-  assert.equal(b.play(heavy.uid).ok, false); assert.equal(b.energy, 1); assert.equal(b.enemy.hp, 48); assert.equal(b.hand.length, 5);
+  assert.equal(b.play(heavy.uid, { x: 0, y: 0 }).ok, false); assert.equal(b.energy, 1); assert.equal(b.enemy.hp, 24); assert.equal(b.hand.length, 5);
 });
 test('block absorbs attacks and clears on the next player turn', () => {
   const b = new Battle({ rng: fixed }); b.play(b.hand.find(c => c.id === 'guard').uid);
@@ -19,9 +20,12 @@ test('block absorbs attacks and clears on the next player turn', () => {
   assert.equal(result.hit.blocked, 6); assert.equal(result.hit.lost, 3); assert.equal(b.hero.hp, 47);
   assert.equal(b.hero.block, 0); assert.equal(b.energy, 3); assert.equal(b.turn, 2); assert.equal(b.hand.length, 5);
 });
-test('burn bypasses block and a burn kill cancels the enemy attack', () => {
-  const b = new Battle({ rng: fixed }); b.enemy.hp = 4; b.enemy.block = 20; b.enemy.burn = 4;
-  const result = b.endTurn(); assert.equal(result.burnKill, true); assert.equal(b.status, 'won'); assert.equal(b.hero.hp, 50);
+test('shape attacks require placement and removing the last cells finishes combat', () => {
+  const b = new Battle({ rng: fixed }); b.enemy.cells = b.enemy.cells.map((_, i) => i < 3); b.syncEnemy();
+  const strike = b.hand.find(c => c.id === 'strike'); const energy = b.energy;
+  assert.equal(b.play(strike.uid).requiresPlacement, true); assert.equal(b.energy, energy);
+  assert.equal(b.play(strike.uid, { x: 5, y: 0 }).ok, false); assert.equal(b.energy, energy);
+  const result = b.play(strike.uid, { x: 0, y: 0 }); assert.equal(result.hit.lost, 3); assert.equal(b.status, 'won'); assert.equal(b.hero.hp, 50);
   assert.equal(b.play('card-0').ok, false); assert.equal(b.endTurn().ok, false);
 });
 test('draw reshuffles discard, respects hand limit and focus exhausts', () => {
@@ -35,7 +39,7 @@ test('draw reshuffles discard, respects hand limit and focus exhausts', () => {
 });
 test('intent shield survives the player turn and strength boosts later attacks', () => {
   const b = new Battle({ rng: fixed }); b.endTurn(); b.endTurn();
-  assert.equal(b.enemy.block, 8); assert.equal(b.intent.damage, 5);
+  assert.equal(b.enemy.block, 3); assert.equal(b.enemy.armor.filter(Boolean).length, 3); assert.equal(b.intent.damage, 5);
   b.endTurn(); assert.equal(b.enemy.block, 0); assert.equal(b.enemy.strength, 3); assert.equal(b.intent.damage, 12);
 });
 test('skipping turns produces a reachable loss and refuses further actions', () => {
@@ -49,7 +53,17 @@ test('a sensible card policy wins the encounter across varied shuffles', () => {
       for (let moves = 0; moves < 20 && b.status === 'playing'; moves++) {
         const priority = ['focus', 'ember', 'parry', 'heavy', 'strike', 'insight', 'guard'];
         const choices = b.hand.filter(c => b.definition(c).cost <= b.energy).sort((a, c) => priority.indexOf(a.id) - priority.indexOf(c.id));
-        if (!choices.length) break; b.play(choices[0].uid);
+        if (!choices.length) break;
+        const card = choices[0]; let placement = null;
+        if (b.definition(card).shape) {
+          let score = -1;
+          for (let r = 0; r < 4; r++) for (let y = 0; y < b.rows; y++) for (let x = 0; x < b.columns; x++) {
+            const plan = b.planAttack(card, { x, y, rotation: r }); const value = plan.hits.length * 10 + plan.blocked.length;
+            if (plan.ok && value > score) { score = value; placement = { x, y, rotation: r }; }
+          }
+          if (!placement) break;
+        }
+        b.play(card.uid, placement);
       }
       if (b.status === 'playing') b.endTurn();
     }
@@ -58,6 +72,8 @@ test('a sensible card policy wins the encounter across varied shuffles', () => {
 });
 test('reward relics have their displayed effects on a new battle', () => {
   const heart = new Battle({ relic: 'heart' }); assert.equal(heart.hero.maxHp, 60);
-  const blade = new Battle({ relic: 'blade' }); assert.equal(blade.definition('strike').damage, 8); assert.equal(blade.definition('parry').damage, 5);
+  const blade = new Battle({ relic: 'blade' }); assert.equal(blade.definition('strike').damage, 3); assert.equal(blade.definition('strike').pierce, true);
+  blade.grantArmor(3); const strike = blade.hand.find(c => c.id === 'strike'); const hit = blade.play(strike.uid, { x: 0, y: 0 });
+  assert.equal(hit.hit.lost, 3); assert.equal(hit.hit.blocked, 0);
   assert.equal(blade.definition('guard').damage, 0);
 });
