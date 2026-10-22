@@ -2,17 +2,17 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#131e21"><meta name="description" content="余烬回廊：可离线游玩的卡牌爬塔第一层，分岔路线、不同节点与关底Boss，支持自动存档和存档导入导出。">
-  <title>余烬回廊 · 残火之径</title><link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#131e21"><meta name="description" content="余烬回廊：可离线游玩的五层卡牌爬塔，逐层增强、不同节点与七位首领，支持自动存档和存档导入导出。">
+  <title>余烬回廊 · 五层旅途</title><link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="game-shell">
   <header class="topbar">
     <a class="brand" href="#" aria-label="余烬回廊首页"><span class="brand-mark"><svg viewBox="0 0 32 40" fill="none" aria-hidden="true"><path d="M18 2c5 11-7 13-4 22 3-2 6-6 6-10 14 16 6 24-4 24S1 29 6 20c1 5 3 6 5 7-3-10 9-15 7-25Z" fill="currentColor"/><path d="M16 25c-7 7-4 11 1 10s8-6-1-10Z" fill="#fff2cf"/></svg></span><span>余烬回廊<small>THE EMBER CORRIDOR</small></span></a>
-    <div class="run-resources"><span>Ⅰ · 残火之径</span><b id="run-progress">0 / 12</b><span class="gold-resource">¤ <b id="run-gold">60</b></span><button id="route-button">路线</button></div>
+    <div class="run-resources"><span id="floor-label">第1 / 5层 · 残火之径</span><b id="run-progress">0 / 12</b><span class="gold-resource">¤ <b id="run-gold">60</b></span><button id="route-button">路线</button></div>
     <div class="top-actions"><button class="save-button" id="save-button"><i></i><span id="save-state">本地存档</span></button><button class="icon-button" id="sound-button" title="开启音效" aria-label="切换音效" aria-pressed="false"></button><button class="icon-button" id="help-button" title="玩法说明" aria-label="玩法说明"></button><button class="icon-button" id="restart-button" title="重新挑战" aria-label="重新挑战"></button></div>
   </header>
-  <main class="expedition-view" id="expedition-view" hidden aria-label="第一层路线">
+  <main class="expedition-view" id="expedition-view" hidden aria-label="五层旅途路线">
     <img class="expedition-backdrop" id="expedition-backdrop" alt="" aria-hidden="true" draggable="false">
     <div class="map-intro"><div><span class="eyebrow">ACT I · THE ASHEN PATH</span><h1>残火之径</h1><p>选择你的路，带着余火走向灰冠。</p></div><span class="map-instruction">从下往上 · 点亮的节点可前往</span></div>
     <div class="expedition-layout"><section class="route-map" id="route-map" aria-label="分岔路线，十二站四十七个节点"></section><aside class="node-panel" id="node-panel"></aside></div>

@@ -50,16 +50,16 @@
     const title=document.querySelector('.map-intro h1'),note=document.querySelector('.map-intro p');
     if(title.textContent!==run.mapName)title.textContent=run.mapName;
     note.textContent=run.screen==='node'?'处理当前房间后继续前行。':'滑动浏览地图 · 点亮的节点可前往';
-    const nextHand=[run.seed,run.nodeId,battle.turn].join(':');
+    const nextHand=[run.seed,run.floorNumber,run.nodeId,battle.turn].join(':');
     if(nextHand!==handKey){handKey=nextHand;hand.scrollLeft=0;}
     const chosen=hand.querySelector('.card.selected')?.dataset.uid||null;
     if(chosen&&chosen!==lastSelected)scheduleLayout(revealGrid);
     lastSelected=chosen;
     if(run.screen==='map'){
-      const nextMap=[run.seed,run.routeVersion,run.visited.at(-1)||'start'].join(':');
+      const nextMap=[run.seed,run.floorNumber,run.routeVersion,run.visited.at(-1)||'start'].join(':');
       if(nextMap!==mapKey){mapKey=nextMap;scheduleLayout(focusAvailable);}
     }
-    const nextRoom=run.seed+':'+run.nodeId;
+    const nextRoom=run.seed+':'+run.floorNumber+':'+run.nodeId;
     if(run.screen==='node'&&nextRoom!==roomKey){roomKey=nextRoom;$('node-panel').scrollTop=0;}
     $('route-button').setAttribute('aria-current',run.screen==='map'||run.screen==='node'?'page':'false');
     $('phone-menu-toggle').setAttribute('aria-expanded',String(menu.open));

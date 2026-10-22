@@ -207,3 +207,6 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   .phone .toast{bottom:calc(var(--phone-bottom) + 12px)}
 }
 @media(prefers-reduced-motion:reduce){.phone .hero-figure,.phone .enemy-figure{animation:none}.phone .card{transition:none}}
+
+.phone .campaign-trail{gap:4px;margin-bottom:15px}.phone .campaign-trail li{font-size:9px;line-height:1.5}.phone .campaign-trail li b{width:27px;height:27px;font-size:13px}
+.phone .ascent-choices .node-choice{min-height:84px;padding:12px 30px 12px 13px}.phone .ascent-choices .node-choice>b{font-size:13px;line-height:1.6}.phone .ascent-choices .node-choice>span{font-size:11px;line-height:1.8}.phone .ascent-note{font-size:12px;line-height:1.85}.phone #floor-label{font-size:8px;letter-spacing:0;white-space:normal}

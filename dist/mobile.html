@@ -2,15 +2,15 @@
 <html lang="zh-CN" data-ui="phone">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#131e21"><meta name="description" content="余烬回廊：可离线游玩的卡牌爬塔第一层，分岔路线、不同节点与关底Boss，支持自动存档和存档导入导出。">
+  <meta name="theme-color" content="#131e21"><meta name="description" content="余烬回廊：可离线游玩的五层卡牌爬塔，逐层增强、不同节点与七位首领，支持自动存档和存档导入导出。">
   <title>余烬回廊 · 手机版</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="mobile.css"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body class="phone">
 <div class="game-shell">
 <header class="topbar">
-  <a class="brand" href="#" aria-label="余烬回廊手机版"><span class="phone-brand-flame">✦</span><span>余烬回廊<small>残火之径 · 手机专用</small></span></a>
+  <a class="brand" href="#" aria-label="余烬回廊手机版"><span class="phone-brand-flame">✦</span><span>余烬回廊<small id="floor-label">第1 / 5层 · 残火之径</small></span></a>
   <div class="run-resources"><b id="run-progress">0 / 12</b><small>站</small><span class="gold-resource">¤ <b id="run-gold">60</b></span></div>
-</header><main class="expedition-view" id="expedition-view" hidden aria-label="第一层路线">
+</header><main class="expedition-view" id="expedition-view" hidden aria-label="五层旅途路线">
     <img class="expedition-backdrop" id="expedition-backdrop" alt="" aria-hidden="true" draggable="false">
     <div class="map-intro"><div><span class="eyebrow">ACT I · THE ASHEN PATH</span><h1>残火之径</h1><p>选择你的路，带着余火走向灰冠。</p></div><span class="map-instruction">从下往上 · 点亮的节点可前往</span></div>
     <div class="expedition-layout"><section class="route-map" id="route-map" aria-label="分岔路线，十二站四十七个节点"></section><aside class="node-panel" id="node-panel"></aside></div>

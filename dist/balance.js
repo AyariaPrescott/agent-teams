@@ -111,6 +111,83 @@
     obelisk:{title:'旧路方碑',story:'方碑上的凹槽正好能放入一枚硬币。',choices:[choice('compass','购买罗盘','支付25金币，获得旧路罗盘；已有则改给45金币。',{relic:'compass'},25),choice('study','描下震荡符纹','获得「震荡」。',{card:'pulse'})]},
     cache:{title:'遗失的行囊',story:'倒塌的树干下压着一只旅行皮包。',choices:[choice('gold','收下钱袋','获得55金币。',{gold:55}),choice('study','取走技艺手册','获得「环刃」。',{card:'ring'})]}
   };
+  // Frozen ID order is part of the v1/v2 save format. Never extend these pools.
+  rules.legacy={rewardPool:[...rules.rewardPool],relics:Object.keys(rules.relics),enemies:Object.keys(rules.enemies),events:Object.keys(rules.events)};
+  const rect=(w,h)=>Array.from({length:w*h},(_,i)=>[i%w,Math.floor(i/w)]);
+  const advanced={
+    tidecut:attack('潮线斩',1,'潮线',rect(4,1),{powerBonus:.5,art:'sweep'}),
+    inkfork:attack('墨潮双叉',2,'双叉',[[0,0],[2,0],[0,1],[1,1],[2,1]],{powerBonus:1,art:'fork'}),
+    deepneedle:attack('深水针',1,'针列',rect(1,4),{powerBonus:.5,pierce:true,art:'spear'}),
+    tideguard:skill('回潮盾',1,{block:9,draw:1,art:'retreat'}),
+    saltstitch:skill('盐泉缝线',1,{heal:10,cleanse:true,art:'suture'}),
+    readcurrent:skill('解读水纹',0,{draw:2,exhaust:true,art:'clarity'}),
+    hammerfall:attack('锻炉坠击',2,'锤面',rect(3,2),{powerBonus:1,pierce:true,art:'cleave'}),
+    rivet:attack('铆钉阵',1,'四角',[[0,0],[2,0],[0,2],[2,2]],{powerBonus:1,block:4,art:'needle'}),
+    forgecross:attack('熔火十字',2,'十字',[[1,0],[0,1],[1,1],[2,1],[1,2]],{powerBonus:1.5,art:'cross'}),
+    steelcoat:skill('钢衣',1,{block:14,art:'wall'}),
+    bellows:skill('风箱',0,{energy:2,draw:1,exhaust:true,art:'channel'}),
+    fieldrepair:skill('战地整备',1,{heal:14,block:4,exhaust:true,art:'renew'}),
+    mirrorfan:attack('万镜扇',2,'扇面',[[0,0],[1,0],[2,0],[3,0],[1,1],[2,1]],{powerBonus:1.5,art:'crescent'}),
+    prism:attack('棱光环',2,'光环',[[0,0],[1,0],[2,0],[0,1],[2,1],[0,2],[1,2],[2,2]],{powerBonus:1,pierce:true,art:'ring'}),
+    starlance:attack('星芒枪',1,'长枪',rect(1,4),{powerBonus:1.5,pierce:true,art:'spear'}),
+    reflection:skill('折镜壁',1,{block:12,draw:1,art:'bulwark'}),
+    nightsight:skill('夜观',1,{draw:4,exhaust:true,art:'insight'}),
+    moonstitch:skill('月丝重缝',1,{heal:16,cleanse:true,art:'suture'}),
+    supernova:attack('新星',3,'十二宫',rect(4,3),{powerBonus:2,pierce:true,exhaust:true,art:'burst'}),
+    coronacut:attack('日冕轮',2,'日冕',[[0,0],[1,0],[2,0],[0,1],[2,1],[0,2],[1,2],[2,2]],{powerBonus:2,art:'ring'}),
+    voidstep:attack('虚空踏',1,'折跃',[[0,0],[2,0],[1,1],[0,2],[2,2]],{powerBonus:1.5,block:6,art:'zigzag'}),
+    lastwall:skill('不落壁垒',2,{block:24,draw:1,art:'bulwark'}),
+    starfuel:skill('星核燃料',0,{energy:3,exhaust:true,art:'focus'}),
+    rebirth:skill('余烬回生',1,{heal:22,cleanse:true,block:8,exhaust:true,art:'renew'})
+  };
+  Object.entries(advanced).forEach(([id,c],i)=>{c.minFloor=2+Math.floor(i/6);c.description=[c.shape?`${c.shape.length}格${c.shapeName}，基础攻效${Math.round((1+(c.powerBonus||0))*100)}%。`:'',c.pierce?'穿甲。':'',c.block?`基础格挡${c.block}。`:'',c.draw?`抽${c.draw}张。`:'',c.energy?`能量+${c.energy}。`:'',c.heal?`修复最重存活伤处${c.heal}点。`:'',c.cleanse?'全部止血。':'',c.exhaust?'消耗。':''].join('');rules.cards[id]=c;});
+  rules.rewardPool=Object.keys(rules.cards).filter(id=>!['strike','focus'].includes(id));
+  Object.assign(rules.relics,{
+    tidepearl:{name:'潮汐珠',minFloor:2,description:'每回合开始获得2点格挡。',turnBlock:2},
+    blueflame:{name:'蓝焰灯芯',minFloor:2,description:'攻击效能提高25%。',attack:.25},
+    coral:{name:'珊瑚药盒',minFloor:2,description:'每次包扎额外修复5点。',healing:5},
+    furnace:{name:'微型熔炉',minFloor:3,description:'每回合额外1能量，最多6。',energy:1},
+    ironleaf:{name:'铁叶披风',minFloor:3,description:'卡牌格挡提高35%。',guard:.35},
+    gear:{name:'回转齿轮',minFloor:3,description:'每回合多抽1张牌，手牌最多9张。',draw:1},
+    lens:{name:'棱星透镜',minFloor:4,description:'攻击效能提高40%。',attack:.4},
+    mirrorplate:{name:'镜面胸针',minFloor:4,description:'开局获得10格挡；每回合开始获得3格挡。',openingBlock:10,turnBlock:3},
+    silverthread:{name:'银月线轴',minFloor:4,description:'每次非首领节点结束，额外修复存活部位8%并恢复10%血容量。',nodeHeal:.08},
+    starheart:{name:'星核余温',minFloor:5,description:'攻击效能提高50%；每场开局额外1能量。',attack:.5,openingEnergy:1},
+    dawnshield:{name:'黎明盾印',minFloor:5,description:'卡牌格挡提高50%；每回合开始获得4格挡。',guard:.5,turnBlock:4},
+    eternity:{name:'永燃书签',minFloor:5,description:'每场开局多抽2张牌；包扎额外修复6点。',openingDraw:2,healing:6}
+  });
+  // Each upper floor has six common enemies, two elites and its own boss.
+  const packs=[
+    {floor:2,prefix:'tide',names:['溺页鼠','墨潮蛾','盐弓守望','淤泥抄写员','沉钟潜徒','珊瑚盾蟹','藏书禁卫','潮痕司书','溺海典藏者'],hp:[22,23,24,26,27,28,42,44,60],sprites:[0,1,2,3,4,5,'elite',6,7],damage:5},
+    {floor:3,prefix:'forge',names:['炉渣啮兽','铜翼飞蛾','铆钉猎手','熔蜡工匠','灰铁监工','钢壳搬运者','炉膛刽子手','铁誓主教','百锤熔炉'],hp:[32,34,35,37,38,40,58,61,82],sprites:[0,1,2,3,4,5,'elite',6,'boss'],damage:7},
+    {floor:4,prefix:'mirror',names:['镜隙啮影','月尘蝶','碎光射手','水银镜灵','无面观星人','星壳守卫','棱镜执刑官','盲目先知','千面星后'],hp:[44,46,48,50,52,54,78,82,108],sprites:[0,1,2,3,4,5,'elite',6,7],damage:9},
+    {floor:5,prefix:'star',names:['蚀星幼兽','日蚀蛾','黑曜投矛者','星髓凝聚体','终焰苦修者','陨铁巨蟹','终火审判者','寂星引路人','永夜之心'],hp:[58,60,63,65,68,70,100,106,144],sprites:[0,1,2,3,4,5,'elite',6,'boss'],damage:11}
+  ];
+  packs.forEach(p=>p.names.forEach((name,i)=>{
+    const kind=i===8?'boss':i>=6?'elite':'battle',d=p.damage+(kind==='boss'?4:kind==='elite'?2:0),id=p.prefix+i;
+    rules.enemies[id]={...enemy(name,kind,p.hp[i],p.sprites[i],i%4,[I(['突袭','裂刃','冲撞'][i%3],d),I(kind==='boss'?'王座重铸':i%2?'凝甲':'蓄力',0,p.floor+(i%3),i%2?0:1),I(kind==='boss'?'崩解审判':'追猎',d+2,0,kind==='battle'?0:1)],kind==='boss'?p.floor+1:0),floor:p.floor};
+  }));
+  Object.assign(rules.events,{
+    tidetable:{minFloor:2,title:'被水淹没的案桌',story:'墨迹顺着水纹散开，一页完整剑谱漂到灯下。',choices:[choice('ink','拾起剑谱','获得「墨潮双叉」。',{card:'inkfork'}),choice('pearl','打捞潮珠','支付35金币，获得潮汐珠；已有则45金币。',{relic:'tidepearl'},35)]},
+    saltclinic:{minFloor:2,title:'盐泉诊室',story:'玻璃瓶里封存着旧日医者的盐泉。',choices:[choice('restore','接受再生术','支付45金币，恢复一支缺失部位树；没有缺失则全身修复40%。',{restore:true},45),choice('learn','收起缝线','获得「盐泉缝线」，血容量+20。',{card:'saltstitch',blood:20})]},
+    drownedbell:{minFloor:2,title:'水下钟声',story:'一记钟声让所有漂浮书页同时静止。',choices:[choice('listen','听清潮汐','获得「解读水纹」及25金币。',{card:'readcurrent',gold:25}),choice('rest','等待退潮','修复存活部位35%，全部止血，血容量+35。',{heal:.35,blood:35})]},
+    gearmarket:{minFloor:3,title:'齿轮黑市',story:'无名匠人把仍在转动的齿轮装进木盒。',choices:[choice('gear','购买齿轮','支付55金币，获得回转齿轮；已有则45金币。',{relic:'gear'},55),choice('rivet','学习铆接','获得「铆钉阵」和20金币。',{card:'rivet',gold:20})]},
+    coldanvil:{minFloor:3,title:'未冷的铁砧',story:'铁砧上回荡着前一位旅人的最后一锤。',choices:[choice('forge','接过锻锤','获得「锻炉坠击」。',{card:'hammerfall'}),choice('coat','披上钢衣','获得「钢衣」，修复存活部位15%。',{card:'steelcoat',heal:.15})]},
+    furnacegarden:{minFloor:3,title:'炉边药圃',story:'暗红的叶片在火舌旁缓缓展开。',choices:[choice('heal','采药整备','获得「战地整备」，全身止血，血容量+35。',{card:'fieldrepair',blood:35,cleanse:true}),choice('fuel','收集燃料','获得「风箱」和35金币。',{card:'bellows',gold:35})]},
+    starwindow:{minFloor:4,title:'没有倒影的窗',story:'窗外的星辰组成了你尚未走过的路。',choices:[choice('lens','取下观星透镜','支付65金币，获得棱星透镜；已有则45金币。',{relic:'lens'},65),choice('prism','描下星轨','获得「棱光环」。',{card:'prism'})]},
+    moonward:{minFloor:4,title:'月光病房',story:'银线在空中缓慢缝起一道裂口。',choices:[choice('restore','缝补缺失部位','支付55金币，恢复一支缺失部位树；无缺失则全身修复40%。',{restore:true},55),choice('thread','学会月丝重缝','获得「月丝重缝」，全部止血。',{card:'moonstitch',cleanse:true})]},
+    mirrorchoir:{minFloor:4,title:'碎镜合唱',story:'每一片镜子都在唱不同的旋律。',choices:[choice('fan','记下剑舞','获得「万镜扇」。',{card:'mirrorfan'}),choice('quiet','让歌声停歇','获得70金币，血容量+30。',{gold:70,blood:30})]},
+    fallenstar:{minFloor:5,title:'坠落的晨星',story:'星核还在震动，仿佛一颗迟迟不肯停下的心脏。',choices:[choice('fuel','封存星核','获得「星核燃料」和30金币。',{card:'starfuel',gold:30}),choice('relic','接住余温','支付80金币，获得星核余温；已有则45金币。',{relic:'starheart'},80)]},
+    dawnsanctum:{minFloor:5,title:'黎明圣所',story:'石壁上残存着最后一道完整盾印。',choices:[choice('wall','记下不落壁垒','获得「不落壁垒」。',{card:'lastwall'}),choice('restore','接受最后的再生','恢复一支缺失部位树，无缺失则全身修复40%；血容量+50。',{restore:true,blood:50})]},
+    lastletter:{minFloor:5,title:'最后一封家书',story:'纸张已经烧焦，唯独“活着回来”四字还清晰可辨。',choices:[choice('rebirth','带走这句话','获得「余烬回生」，修复存活部位25%。',{card:'rebirth',heal:.25}),choice('nova','点燃信纸','血容量高于25%时献出10%，获得「新星」和一件未拥有遗物。',{card:'supernova',randomRelic:true,bloodCost:10})]}
+  });
+  rules.floors=[
+    {name:'残火之径',subtitle:'THE ASHEN PATH',story:'提灯穿过苔石与旧钟。先补足牌组，再推开灰冠之门。',hue:0},
+    {name:'潮汐书库',subtitle:'THE DROWNED ARCHIVE',story:'书页沉入墨潮。护甲与蓄力的敌人开始考验穿甲和治疗。',hue:135},
+    {name:'铜炉工坊',subtitle:'THE COPPER FORGE',story:'钢铁在火中苏醒。用高效削层、能量和格挡突破铸造防线。',hue:325},
+    {name:'碎镜天台',subtitle:'THE SHATTERED OBSERVATORY',story:'月光折入万千镜面。厚重生命格与狂怒首领等待成熟的牌组。',hue:225},
+    {name:'群星熔心',subtitle:'THE STELLAR HEART',story:'余火抵达永夜中心。整备身体，用最强的形状划出黎明。',hue:285}
+  ];
   root.EmberRules = rules;
   if (typeof module !== 'undefined' && module.exports) module.exports = rules;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
