@@ -61,8 +61,19 @@
         <path d="m81 213 72 2" fill="none" stroke="#dab37b" stroke-width="4"/><circle cx="119" cy="215" r="5" fill="#c9a574"/>
         <path d="m87 267 11-25m35 26 3-30M108 45l9-8 18 6" fill="none" stroke="#e0a56e" stroke-opacity=".45" stroke-width="2"/>
       </svg>
-      <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span>提灯旅人<span class="actor-role">流浪者</span></div><div class="health-track hero-health" id="hero-health" role="progressbar" aria-label="旅人生命" aria-valuemin="0" aria-valuemax="50" aria-valuenow="50"><span id="hero-hp-fill"></span><b>♥ <span id="hero-hp">50 / 50</span></b></div><div class="statuses" id="hero-status"></div></div>
+      <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span>提灯旅人<span class="actor-role">流浪者</span></div><div class="health-track hero-health" id="hero-health" role="progressbar" aria-label="旅人各部位完好度合计" title="各部位生命之和；要害失效或失去意识仍会导致失败" aria-valuemin="0"><span id="hero-hp-fill"></span><b>身体 <span id="hero-hp"></span></b></div><div class="statuses" id="hero-status"></div></div>
     </section>
+    <aside class="body-panel" id="body-panel" aria-label="己方部位健康与能力">
+      <div class="body-panel-heading"><div><span class="grid-eyebrow">BODY &amp; CAPACITIES</span><h2>旅人 · 健康</h2></div><button id="health-button" title="查看全部22个部位、命中权重和能力影响">详情 ↗</button></div>
+      <p class="body-condition" id="body-condition">身体机能正常</p>
+      <div class="body-overview"><div class="body-diagram" id="body-diagram"></div><div class="body-vitals" id="body-vitals"></div></div>
+      <div class="body-section-label">身体能力 <small>100% 为正常 · 绿色为增益</small></div>
+      <div class="capacity-grid" id="capacity-grid"></div>
+      <div class="capacity-effects" id="capacity-effects"></div>
+      <label class="treatment-label" for="treatment-part">治疗部位 <select id="treatment-part"></select></label>
+      <p class="part-description" id="part-description"></p>
+      <div class="medical-actions"><button id="bandage-button">包扎 · 1能量</button><button id="boost-button">强化 · 1能量</button></div>
+    </aside>
     <section class="actor enemy-actor" id="enemy-actor" aria-label="石门守卫">
       <div class="enemy-intent" id="enemy-intent" tabindex="0"><span class="intent-label" id="intent-label">碎门重锤</span><span class="intent-value" id="intent-value"></span><i></i></div>
       <div class="character-shadow"></div>
@@ -90,11 +101,13 @@
       <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span>石门守卫<span class="actor-role">古老构装体</span></div><div class="statuses" id="enemy-status"></div></div>
     </section>
     <section class="enemy-grid-panel" id="enemy-grid-panel" aria-label="守卫的可攻击生命方格">
-      <div class="grid-panel-header"><div><span class="grid-eyebrow">VITALITY MATRIX</span><h2>守卫生命格</h2></div><span class="grid-hp" id="enemy-health" role="progressbar" aria-label="守卫剩余生命格" aria-valuemin="0" aria-valuemax="24" aria-valuenow="24"><b id="enemy-hp">24 / 24</b><small>每格 1 生命</small></span></div>
-      <div class="hp-grid" id="enemy-grid" role="group" aria-label="点击生命方格放置攻击"></div>
-      <div class="grid-legend"><span><i class="legend-live"></i>生命</span><span><i class="legend-hit"></i>将移除</span><span><i class="legend-armor"></i>护甲 / 破甲</span></div>
+      <div class="grid-panel-header"><div><span class="grid-eyebrow">VITALITY MATRIX</span><h2>守卫生命层</h2></div><span class="grid-hp" id="enemy-health" role="progressbar" aria-label="守卫剩余总生命" aria-valuemin="0" aria-valuemax="24" aria-valuenow="24"><b id="enemy-hp">24 / 24</b><small id="enemy-cell-count">每格最多 9 层</small></span></div>
+      <div class="hp-grid" id="enemy-grid" role="group" aria-label="攻击图案以鼠标为中心吸附，点击棋盘立即出牌"></div>
+      <span class="placement-reticle" id="placement-reticle" aria-hidden="true" hidden></span>
+      <div class="layer-legend" id="layer-legend" aria-label="1至9层生命颜色图例"></div>
+      <div class="grid-legend"><span><i class="legend-live"></i>每层 1 生命</span><span><i class="legend-hit"></i>削 1 层</span><span><i class="legend-armor"></i>护甲 / 破甲</span></div>
       <div class="placement-summary"><div id="placement-preview" aria-hidden="true"></div><div><strong id="placement-title">选择攻击形状</strong><p id="placement-status" role="status" aria-live="polite">先选择一张攻击牌。</p></div></div>
-      <div class="placement-actions"><button id="rotate-attack" disabled title="顺时针旋转90度">旋转 <kbd>R</kbd></button><button id="cancel-attack" disabled title="取消选牌，不消耗能量">取消 <kbd>Esc</kbd></button><button id="auto-button" class="auto-button" aria-pressed="false" title="开启后点攻击牌直接出牌，自动选择落点；快捷键A"><i></i><span>AUTO</span><b id="auto-state">关</b></button></div>
+      <div class="placement-actions"><button id="rotate-attack" disabled title="R或滚轮旋转；Shift+R反向旋转，中心保持稳定">旋转 <kbd>R</kbd></button><button id="cancel-attack" disabled title="Esc或棋盘内右键取消，不消耗能量">取消 <kbd>Esc</kbd></button><button id="auto-button" class="auto-button" aria-pressed="false" title="开启后点攻击牌直接出牌，自动选择落点；快捷键A"><i></i><span>AUTO</span><b id="auto-state">关</b></button></div>
     </section>
     <div class="first-hint" id="first-hint"><span>✧</span> 选攻击牌 → 点格即出 / 开启 AUTO 免放置 <i>↓</i></div>
     <div class="combat-effects" id="combat-effects" aria-hidden="true"></div>
@@ -103,11 +116,11 @@
     <div class="scene-bottom"><span>遗忘者的石门</span><button id="log-button">战斗记录 <span>↗</span></button></div>
   </main>
   <section class="hand-zone" aria-label="手牌区域">
-    <div class="hand-heading"><span>你的手牌 <b id="hand-count">5</b></span><span id="hand-shortcuts">选牌 1–9 · 点格攻击 · R 旋转</span><span id="exhaust-count"></span></div>
-    <div class="hand-layout"><div class="left-controls"><div class="energy-orb" id="energy-orb" title="每回合恢复3点能量"><div><b id="energy">3</b><span>/ 3</span></div><small>能 量</small></div><button class="pile-control" id="draw-pile"><span class="pile-symbol" id="draw-symbol"></span><b id="draw-count">5</b><span>抽牌堆</span></button></div><div class="hand" id="hand"></div><div class="right-controls"><button class="gold-button end-turn" id="end-turn"></button><button class="pile-control discard-control" id="discard-pile"><span class="pile-symbol" id="discard-symbol"></span><b id="discard-count">0</b><span>弃牌堆</span></button></div></div>
+    <div class="hand-heading"><span>你的手牌 <b id="hand-count">5</b></span><span id="hand-shortcuts">选牌 1–9 · 鼠标居中 · R/滚轮旋转</span><span id="exhaust-count"></span></div>
+    <div class="hand-layout"><div class="left-controls"><div class="energy-orb" id="energy-orb" title="每回合能量恢复受行动与呼吸影响"><div><b id="energy">3</b><span id="energy-max">/ 3</span></div><small>能 量</small></div><button class="pile-control" id="draw-pile"><span class="pile-symbol" id="draw-symbol"></span><b id="draw-count">5</b><span>抽牌堆</span></button></div><div class="hand" id="hand"></div><div class="right-controls"><button class="gold-button end-turn" id="end-turn"></button><button class="pile-control discard-control" id="discard-pile"><span class="pile-symbol" id="discard-symbol"></span><b id="discard-count">0</b><span>弃牌堆</span></button></div></div>
   </section>
   <footer><span>✦ 余烬之后，仍有前路。</span><span>形状攻击 · 方格生命 <i>·</i> 单关原型</span><button id="deck-button"></button></footer>
 </div>
 <div class="modal-backdrop" id="modal" hidden><section class="modal-panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="关闭弹窗">×</button><div class="modal-ornament">— ✦ —</div><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
-<script src="balance.js"></script><script src="game.js"></script>
+<script src="balance.js"></script><script src="body.js"></script><script src="game.js"></script>
 </body></html>
