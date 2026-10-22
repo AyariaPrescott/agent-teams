@@ -81,3 +81,35 @@ Use case: stylized-concept. Asset type: one production-ready sprite atlas contai
 本机私有审计保存原输出位置与项目目标之间的关联。项目PNG与HTML、源码有修改前后快照，可通过事务或Git提交回滚；发现后续编辑冲突时不强制覆盖。
 
 按用户持续要求，没有运行游戏测试、语法检查、浏览器自动化或试玩。只审阅生成图片、PNG元数据、源码、差异、资源引用和待提交内容，视觉适配与手感由用户实际游玩确认。
+
+## 2026-10-22 · 扩展图集
+
+新增三个最终资产使用内置image_gen生成，Codex提示、审阅与复制，未进行像素修改。原有七项资产仍保留。需求：user-2026-10-22-content-balance-relics；项目事务：d7e74a6446b54bc6935a3f59cb25afe4。
+
+| 最终路径 | 尺寸 | 字节数 | SHA-256 |
+| --- | --- | --- | --- |
+| `dist/assets/room-atlas.png` | 2048×768 | 3256093 | `5740d7b629a4c815317145ec7e168508f97efc5ba75a1571c7bc0a66cc14a8cc` |
+| `dist/assets/enemy-atlas.png` | 1448×1086 | 2530058 | `dcdc214e40189085e85fb127369307d4f9edc0dece372450a7fce146140a845d` |
+| `dist/assets/expansion-card-atlas.png` | 1402×1122 | 3212383 | `d90f228c21d2edd738a7878dd509357b52faa32e43841588aed5f00d18cc5a95` |
+
+房间图集3列2行，首行营火/商店/宝箱，次行泉林事件/精英炉厅/Boss王座。敌人图集4列2行，依次鼠/蛾/弓手/凝胶，行者/蟹/先知/古根王后，保留RGBA透明通道。新卡图集5列4行，与CONTENT-EXPANSION.md新增20卡顺序一致。
+
+角色图像通过图集格位和已有单体PNG组合支持19种定义，不宣称每种都有独立原画。资源按art.js地址解析，独立HTML则内嵌全部10项PNG。未运行浏览器检查，图像审阅不等同于页面适配验证。
+
+### room-atlas.png · 完整提示词
+
+```text
+Use case: stylized-concept. One final production game background atlas, EXACT 3 columns by 2 rows, all six cells equal 16:9 landscape proportions, total canvas roughly 8:3 wide. No gutters, no borders, no text, no symbols or UI. Original hand-painted dark fantasy, textured gouache/oil paint, midnight indigo, antique bronze, warm amber lanterns and ivory haze. Each cell is a complete empty side-view room with a calm foreground for a 2D card-game overlay. TOP left: warm campfire under broken forest arches, bedrolls and distant trees. TOP middle: mysterious travelling merchant's candlelit stall with shelves of bottles, hanging trinkets and folded cloth. TOP right: ancient treasure vault with a luminous chest among gold and ruined pillars. BOTTOM left: quiet moonlit healing spring with a stone basin and pale blue luminous water in a forest ruin. BOTTOM middle: menacing red-amber elite enemy cathedral forge, chains and a cold anvil, empty floor. BOTTOM right: imposing royal boss throne hall with a sealed door, tall dark pillars and a crown-shaped silhouette far away, empty foreground. Rich coherent painterly atmosphere, readable architectural silhouettes, luminous details without overbusy central space. No characters or monsters, no letters, no watermark. Strict equal 3 by 2 atlas grid so CSS can select cells.
+```
+
+### enemy-atlas.png · 完整提示词
+
+```text
+Use case: stylized-concept. A final game sprite atlas on a truly transparent background, EXACT 4 COLUMNS by 2 ROWS of eight separate original hand-painted dark fantasy enemy sprites. All cells equal portrait 2:3, atlas total ratio 4:3. No borders or gutters drawn, no text, no letters, no labels. Entire full body, weapons and extremities of EACH creature inside its own cell with 8 percent clear margin, no overlapping adjacent cells. All face LEFT in three-quarter combat stance. Textured gouache and restrained oil paint, strong inked silhouettes, charcoal/indigo shadows, aged bronze and amber highlights matching a premium dark-fantasy deckbuilder. TOP row left to right: (1) small soot-black rat with glowing ember tail; (2) elegant giant ember moth with folded burnt-orange wings and skull-like markings; (3) hooded ragged bandit archer with a crooked bow; (4) squat translucent midnight-blue slime with faint gold core. BOTTOM row: (5) ghostly bell-carrying pilgrim in torn ivory robes; (6) armoured ash crab with iron shell and bronze claws; (7) tall glass-masked oracle with violet crystal staff, ornate elite silhouette; (8) imposing root-crowned forest queen made of ancient gnarled wood, torn ivory bark cloak, amber core, regal boss silhouette. No scenery, no floor, no ground shadows, true transparent alpha around each sprite, no checkerboard painted into image. Painterly details and clear varied silhouettes.
+```
+
+### expansion-card-atlas.png · 完整提示词
+
+```text
+Use case: stylized-concept. One production card illustration atlas of EXACTLY 20 separate square paintings, EXACT 5 COLUMNS by 4 ROWS, no gaps or borders, no text or numbers. All equal cells edge-to-edge, no subject crosses cell boundaries. Coherent hand-painted dark fantasy gouache/oil, indigo charcoal backgrounds, aged gold, warm amber and ivory light, readable centered miniature motifs. ROW 1 left to right: hooked bronze blade; two zigzag lightning blades; diagonal stair-like chain of four glowing cuts; long ivory-tipped spear; ring of eight glowing sword fragments. ROW 2: fiery nine-point impact burst; two-pronged fork blade; broad heavy cleaver; tiny piercing silver needle; crescent moon sickle. ROW 3: heavy fortress wall of shields; traveller retreating behind a small shield; two amber energy crystals hovering in a hand; a healing herb wrapped in white cloth with green glow; bronze surgical needle stitching an ivory cloth. ROW 4: three luminous pages of a book; a feinting short dagger with curling smoke; shield leaning against a white bandage roll; a golden shock-wave crossing dark stone; assassin's narrow curved knife in indigo smoke. Every painting has its own subtle atmospheric backdrop, centered subjects fit within their square. Premium painterly deckbuilding game art, strong silhouettes at 100 pixels. No UI, frames, labels, lettering or watermark. Strict 5 by 4 uniform atlas.
+```

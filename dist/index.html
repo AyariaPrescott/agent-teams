@@ -9,20 +9,20 @@
 <div class="game-shell">
   <header class="topbar">
     <a class="brand" href="#" aria-label="余烬回廊首页"><span class="brand-mark"><svg viewBox="0 0 32 40" fill="none" aria-hidden="true"><path d="M18 2c5 11-7 13-4 22 3-2 6-6 6-10 14 16 6 24-4 24S1 29 6 20c1 5 3 6 5 7-3-10 9-15 7-25Z" fill="currentColor"/><path d="M16 25c-7 7-4 11 1 10s8-6-1-10Z" fill="#fff2cf"/></svg></span><span>余烬回廊<small>THE EMBER CORRIDOR</small></span></a>
-    <div class="run-resources"><span>Ⅰ · 残火之径</span><b id="run-progress">0 / 8</b><span class="gold-resource">¤ <b id="run-gold">60</b></span><button id="route-button">路线</button></div>
+    <div class="run-resources"><span>Ⅰ · 残火之径</span><b id="run-progress">0 / 12</b><span class="gold-resource">¤ <b id="run-gold">60</b></span><button id="route-button">路线</button></div>
     <div class="top-actions"><button class="save-button" id="save-button"><i></i><span id="save-state">本地存档</span></button><button class="icon-button" id="sound-button" title="开启音效" aria-label="切换音效" aria-pressed="false"></button><button class="icon-button" id="help-button" title="玩法说明" aria-label="玩法说明"></button><button class="icon-button" id="restart-button" title="重新挑战" aria-label="重新挑战"></button></div>
   </header>
   <main class="expedition-view" id="expedition-view" hidden aria-label="第一层路线">
     <div class="map-intro"><div><span class="eyebrow">ACT I · THE ASHEN PATH</span><h1>残火之径</h1><p>选择你的路，带着余火走向灰冠。</p></div><span class="map-instruction">从下往上 · 点亮的节点可前往</span></div>
-    <div class="expedition-layout"><section class="route-map" id="route-map" aria-label="分岔路线，八站十八个节点"></section><aside class="node-panel" id="node-panel"></aside></div>
+    <div class="expedition-layout"><section class="route-map" id="route-map" aria-label="分岔路线，十二站四十七个节点"></section><aside class="node-panel" id="node-panel"></aside></div>
     <div class="map-legend" id="map-legend"></div>
   </main>
   <main class="arena" id="arena" aria-label="石门守卫战斗场景">
-    <div class="scenery" aria-hidden="true"></div>
+    <div class="scenery" aria-hidden="true"><img id="scene-image" alt="" decoding="async"><div class="scene-room" id="scene-room" hidden></div></div>
     <div class="scene-vignette"></div><div class="grain"></div>
     <div class="encounter-title"><div class="eyebrow" id="encounter-eyebrow">第一层 · 残火之径</div><h1 id="encounter-name">石门守卫</h1><p id="encounter-note">把攻击拼进生命格，由你决定破碎的位置。</p></div>
     <div class="round-display"><span>ROUND</span><b id="turn">01</b><i></i><strong id="phase-label">你的回合</strong></div>
-    <div class="relic-badge" id="relic-badge" hidden></div>
+    <button class="relic-badge" id="relic-badge" hidden title="查看遗物效果"></button>
     <section class="actor hero-actor" id="hero-actor" aria-label="提灯旅人">
       <div class="character-shadow"></div>
       <img class="hero-figure" id="hero-figure" alt="" aria-hidden="true" decoding="async" draggable="false">
@@ -42,7 +42,7 @@
     <section class="actor enemy-actor" id="enemy-actor" aria-label="石门守卫">
       <div class="enemy-intent" id="enemy-intent" tabindex="0"><span class="intent-label" id="intent-label">碎门重锤</span><span class="intent-value" id="intent-value"></span><i></i></div>
       <div class="character-shadow"></div>
-      <img class="enemy-figure" id="enemy-figure" alt="" aria-hidden="true" decoding="async" draggable="false">
+      <div class="enemy-figure" id="enemy-figure" aria-hidden="true"><img id="enemy-fallback" alt="" decoding="async" draggable="false"><div id="enemy-atlas-sprite" hidden></div></div>
       <div class="actor-caption"><div class="actor-name"><span class="tiny-diamond"></span><span id="enemy-name">石门守卫</span><span class="actor-role" id="enemy-role">古老构装体</span></div><div class="statuses" id="enemy-status"></div></div>
     </section>
     <section class="enemy-grid-panel" id="enemy-grid-panel" aria-label="守卫的可攻击生命方格">
@@ -64,7 +64,7 @@
     <div class="hand-heading"><span>你的手牌 <b id="hand-count">5</b></span><span id="hand-shortcuts">选牌 1–9 · 鼠标居中 · R/滚轮旋转</span><span id="exhaust-count"></span></div>
     <div class="hand-layout"><div class="left-controls"><div class="energy-orb" id="energy-orb" title="每回合能量恢复受行动与呼吸影响"><div><b id="energy">3</b><span id="energy-max">/ 3</span></div><small>能 量</small></div><button class="pile-control" id="draw-pile"><span class="pile-symbol" id="draw-symbol"></span><b id="draw-count">5</b><span>抽牌堆</span></button></div><div class="hand" id="hand"></div><div class="right-controls"><button class="gold-button end-turn" id="end-turn"></button><button class="pile-control discard-control" id="discard-pile"><span class="pile-symbol" id="discard-symbol"></span><b id="discard-count">0</b><span>弃牌堆</span></button></div></div>
   </section>
-  <footer><span>✦ 余烬之后，仍有前路。</span><span id="footer-status">第一层 · 八站分岔路线</span><button id="deck-button"></button></footer>
+  <footer><span>✦ 余烬之后，仍有前路。</span><span id="footer-status">第一层 · 十二站分岔路线</span><button id="asset-warning" hidden>图片加载异常</button><button id="deck-button"></button></footer>
 </div>
 <div class="modal-backdrop" id="modal" hidden><section class="modal-panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="关闭弹窗">×</button><div class="modal-ornament">— ✦ —</div><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
 <input type="file" id="save-file" accept=".json,application/json" hidden>

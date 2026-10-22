@@ -104,15 +104,22 @@
       if (this.boostTurns > 0) this.boostTurns--;
       return { bleeding, recovered, lostBlood: before - this.blood, expired: wasBoosted && this.boostTurns === 0 };
     }
-    canTreat(id) { const p = this.part(id); return !!p && this.bandages > 0 && (p.bleed > 0 || (this.available(id) && p.hp < p.maxHp)); }
+    // bandages remains a legacy save field; treatment has no charge limit.
+    canTreat(id) { const p = this.part(id); return !!p && (p.bleed > 0 || (this.available(id) && p.hp < p.maxHp)); }
     bestTreatment() { return this.parts.filter(p => this.canTreat(p.id)).sort((a, b) => (b.bleed + 1 - b.hp / b.maxHp) - (a.bleed + 1 - a.hp / a.maxHp))[0]; }
-    treat(id) {
+    treat(id, bonus = 0) {
       const p = this.part(id);
-      if (!this.bandages) return { ok: false, reason: '本局包扎次数已用完。' };
       if (!this.canTreat(id)) return { ok: false, reason: p?.missing ? '缺失部位不能再生；残端已无出血，无需再次包扎。' : '这个部位不需要包扎。' };
-      const healed = this.available(id) ? Math.min(p.maxHp - p.hp, this.effects.healing) : 0, stopped = p.bleed;
-      p.hp += healed; p.bleed = 0; this.blood = Math.min(100, this.blood + 4 * this.capacities.metabolism); this.bandages--;
+      const healed = this.available(id) ? Math.min(p.maxHp - p.hp, this.effects.healing + bonus) : 0, stopped = p.bleed;
+      p.hp += healed; p.bleed = 0; this.blood = Math.min(100, this.blood + 4 * this.capacities.metabolism);
       return { ok: true, part: p.name + (p.missing ? '残端' : ''), healed, stopped };
+    }
+    recover(amount, cleanse = false) {
+      const p=this.parts.filter(part=>this.available(part.id) && part.hp<part.maxHp).sort((a,b)=>(b.maxHp-b.hp)-(a.maxHp-a.hp))[0];
+      const healed=p?Math.min(p.maxHp-p.hp,Math.max(0,Math.round(amount*this.capacities.metabolism))):0;
+      if(p) { p.hp+=healed; p.bleed=0; }
+      if(cleanse) for(const part of this.parts) part.bleed=0;
+      return {healed,part:p?.name||'',cleanse};
     }
     stimulate() {
       if (!this.stimulants) return { ok: false, reason: '本局强化剂已用完。' };
