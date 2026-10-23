@@ -3,7 +3,7 @@ param([ValidateSet('all','desktop','mobile')][string]$Edition='all')
 $ErrorActionPreference='Stop'
 $project=Split-Path -Parent $PSScriptRoot
 $utf8=New-Object Text.UTF8Encoding($false)
-$common=@('art.js','balance.js','statuses.js','body.js','floor.js','game.js')
+$common=@('art.js','balance.js','statuses.js','progression.js','exploration.js','body.js','floor.js','game.js')
 $modules=@{}
 foreach($file in ($common+@('mobile.js'))){
     $content=[IO.File]::ReadAllText((Join-Path $project ('dist\'+$file)))

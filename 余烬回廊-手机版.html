@@ -397,17 +397,80 @@ body:not([data-floor="1"]) .scenery>img,body:not([data-floor="1"]) .scene-room,b
 .card-description .card-ailment{display:block;font-size:9px;line-height:1.35;color:#50335c;font-weight:700;margin-top:2px}.card-description .card-ailment:empty{display:none}.card.unaffordable .card-ailment{color:#735562}
 .status-modal{width:760px}.status-summary{padding:12px;margin:14px 0;background:#151a27;border:1px solid #a6996c55;border-radius:5px}.status-summary h3{font-size:14px;margin:10px 0;color:#e9d3af}.status-guide{display:grid;grid-template-columns:1fr 1fr;gap:12px}.status-guide article{padding:14px;border-left:3px solid var(--ailment-color);background:#151a2788}.status-guide h3{color:var(--ailment-color);font-size:16px;margin:0 0 8px}.status-guide p{font-size:13px;line-height:1.85;color:#e3dac8;margin:0}
 @media(max-width:760px){.status-guide{grid-template-columns:1fr}.ailment-chip{font-size:10px}.card-description .card-ailment{font-size:7px}.combat-afflictions{margin-top:5px;padding-top:5px}.combat-afflictions>.ailment-list{max-height:76px;overflow-y:auto}}
+
+/* Relic inventory stays in the header on every screen. The second row has its own space. */
+.game-shell{--shell-top:94px;--shell-hand:clamp(192px,27dvh,244px);--shell-bottom:25px;grid-template-rows:var(--shell-top) minmax(0,1fr) var(--shell-hand) var(--shell-bottom)}
+.game-shell.map-mode{grid-template-rows:var(--shell-top) minmax(0,1fr) var(--shell-bottom)}
+.topbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) 34px;gap:0 16px;padding-bottom:0}
+.topbar>.run-resources{justify-self:center}.topbar>.top-actions{justify-self:end}
+.relic-strip{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-width:0;height:34px;border-top:1px solid #bf9b6025}
+.strip-label,.tech-button{flex:none;height:30px;border:0;border-radius:3px;background:none;font-size:11px;color:#cbbba4;padding:0 7px;white-space:nowrap}
+.strip-label b{color:#ecd4a9;font-weight:400;margin-left:3px}.strip-label:hover,.tech-button:hover:not(:disabled){background:#dcc69316;color:#ffe0a5}
+.tech-button{border:1px solid #bda06a66;color:#ecc893;background:#9f793c14;min-width:90px;height:28px}.tech-button b{display:inline-block;margin-left:6px;color:#ffdf9d;font:17px Georgia}
+.relic-slots{display:flex;align-items:center;gap:5px;min-width:0;flex:1;height:34px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain}.relic-slots::-webkit-scrollbar{display:none}
+.relic-slot{position:relative;display:grid;place-items:center;flex:0 0 32px;height:31px;padding:3px;border:1px solid transparent;border-radius:5px;background:transparent;transition:background .15s,border-color .15s,transform .15s}
+.relic-slot:hover,.relic-slot:focus-visible{background:#e3bd6724;border-color:#d6b77d88;transform:translateY(-1px);outline:2px solid #e5c688;outline-offset:-2px}
+.relic-mark{display:block;width:25px;height:25px;filter:drop-shadow(0 2px 2px #0009)}.relic-empty{color:#a39989;font-size:10px;letter-spacing:1px;padding-left:7px}
+.relic-tooltip{position:fixed;z-index:90;width:260px;max-width:calc(100vw - 16px);padding:15px 17px;border:1px solid #d0b178aa;border-radius:5px;background:linear-gradient(135deg,#39303b,#1a1b28);box-shadow:0 8px 24px #0009;pointer-events:none}
+.relic-tooltip>b{color:#edcc92;font:18px Georgia,"Songti SC",serif}.relic-tooltip p{color:#e0d5c3;font-size:13px;line-height:1.8;margin:9px 0 0}
+.loot-relic>.relic-mark,.loot-relic>span .relic-mark{width:35px;height:35px}.relic-badge{display:none!important}
+.tech-panel{width:1000px;padding:25px 28px 28px}.tech-panel h2{margin-bottom:20px}
+.tech-summary{display:flex;justify-content:center;gap:0;padding:15px 0;border:1px solid #c7ac6855;border-radius:6px;background:#17192577}
+.tech-summary>div{flex:1;display:flex;align-items:center;justify-content:center;gap:12px;border-right:1px solid #c7ac6833}.tech-summary>div:last-child{border:0}.tech-summary b{color:#f2cf85;font:28px Georgia}.tech-summary span{font-size:12px;color:#d3c7b4}
+.tech-tree-scroll{overflow:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border:1px solid #d4b16b33;border-radius:7px;background:radial-gradient(ellipse at 50% 15%,#41403944,#12182399);touch-action:pan-x pan-y}
+.tech-tree{position:relative;min-width:720px;height:610px;background-image:radial-gradient(#d2b67e13 1px,transparent 1px);background-size:20px 20px}
+.tech-tree>svg{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke:#80786966;stroke-width:2;pointer-events:none}.tech-tree>svg .lit{stroke:#dcba6d;filter:drop-shadow(0 0 3px #f4cf7766)}
+.tech-branch{position:absolute;top:17px;width:220px;transform:translateX(-50%);text-align:center;display:flex;flex-direction:column;gap:5px;pointer-events:none}.tech-branch b{font:20px Georgia,"Songti SC",serif;color:#eccb94;letter-spacing:6px}.tech-branch span{font-size:11px;color:#b4aea0}
+.tech-node{position:absolute;transform:translate(-50%,-50%);width:23.8%;height:128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border:1px solid #82796c66;border-radius:9px;background:linear-gradient(145deg,#2a303b,#171c29);color:#e6ddce;text-align:center;box-shadow:0 7px 14px #0005}
+.tech-node small{font-size:10px;color:#b8a889;letter-spacing:1px}.tech-node b{font:17px Georgia,"Songti SC",serif;color:#ead7b8}.tech-node span{font-size:11px;line-height:1.6}.tech-node em{font-size:10px;color:#a9b0b7;font-style:normal}
+.tech-node.available{border-color:#e0bb70;background:linear-gradient(145deg,#4b4237,#242833);box-shadow:0 0 13px #deb8691a}.tech-node.available small,.tech-node.available em{color:#f6d891}
+.tech-node.unlocked{border-color:#84b4a0;background:linear-gradient(145deg,#2e4a43,#1a2c30)}.tech-node.unlocked small,.tech-node.unlocked em{color:#b8e1bf}
+.tech-node.selected{outline:2px solid #f4d492;outline-offset:4px}.tech-node:focus-visible{outline:3px solid #fff0bd;outline-offset:4px}.tech-node.locked{background:linear-gradient(145deg,#282a34,#1a1e28)}
+.tech-detail{position:sticky;bottom:-29px;z-index:2;display:flex;align-items:center;gap:20px;justify-content:space-between;min-height:132px;padding:17px 20px;border:1px solid #c7a76977;border-radius:7px;background:#23252ef5;box-shadow:0 -7px 20px #0005;margin-top:14px}
+.tech-detail small{font-size:11px;color:#bfa781}.tech-detail h3{font-size:18px;color:#efd5a4;margin:5px 0}.tech-detail p{font-size:13px;line-height:1.7;color:#e5dac5;margin:6px 0}.tech-detail span{font-size:12px;color:#b7cdbb}.tech-detail>button{flex-shrink:0;min-width:120px}
+.tech-clear-reward{display:flex;flex-direction:column;align-items:center;gap:8px;padding:17px;margin:16px 0;border:1px solid #d8b36866;border-radius:6px;background:#bf9a4e13}.tech-clear-reward b{color:#f1d292;font-size:16px}.tech-clear-reward span{color:#d1c1a4;font-size:12px}
+@media(max-height:740px) and (min-width:761px){.game-shell{--shell-top:84px;--shell-hand:184px;--shell-bottom:23px}}
+@media(max-height:490px) and (min-width:761px){.game-shell{--shell-top:74px;--shell-hand:135px;--shell-bottom:19px}}
+@media(max-width:760px){.game-shell{--shell-top:84px;--shell-hand:177px;--shell-bottom:22px}.topbar{gap:0 8px}.relic-strip{gap:5px}.tech-panel{padding:22px 15px}.tech-summary>div{flex-direction:column;gap:5px}.tech-summary span{font-size:10px}.tech-detail{bottom:-23px;gap:12px;padding:12px}.tech-detail>button{min-width:94px;padding:10px}.tech-detail p{font-size:12px}.tech-detail span{font-size:11px}}
+@media(max-width:760px) and (max-height:490px){.game-shell{--shell-top:72px;--shell-hand:122px;--shell-bottom:18px}}
+
+/* Original four-way field map. Icons are local SVG; paths and fog share the same coordinates. */
+.sea-exploration .expedition-layout{max-width:1450px;gap:22px;grid-template-columns:minmax(0,1fr) minmax(260px,28%)}
+.sea-exploration .map-intro h1{font-size:29px}.sea-exploration .map-legend{gap:10px;font-size:10px}.map-legend .sea-glyph{width:18px;height:18px}
+.sea-map-frame{width:100%;height:100%;min-height:0;min-width:0;display:flex;flex-direction:column;gap:7px;border:1px solid #8fb6af55;border-radius:7px;background:#121e23;overflow:hidden;box-shadow:0 13px 35px #0006}
+.sea-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:none;padding:10px 12px;background:linear-gradient(100deg,#243c3e,#17272d);border-bottom:1px solid #92bdab33}
+.sea-movement-count{display:flex;align-items:baseline;gap:7px;color:#d2e2d8;flex:none}.sea-movement-count>span{font-size:11px;letter-spacing:1px}.sea-movement-count>b{color:#e9d6a1;font:30px Georgia}.sea-movement-count>small{font-size:11px}.sea-movement-count>em{font:10px system-ui;color:#a5b9b3;display:none}
+.sea-modes{display:flex;gap:4px;flex:1}.sea-modes button{flex:1;padding:8px 7px;border:1px solid #b1c6b144;border-radius:4px;background:#111c23;color:#c9d5ca;font-size:11px;white-space:nowrap}.sea-modes button b{color:#e4d2a0;margin-left:2px}.sea-modes button[aria-pressed="true"]{background:#45625b;border-color:#d5dcb0;color:#fff5ce}.sea-modes button:disabled{opacity:.4}
+.sea-guide-button{height:27px;width:27px;flex:none;border:1px solid #9eb7a566;border-radius:50%;color:#cbd8be;background:#354745;font-size:15px}
+.sea-map-viewport{position:relative;flex:1;min-height:0;min-width:0;overflow:auto;container-type:size;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#6c8b8077 #17272a;touch-action:pan-x pan-y;background:radial-gradient(ellipse at center,#2e494444,#101b22)}
+.sea-map-viewport{cursor:grab;user-select:none}.sea-map-viewport.grabbing,.sea-map-viewport.grabbing *{cursor:grabbing!important}
+.sea-map.route-canvas{position:relative;flex:none;width:max(660px,min(100%,106cqh));min-width:660px;height:auto;max-width:none;max-height:none;margin:0 auto;aspect-ratio:880/830;isolation:isolate;border:0;border-radius:0;background:radial-gradient(ellipse at 40% 55%,#35524a55,#15262a99 65%),repeating-linear-gradient(0deg,#9dbd9410 0 1px,transparent 1px 41px),repeating-linear-gradient(90deg,#9dbd9410 0 1px,transparent 1px 41px);box-shadow:inset 0 0 80px #040e14aa}
+.sea-map>.sea-paths{position:absolute;inset:0;width:100%;height:100%;z-index:0;fill:none;pointer-events:none}.sea-edge{stroke:#91b5a244;stroke-width:3}.sea-edge.preview{stroke:#ecce8b;stroke-width:5;filter:drop-shadow(0 0 5px #e9b54f55)}.sea-jump{stroke:#a7a9e8;stroke-width:4;stroke-dasharray:10 8;filter:drop-shadow(0 0 4px #aaa4ec55)}
+.sea-map .sea-node{position:absolute;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transform:translate(-50%,-50%);width:82px;height:64px;padding:6px;border:1px solid #7c9c9088;border-radius:3px 12px 3px 12px;color:#bfd8c5;background:linear-gradient(135deg,#354840,#182e32);box-shadow:0 4px 12px #0008,inset 0 0 0 3px #86ac8b0c;cursor:pointer;opacity:1;transition:border-color .15s,background .15s}
+.sea-map .sea-node .sea-glyph{display:block;flex:none;width:28px;height:28px}.sea-map .sea-node .sea-label{display:block;position:static;transform:none;margin:0;font:10px/1.25 system-ui;color:inherit;text-shadow:none;white-space:nowrap;letter-spacing:1px}
+.sea-map .sea-node.available{border-color:#c3d4ae;background:linear-gradient(135deg,#435e4d,#243c3c);box-shadow:0 0 0 2px #c8dec415,0 4px 14px #0008;animation:none}
+.sea-map .sea-node.chosen{border-color:#efd190;outline:2px solid #efd190;outline-offset:4px;z-index:3}.sea-map .sea-node.current{border-color:#9fdbdc;background:linear-gradient(135deg,#2e6263,#203d49);box-shadow:0 0 18px #87cfc74a}
+.sea-map .sea-node:hover:not(:disabled),.sea-map .sea-node:focus-visible{transform:translate(-50%,-50%);border-color:#ffe9ad;background:#536554;outline:2px solid #e5d6a5;outline-offset:3px;z-index:4}
+.sea-map .sea-node:disabled{opacity:1;cursor:default}.sea-map .sea-node.sea-unknown,.sea-map .sea-node.sea-unknown-combat{border-style:dashed;border-color:#799a8580;background:#182a2be6;color:#9caf9f}.sea-map .sea-node.sea-unknown-combat{color:#c29b8e}
+.sea-map .sea-node.sea-battle{color:#e3b9a5;background:linear-gradient(135deg,#4c413c,#2c3033)}.sea-map .sea-node.sea-elite{color:#f0b38e;background:linear-gradient(135deg,#62433c,#332f35)}.sea-map .sea-node.sea-boss{width:94px;height:76px;color:#f0ccab;border-color:#dfa489;background:linear-gradient(135deg,#795645,#3c303c)}.sea-map .sea-boss .sea-glyph{width:35px;height:35px}
+.sea-map .sea-node.sea-cache{color:#d8dcb2;background:linear-gradient(135deg,#566045,#283b33)}.sea-map .sea-node.sea-beacon{color:#b8d6df;background:linear-gradient(135deg,#3a5663,#25373e)}.sea-map .sea-node.sea-treasure{color:#e2cd91}.sea-map .sea-node.sea-clearing{width:68px;height:54px;border-radius:8px;color:#8aa69a;background:#182b2c;border-color:#779d8866}.sea-map .sea-clearing .sea-glyph{height:20px;width:20px}
+.sea-position{position:absolute;left:50%;top:-24px;transform:translateX(-50%);white-space:nowrap;padding:3px 8px;background:#b7dfce;color:#173b39;border-radius:3px;font:10px system-ui;box-shadow:0 2px 7px #0007}
+.sea-map-caption{display:flex;align-items:center;justify-content:space-between;flex:none;gap:10px;padding:0 11px 7px;color:#9eb6a8;font-size:10px}.sea-map-caption button{border:0;border-radius:3px;padding:5px 7px;color:#d5d4b2;background:#64756124;font-size:11px;white-space:nowrap}
+.sea-preview>h2{font-size:23px;line-height:1.5;margin:12px 0}.sea-preview>p{font-size:12px;line-height:1.8;color:#d0caba}.sea-preview .sea-mode-note{border-left:2px solid #9cb9aa66;padding-left:10px;color:#aebfb0;font-size:11px}.sea-route-cost{display:flex;align-items:center;gap:12px;margin:16px 0}.sea-route-cost b{color:#efd18c;font:25px Georgia;white-space:nowrap}.sea-route-cost span{font-size:12px;line-height:1.6;color:#c4cdb8}.sea-confirm{width:100%;font-size:13px;min-height:42px}.sea-progress{display:block;margin-top:14px;font-size:10px;line-height:1.8;color:#a5b29d}
+.sea-pursuit{padding:13px;border:1px solid #c68a7166;background:#70463a24;border-radius:5px;margin:0 0 15px}.sea-pursuit>b{color:#efc4a5;font-size:14px}.sea-pursuit>p{font-size:11px;line-height:1.8;color:#ddcbb7}.sea-pursuit button{width:100%;font-size:12px}.room-emblem .sea-glyph{width:33px;height:33px}.sea-exploration .node-panel{scrollbar-width:thin}
+.route-preview .sea-map-frame{height:100%;min-height:350px}.map-modal:has(.sea-map-frame){width:1000px}.readonly .sea-map-caption>button{display:none}
+@media(max-width:900px){.sea-exploration .expedition-layout{gap:12px;grid-template-columns:minmax(0,1fr) minmax(225px,34%)}.sea-toolbar{padding:7px;gap:6px}.sea-modes button{padding:7px 5px;font-size:10px}.sea-exploration .node-panel{padding:14px}.sea-preview>h2{font-size:20px}.sea-exploration .map-intro h1{font-size:23px}}
 .formation-ailment{display:block;color:#edbd88;font-size:10px;line-height:1.5;margin:2px 0}.phone .formation-ailment{font-size:9px;line-height:1.5}
 
 </style><style>
 /* Phone-specific composition. Shared component art/rules remain in style.css/game.js. */
 html[data-ui="phone"]{background:#13121b;-webkit-text-size-adjust:100%}
-body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(safe-area-inset-top,0px));--phone-bottom:calc(56px + env(safe-area-inset-bottom,0px));height:100dvh;overflow:hidden;overscroll-behavior:none;background:radial-gradient(ellipse at top,#3c2e39,#13121b 70%)}
+body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(88px + env(safe-area-inset-top,0px));--phone-bottom:calc(56px + env(safe-area-inset-bottom,0px));height:100dvh;overflow:hidden;overscroll-behavior:none;background:radial-gradient(ellipse at top,#3c2e39,#13121b 70%)}
 .phone button,.phone summary,.phone a{touch-action:manipulation}
 .phone select,.phone input{font-size:16px}
 .phone .game-shell{height:100dvh;width:100%;max-width:600px;margin:0 auto;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);grid-template-rows:var(--phone-top) minmax(0,1fr) var(--phone-hand) var(--phone-bottom);box-shadow:0 0 70px #0008}
 .phone .game-shell.map-mode{grid-template-rows:var(--phone-top) minmax(0,1fr) var(--phone-bottom)}
-.phone .topbar{padding:env(safe-area-inset-top,0px) 14px 0;gap:8px}
+.phone .topbar{padding:env(safe-area-inset-top,0px) 14px 0;gap:0 8px;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:50px 38px}
 .phone .brand{font-size:17px;letter-spacing:2px;gap:7px}
 .phone .brand small{display:block;font:8px system-ui;letter-spacing:1px;margin-top:3px}
 .phone-brand-flame{font-size:26px;color:#e7b77d;filter:drop-shadow(0 0 8px #d89045)}
@@ -624,6 +687,20 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
 @media(max-height:720px){.phone .phone-duel{height:94px}.phone .multi-enemy .phone-duel{height:66px}}
 .phone .phone-duel{height:auto;min-height:120px}.phone .hero-actor{height:auto}.phone .multi-enemy .phone-duel{height:auto;min-height:58px}.phone #hero-status{max-height:76px;height:auto;min-height:0;margin-top:3px}.phone .ailment-chip{min-height:26px;font-size:11px;padding:4px 6px}.phone .ailment-chip b{font-size:11px}.phone .formation-card .ailment-chip{min-height:0;font-size:8px;padding:1px 3px}.phone .formation-card .ailment-chip b{font-size:8px}.phone .formation-card>.ailment-list{max-height:35px}.phone .enemy-grid-panel{max-height:none;overflow:visible}.phone .status-guide-link{font-size:12px;min-height:30px}.phone .combat-afflictions>.ailment-list{max-height:100px;overflow-y:auto}.phone .card-description .card-ailment{font-size:9px;line-height:1.35}.phone .status-guide{grid-template-columns:1fr}.phone .status-guide p{font-size:13px;line-height:1.85}
 @media(max-height:720px){.phone .phone-duel{height:auto;min-height:90px}.phone .multi-enemy .phone-duel{height:auto;min-height:58px}}
+/* Permanent progress and the relic strip remain available above both combat and the route. */
+.phone .relic-strip{height:38px;gap:4px}.phone .relic-slots{height:38px;gap:3px}.phone .relic-slot{height:36px;flex-basis:36px;padding:5px}.phone .strip-label{height:36px;font-size:11px;padding:0 3px}.phone .tech-button{height:34px;min-width:83px;padding:0 7px;font-size:12px}.phone .relic-empty{font-size:10px;padding-left:3px}
+.phone .tech-panel{max-width:1000px}.phone .tech-tree-scroll{touch-action:pan-x pan-y}.phone .tech-tree{min-width:760px}.phone .tech-node{height:132px}.phone .tech-node span{font-size:12px}.phone .tech-detail{bottom:calc(-22px - env(safe-area-inset-bottom,0px));padding:12px 10px calc(12px + env(safe-area-inset-bottom,0px));gap:10px}.phone .tech-detail>button{min-width:95px;padding:10px 8px}.phone .tech-detail h3{font-size:17px}.phone .tech-summary b{font-size:25px}.phone .tech-summary span{font-size:11px}
+/* Two-dimensional map: pan the field above a separate, reachable move-confirmation dock. */
+.phone .sea-exploration{gap:7px;padding:9px}.phone .sea-exploration .map-intro h1{font-size:18px;letter-spacing:1px;margin-bottom:3px}.phone .sea-exploration .map-intro p{font-size:10px}
+.phone .sea-exploration .expedition-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:7px;min-height:0}.phone .sea-exploration .route-map{min-height:0;overflow:hidden;container-type:normal}
+.phone .sea-exploration #node-panel{display:block;height:auto;max-height:31dvh;padding:10px 13px;border-color:#90ad9455;scrollbar-width:thin}.phone[data-screen="map"] .sea-exploration #node-panel>.campaign-trail,.phone[data-screen="map"] .sea-exploration #node-panel>.journey-health,.phone[data-screen="map"] .sea-exploration #node-panel>.journey-relics{display:none}
+.phone[data-screen="node"] .sea-exploration .expedition-layout{display:block}.phone[data-screen="node"] .sea-exploration #node-panel{height:100%;max-height:none;padding:16px}.phone .sea-exploration .map-legend{display:none}
+.phone .sea-toolbar{display:grid;grid-template-columns:minmax(0,1fr) 27px;grid-template-rows:auto auto;padding:5px 8px;gap:4px 7px}.phone .sea-movement-count{gap:6px}.phone .sea-movement-count>b{font-size:24px}.phone .sea-movement-count>em{display:block;font-size:9px;margin-left:auto}.phone .sea-modes{grid-column:1/-1;grid-row:2;min-width:0;display:flex}.phone .sea-modes button{min-height:33px;font-size:11px;padding:6px}.phone .sea-guide-button{grid-column:2;grid-row:1}
+.phone .sea-map.route-canvas{width:760px;min-width:760px;height:auto;max-width:none;max-height:none;aspect-ratio:880/830}.phone .sea-map .sea-node{width:80px;height:62px}.phone .sea-map .sea-node .sea-label{display:block;font-size:11px;letter-spacing:0}.phone .sea-map .sea-node .sea-glyph{width:26px;height:26px}.phone .sea-map .sea-node.sea-boss{width:91px;height:72px}.phone .sea-map .sea-node.sea-clearing{width:68px;height:54px}
+.phone .sea-map-caption{padding:0 8px 5px;font-size:9px;gap:5px}.phone .sea-map-caption button{font-size:11px;min-height:29px;padding:3px 5px}.phone .sea-preview>h2{font-size:17px;letter-spacing:1px;margin:4px 0}.phone .sea-preview>p{font-size:11px;line-height:1.65;margin:5px 0}.phone .sea-preview .eyebrow{font-size:9px}.phone .sea-preview .sea-mode-note{font-size:10px}.phone .sea-route-cost{margin:7px 0;gap:9px}.phone .sea-route-cost b{font-size:20px}.phone .sea-route-cost span{font-size:11px}.phone .sea-confirm{min-height:42px;padding:9px;font-size:13px}.phone .sea-progress{margin-top:6px;font-size:9px}.phone .sea-pursuit{padding:9px;margin-bottom:9px}.phone .sea-pursuit p{margin:6px 0;font-size:11px}.phone .sea-pursuit .gold-button{min-height:40px;padding:8px;font-size:12px}
+.phone .route-preview .sea-map-frame{height:100%;min-height:0}.phone .route-preview:has(.sea-map-frame){height:65dvh;overflow:hidden}
+@media(orientation:landscape) and (max-height:600px){.phone .sea-exploration .expedition-layout{grid-template-columns:minmax(0,1fr) minmax(220px,32%);grid-template-rows:minmax(0,1fr)}.phone .sea-exploration #node-panel{height:100%;max-height:none}.phone .sea-toolbar{display:flex;gap:5px;padding:4px 6px}.phone .sea-movement-count>em{display:none}.phone .sea-movement-count>b{font-size:21px}.phone .sea-modes button{min-height:28px;font-size:10px}.phone .sea-exploration .map-intro{display:none}.phone[data-screen="node"] .sea-exploration .expedition-layout{display:block}}
+
 </style><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body class="phone">
@@ -631,6 +708,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
 <header class="topbar">
   <a class="brand" href="#" aria-label="余烬回廊手机版"><span class="phone-brand-flame">✦</span><span>余烬回廊<small id="floor-label">第1 / 5层 · 残火之径</small></span></a>
   <div class="run-resources"><b id="run-progress">0 / 12</b><small>站</small><span class="gold-resource">¤ <b id="run-gold">60</b></span></div>
+  <section class="relic-strip" aria-label="本次旅途遗物"><button class="strip-label" data-open-relics>遗物 <b id="relic-count">0</b></button><div class="relic-slots" id="relic-slots"></div><button class="tech-button" id="tech-button" data-open-tech>✧ 科技 <b id="tech-points">0</b></button></section>
 </header><main class="expedition-view" id="expedition-view" hidden aria-label="五层旅途路线">
     <img class="expedition-backdrop" id="expedition-backdrop" alt="" aria-hidden="true" draggable="false">
     <div class="map-intro"><div><span class="eyebrow">ACT I · THE ASHEN PATH</span><h1>残火之径</h1><p>选择你的路，带着余火走向灰冠。</p></div><span class="map-instruction">从下往上 · 点亮的节点可前往</span></div>
@@ -686,6 +764,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="combat-effects" id="combat-effects" aria-hidden="true"></div>
 <div class="combat-banner" id="combat-banner" role="status" aria-live="polite" aria-atomic="true"><span id="impact-name"></span><b id="impact-value"></b><small id="impact-detail"></small></div><div class="modal-backdrop" id="modal" hidden><section class="modal-panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="关闭弹窗">×</button><div class="modal-ornament">— ✦ —</div><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
+<div id="relic-tooltip" class="relic-tooltip" role="tooltip" hidden></div>
 <input type="file" id="save-file" accept=".json,application/json" hidden>
 <script>
 /* Generated raster assets are bundled locally; standalone HTML embeds these URLs. */
@@ -989,6 +1068,163 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
 
 </script>
 <script>
+/* Permanent progression and original vector relic marks. Codex. */
+(function(root){
+  'use strict';
+  const awards=[1,1,2,2,3],branches=[{id:'edge',name:'锋刃',note:'攻效、状态与能量'},{id:'guard',name:'庇护',note:'医疗、格挡与护印'},{id:'road',name:'远行',note:'补给、侦察与遗物'}];
+  const nodes=[
+    {id:'grip',branch:'edge',tier:1,name:'持刃训练',description:'所有攻击的基础攻效提高5%。',effects:{attack:.05}},
+    {id:'etch',branch:'edge',tier:2,name:'刻印共鸣',description:'卡牌施加的负面状态威力+1，仍不超过20。',effects:{statusPotency:1}},
+    {id:'tempo',branch:'edge',tier:3,name:'战斗节奏',description:'每场战斗开局额外获得1能量。',effects:{openingEnergy:1}},
+    {id:'medicine',branch:'guard',tier:1,name:'急救训练',description:'每次包扎额外修复2点部位生命。',effects:{healing:2}},
+    {id:'poise',branch:'guard',tier:2,name:'稳固架势',description:'卡牌提供的格挡提高10%。',effects:{guard:.1}},
+    {id:'ward',branch:'guard',tier:3,name:'余火护印',description:'开局额外获得4格挡；每回合（含首回合）再获得1格挡。',effects:{openingBlock:4,turnBlock:1}},
+    {id:'supplies',branch:'road',tier:1,name:'预备物资',description:'新旅途初始金币+20。',effects:{gold:20}},
+    {id:'survey',branch:'road',tier:2,name:'先行侦察',description:'每场战斗开局额外抽1张牌，超限仍可选择弃牌。',effects:{openingDraw:1}},
+    {id:'heirloom',branch:'road',tier:3,name:'传家罗盘',description:'每次新旅途自带「旧路罗盘」，商店价格降低20%。',effects:{startCompass:1}}
+  ];
+  for(const n of nodes){n.cost=n.tier;n.minFloor=[1,2,4][n.tier-1];n.requires=nodes.filter(p=>p.branch===n.branch&&p.tier===n.tier-1).map(p=>p.id);}
+  const validId=id=>typeof id==='string'&&/^(run-[a-zA-Z0-9-]{8,80}|legacy-[1-9][0-9]{0,9})$/.test(id);
+  const validTechs=ids=>Array.isArray(ids)&&ids.length<=nodes.length&&new Set(ids).size===ids.length&&ids.every(id=>nodes.some(n=>n.id===id))&&ids.every(id=>nodes.find(n=>n.id===id).requires.every(p=>ids.includes(p)));
+  const floorOf=mask=>mask.toString(2).length;
+  const journeyId=()=> 'run-'+(root.crypto?.randomUUID?root.crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,14));
+  function bonuses(ids){const result={attack:0,statusPotency:0,openingEnergy:0,healing:0,guard:0,openingBlock:0,turnBlock:0,gold:0,openingDraw:0,startCompass:0};for(const id of ids)for(const [key,value]of Object.entries(nodes.find(n=>n.id===id).effects))result[key]+=value;return result;}
+  class Profile{
+    constructor(){this.unlocked=[];this.claims={};}
+    get earned(){return Object.values(this.claims).reduce((sum,mask)=>sum+awards.reduce((value,points,i)=>value+((mask&(1<<i))?points:0),0),0);}
+    get spent(){return this.unlocked.reduce((sum,id)=>sum+nodes.find(n=>n.id===id).cost,0);}
+    get points(){return Math.max(0,this.earned-this.spent);}
+    get bestFloor(){return Object.values(this.claims).reduce((best,mask)=>Math.max(best,floorOf(mask)),0);}
+    claim(id,floors){
+      if(!validId(id)||!Number.isInteger(floors)||floors<0||floors>5)throw new Error('旅途通层记录无效。');
+      if(!floors)return 0;const old=this.claims[id]||0,next=old|((1<<floors)-1);this.claims[id]=next;
+      return awards.reduce((sum,points,i)=>sum+((next&(1<<i))&&!(old&(1<<i))?points:0),0);
+    }
+    reason(id){const n=nodes.find(n=>n.id===id);if(!n)return'未知科技。';if(this.unlocked.includes(id))return'已经解锁。';if(this.bestFloor<n.minFloor)return'需要曾通关第'+n.minFloor+'层。';if(n.requires.some(p=>!this.unlocked.includes(p)))return'需要先解锁同分支前置科技。';if(this.points<n.cost)return'科技点不足。';return'';}
+    unlock(id){const reason=this.reason(id);if(reason)return{ok:false,reason};this.unlocked.push(id);return{ok:true};}
+    merge(other){if(other===this)return this;for(const [id,mask]of Object.entries(other.claims))this.claims[id]=(this.claims[id]||0)|mask;this.unlocked=nodes.filter(n=>this.unlocked.includes(n.id)||other.unlocked.includes(n.id)).map(n=>n.id);return this;}
+    snapshot(){return{format:'ember-corridor.profile',version:1,unlocked:[...this.unlocked],claims:{...this.claims}};}
+    static restore(data){
+      const fail=()=>{throw new Error('永久科技记录无效。');};
+      if(!data||data.format!=='ember-corridor.profile'||data.version!==1||!validTechs(data.unlocked)||!data.claims||typeof data.claims!=='object'||Array.isArray(data.claims))fail();
+      if(Object.keys(data).some(k=>!['format','version','unlocked','claims'].includes(k)))fail();
+      for(const [id,mask]of Object.entries(data.claims))if(!validId(id)||![1,3,7,15,31].includes(mask))fail();
+      const profile=new Profile();profile.unlocked=[...data.unlocked];profile.claims={...data.claims};
+      if(profile.unlocked.some(id=>profile.bestFloor<nodes.find(n=>n.id===id).minFloor))fail();return profile;
+    }
+  }
+  // All marks are local, original line art; no remote or game-owned artwork.
+  const relicIcons={
+    heart:['#ed8f87','M12 21S2 15 2 8a5 5 0 0 1 10-1A5 5 0 0 1 22 8c0 7-10 13-10 13Z'],
+    blade:['#c1d7ee','m4 20 5-5m-3-3 6 6m-4-4L18 3l3-1-1 4-10 10'],
+    lantern:['#f0c77a','M8 7h8l2 13H6L8 7Zm1 0V4h6v3m-3 4v5m-2 5h4'],
+    battery:['#d6ad6b','M7 5h10v16H7V5Zm3 0V2h4v3m-2 4-3 5h6l-3 5'],
+    shell:['#a6c9c1','M3 18C-1 1 25 1 21 18H3Zm9-12v12M6 9l3 9m9-9-3 9m-9 3h12'],
+    whetstone:['#bcb2e3','m3 16 5-9 14 3-5 10-14-4Zm0 0 13-4m-8-5 8 5 6-2'],
+    silk:['#d2cee6','M4 4c5 4 11-2 16 2l-3 15c-5-4-10 2-14-2L4 4Zm4 1-1 14m10-14-2 14'],
+    boots:['#d5b391','M6 3h8v10l6 4v4H3v-7h3V3Zm0 7h8M3 18h17'],
+    feather:['#c7d8bb','M5 21C5 7 10 1 20 3c2 10-5 15-15 15m0 3L17 6m-7 5h6m-9 4h6'],
+    chalice:['#e8bf76','M5 3h14l-2 9-5 4-5-4-2-9Zm7 13v5m-5 1h10'],
+    coin:['#efcf77','M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-6v12m3-9c-5-4-8 3-3 3s2 7-3 3'],
+    herb:['#b0d397','M8 8h8l5 13H3L8 8Zm2 0V4h4v4m-2 5v5m-3-3h6'],
+    supplies:['#c4b0e0','M8 3h8m-6 0v8L4 21h16l-6-10V3M8 16h8'],
+    sunstone:['#f1ba70','m12 3 7 4 2 8-9 7L2 15l3-8 7-4Zm0 5 4 4-4 5-4-5 4-4Z'],
+    compass:['#b9d2c4','M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-5-5-3 8-5 2 3-8 5-2Z'],
+    phoenix:['#eda67d','M12 22C2 19 0 11 4 7l5 7c-3-7 3-10 5-12-1 6 7 8 6 14l-7-3c5 6 4 8-1 9Z'],
+    tidepearl:['#a8d7db','M20 15a8 8 0 1 1-16 0c0-5 8-13 8-13s8 8 8 13Zm-4 0a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z'],
+    blueflame:['#8db9ed','M12 2c4 8 10 7 8 14-1 7-13 8-16 1-2-5 2-7 3-10 0 7 6 6 5-5Zm0 12-3 4 4 3 3-3-4-4Z'],
+    coral:['#eea4af','M12 22V7m0 8-7-3V5m0 4L2 7m10 4 6-3V2m0 4 4-2m-10 15 7-3v-4'],
+    furnace:['#e8aa7b','M5 3h14v19H5V3Zm3 3h8m-8 4h8m-8 9c-2-4 2-6 4-8 0 3 5 5 4 8H8Z'],
+    ironleaf:['#bdc5ac','M3 20C1 5 9 3 21 3c0 13-5 19-18 17Zm0 0L17 7m-6 6V7m0 6h6'],
+    gear:['#dbbf86','m9 3 6 0 1 4 4 1 2 5-3 3 1 4-5 2-3-3-4 1-3-5 3-3-1-4 4-2 0-3Zm7 9a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z'],
+    lens:['#a7c9e9','M17 9a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-2 6 7 7M6 9l4-4m0 8 4-4'],
+    mirrorplate:['#c9bfdf','m12 2 8 4-1 12-7 4-7-4L4 6l8-4Zm-4 5 8 10m0-10-8 10'],
+    silverthread:['#d5d9ef','M6 3h12m-12 18h12M8 3v18m8-18v18M8 6l8 4-8 4 8 4M3 8h5m8 8h5'],
+    starheart:['#efb3c4','m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Zm0 7-2 3 2 3 2-3-2-3Z'],
+    dawnshield:['#e4cb8a','M4 7h16v6c0 4-8 9-8 9s-8-5-8-9V7Zm3-3 1 2m4-5v4m5-1-1 2M7 14a5 5 0 0 1 10 0H7Z'],
+    eternity:['#c8b8ea','M12 12C2-3-5 23 7 19l10-14c12-4 5 22-5 7Z']
+  };
+  const api={Profile,nodes,branches,awards,validTechs,validId,journeyId,bonuses,relicIcons};root.EmberProgression=api;
+  if(typeof module!=='undefined'&&module.exports)module.exports=api;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script>
+<script>
+/* Four-way exploration, limited movement and original node line art. Codex. */
+(function(root){
+  'use strict';
+  const R=root.EmberRules||(typeof require==='function'?require('./balance.js'):null);
+  const budgets=[14,13,12,11,10],width=880,height=830,styles=['雾枝环湾','折影林径','回声裂谷','四风群落'];
+  const modes={walk:{name:'徒步',note:'沿小径移动，每经过一格消耗1步；途中不能越过未完成节点。'},grapple:{name:'折跃索',note:'同一行或列跳跃2–3格，消耗1步和1次装置，可越过未完成节点。'},glide:{name:'余烬滑翔翼',note:'移动至曼哈顿距离3格内的节点，消耗1步和1次装置，可越过未完成节点。'}};
+  const labels={battle:'常规冲突',elite:'危险遭遇',boss:'终末恶敌',event:'迷途异闻',shop:'流浪行商',camp:'余火营地',treasure:'失落秘藏',cache:'应急补给',beacon:'瞭望观测',origin:'登陆点',clearing:'林间空地',unknown:'未知的诡秘','unknown-combat':'未知的凶戾'};
+  const random=seed=>{let state=seed>>>0||1;return()=>{state^=state<<13;state^=state>>>17;state^=state<<5;state>>>=0;return state/4294967296;};};
+  const pick=(a,r)=>a[Math.floor(r()*a.length)],distance=(a,b)=>Math.abs(a.gridX-b.gridX)+Math.abs(a.gridY-b.gridY);
+  function build(seed,floor){
+    const r=random(seed^0xd3a2646c),style=Math.floor(r()*4),nodes=[];
+    const pool=kind=>Object.keys(R.enemies).filter(id=>R.enemies[id].kind===kind&&(R.enemies[id].floor||1)===floor);
+    const events=floor===1?[...R.legacy.events]:[...R.legacy.events.filter(id=>['spring','medic','library','altar','sparrow'].includes(id)),...Object.keys(R.events).filter(id=>R.events[id].minFloor===floor)];
+    for(let y=0;y<7;y++){
+      const radius=style===0?[1,2,3,3,3,2,1][y]:style===1?[1,2,2,3,2,2,1][y]:style===2?[2,3,2,1,2,3,2][y]:[1,3,2,3,2,3,1][y];
+      const shift=style===1?Math.round(Math.sin(y*.9)):style===2?(y<3?-1:y>3?1:0):Math.floor(r()*3)-1;
+      const low=Math.max(0,Math.min(3,3+shift-radius)),high=Math.min(6,Math.max(3,3+shift+radius));
+      for(let x=low;x<=high;x++){
+        let type=pick(['battle','battle','battle','event','event','shop','camp','treasure','elite'],r);
+        if(x===3)type=['boss','elite','event','camp','shop','battle','origin'][y];
+        if(y===4&&x===4)type='cache';if(y===2&&x===2)type='beacon';
+        const content=type==='event'?events:pool(type),variant=content.length?pick(content,r):null;
+        nodes.push({id:'s'+y+'c'+x,gridX:x,gridY:y,row:6-y,lane:x,x:84+x*118,y:90+y*108,type,variant,next:[],floorNumber:floor,groupCombat:!(x===3&&y===5),statusCombat:true,squadSeed:Math.floor(r()*4294967295)||1,seaStyle:style});
+      }
+    }
+    for(const n of nodes)n.next=nodes.filter(other=>distance(n,other)===1).map(other=>other.id);
+    return nodes;
+  }
+  function reveal(state,nodes,id,radius=1){const at=nodes.find(n=>n.id===id);for(const n of nodes)if(distance(at,n)<=radius&&!state.seen.includes(n.id))state.seen.push(n.id);}
+  function create(nodes,floor){const origin=nodes.find(n=>n.type==='origin'),boss=nodes.find(n=>n.type==='boss'),state={position:origin.id,steps:budgets[floor-1],mode:'walk',devices:{grapple:2,glide:1},seen:[origin.id,boss.id],pursuits:0,pursuing:false};reveal(state,nodes,origin.id);return state;}
+  function plan(nodes,state,visited,to,mode=state.mode){
+    const from=nodes.find(n=>n.id===state.position),target=nodes.find(n=>n.id===to),bad=reason=>({ok:false,reason,path:[],cost:0,mode});
+    if(!target||!Object.hasOwn(modes,mode))return bad('请选择地图节点与移动方式。');if(to===state.position)return bad('你已经位于此处。');
+    let path=[];
+    if(mode==='walk'){
+      const queue=[[from.id]],seen=new Set([from.id]);
+      while(queue.length&&!path.length){const route=queue.shift(),at=nodes.find(n=>n.id===route.at(-1));for(const id of at.next){if(seen.has(id))continue;seen.add(id);const next=[...route,id];if(id===to){path=next.slice(1);break;}if(visited.includes(id)||nodes.find(n=>n.id===id).type==='origin')queue.push(next);}}
+      if(!path.length)return bad('沿途有未完成节点。先探索相邻节点，或换用移动装置。');
+    }else{
+      const d=distance(from,target),allowed=mode==='grapple'?(from.gridX===target.gridX||from.gridY===target.gridY)&&d>=2&&d<=3:d>=1&&d<=3;
+      if(!allowed)return bad(modes[mode].note);if(!state.devices[mode])return bad('此装置本层次数已用尽。');path=[to];
+    }
+    const cost=mode==='walk'?path.length:1;
+    return{ok:state.steps>=cost,reason:state.steps>=cost?'':'行动力不足，需要'+cost+'步。',path,cost,mode,to};
+  }
+  function travel(nodes,state,visited,to){const route=plan(nodes,state,visited,to);if(!route.ok)return route;state.steps-=route.cost;if(route.mode!=='walk')state.devices[route.mode]--;state.position=to;for(const id of route.path)reveal(state,nodes,id);if(route.mode!=='walk'&&!state.devices[route.mode])state.mode='walk';return route;}
+  function snapshot(state){return{...state,devices:{...state.devices},seen:[...state.seen]};}
+  function restore(data,nodes,floor,visited){
+    const fail=()=>{throw new Error('树海地图位置、行动力或装置记录无效。');},ids=nodes.map(n=>n.id),initial=create(nodes,floor),caches=visited.filter(id=>nodes.find(n=>n.id===id)?.type==='cache').length;
+    if(!data||Object.keys(data).some(k=>!['position','steps','mode','devices','seen','pursuits','pursuing'].includes(k))||!ids.includes(data.position)||!Object.hasOwn(modes,data.mode)||!Number.isInteger(data.steps)||data.steps<0||data.steps>budgets[floor-1]+caches*4)fail();
+    if(!data.devices||Object.keys(data.devices).length!==2||Object.keys(data.devices).some(k=>!['grapple','glide'].includes(k))||!Number.isInteger(data.devices.grapple)||data.devices.grapple<0||data.devices.grapple>2+caches||!Number.isInteger(data.devices.glide)||data.devices.glide<0||data.devices.glide>1)fail();
+    if(!Array.isArray(data.seen)||new Set(data.seen).size!==data.seen.length||data.seen.some(id=>!ids.includes(id))||[...initial.seen,data.position,...visited].some(id=>!data.seen.includes(id))||!Number.isInteger(data.pursuits)||data.pursuits<0||data.pursuits>100000||typeof data.pursuing!=='boolean'||(data.pursuing&&(data.steps!==0||data.pursuits<1)))fail();
+    return snapshot(data);
+  }
+  const paths={
+    battle:'m4 3 9 7-3 3-7-9 1-1Zm16 0-9 7 3 3 7-9-1-1ZM8 11l-5 9 4 1 5-8m4-2 5 9-4 1-5-8',
+    elite:'m12 2 9 5-2 12-7 3-7-3L3 7l9-5Zm-5 8 3 3m7-3-3 3m-5 4h6m-3-5v7',
+    boss:'m12 1 3 5 6-2-2 8 3 5-6 1-4 5-4-5-6-1 3-5-2-8 6 2 3-5Zm-5 10 3 2m7-2-3 2m-5 4h6',
+    event:'m12 2 9 10-9 10L3 12l9-10Zm-3 7c0-4 7-4 6 0 0 2-3 2-3 5m0 3v1',
+    shop:'M3 9h18l-2-6H5L3 9Zm2 0v12h14V9M9 21v-7h6v7M2 9v3h5V9m0 3h5V9m0 3h5V9m0 3h5V9',
+    camp:'m3 21 18-2M3 18l18 4M12 2c4 5 10 8 5 13-4 4-13 1-10-4 1 3 4 2 3-1-2-4 3-4 2-8Z',
+    treasure:'m3 9 4-6h10l4 6v12H3V9Zm0 0h18m-12 0v12m6-12v12m-5 2h4v5h-4Z',
+    cache:'M7 4h10l4 6-2 12H5L3 10l4-6Zm3 0V2h4v2m-2 5-3 6h6l-3 5M3 10h5m8 0h5',
+    beacon:'M12 8v14m-6 0h12m-8-12-4 12m8-12 4 12M5 4c-4 4-4 9 0 13m14-13c4 4 4 9 0 13M8 7c-2 2-2 5 0 7m8-7c2 2 2 5 0 7m-4-6h0',
+    origin:'M8 7h8l3 13H5L8 7Zm2 0V3h4v4m-2 5-2 5h4l-2-5M3 23h18',
+    clearing:'m3 20 5-7 4 4 4-8 5 11H3Zm4-11V3m-3 3h6m8-1V1m-2 2h4',
+    unknown:'m12 2 9 10-9 10L3 12l9-10M9 9c0-4 7-4 6 0 0 2-3 2-3 5m0 3v1',
+    'unknown-combat':'m12 2 9 5-3 13-6 2-6-2L3 7l9-5Zm-4 8 2 2m6-2-2 2m-5 5h6m-3-5v3'
+  };
+  const glyph=type=>'<svg class="sea-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(paths[type]||paths.unknown)+'"/></svg>';
+  const api={budgets,width,height,styles,modes,labels,build,create,reveal,plan,travel,snapshot,restore,distance,glyph};root.EmberExploration=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script>
+<script>
 /* Original body/capacity adaptation by Codex; inspired by RimWorld's health model. */
 (function (root) {
   'use strict';
@@ -1127,9 +1363,11 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
 /* Seeded expanded floor, content rewards and versioned save migration. Codex. */
 (function(root){
   'use strict';
-  const R=root.EmberRules||require('./balance.js'),Body=root.EmberBody||require('./body.js').HeroBody,S=root.EmberStatuses||require('./statuses.js');
+  const R=root.EmberRules||require('./balance.js'),Body=root.EmberBody||require('./body.js').HeroBody,S=root.EmberStatuses||require('./statuses.js'),P=root.EmberProgression||require('./progression.js');
+  const E=root.EmberExploration||require('./exploration.js');
   const types={battle:{name:'战斗',mark:'⚔',note:'击败敌人，获得金币与三选一卡牌。'},elite:{name:'精英',mark:'♜',note:'获得更多金币、卡牌及一件未拥有的遗物。'},event:{name:'事件',mark:'?',note:'探索遗迹，作出不同的选择。'},shop:{name:'商店',mark:'¤',note:'购买卡牌、遗物、治疗，或精简牌组。'},camp:{name:'营火',mark:'♨',note:'恢复身体、强化或学习卡牌，或自由移除一张牌。'},treasure:{name:'宝箱',mark:'◇',note:'从两件遗物中选择一件，或带走金币。'},boss:{name:'关底 Boss',mark:'♛',note:'击败本层首领，获得遗物；第五层胜利即完成旅途。'}};
   const legacyLayout=[[[0,'battle'],[2,'battle']],[[0,'event'],[1,'battle'],[2,'shop']],[[0,'camp'],[1,'elite'],[2,'event']],[[0,'battle'],[2,'treasure']],[[0,'shop'],[1,'camp'],[2,'elite']],[[0,'event'],[2,'battle']],[[0,'camp'],[2,'treasure']],[[1,'boss']]];
+  Object.assign(types,{cache:{name:'应急补给',note:'获得4步行动力及1次折跃索，本节点只可领取一次。'},beacon:{name:'瞭望观测',note:'揭示当前位置曼哈顿距离2格内的节点内容。'},origin:{name:'登陆点',note:'本层旅途从这里开始。'},clearing:{name:'林间空地',note:'已完成的地点，仅供移动，不会重复发奖。'}});
   const rows=[
     [[0,2,4],['battle','battle','battle']],
     [[0,1,3,4],['event','battle','shop','event']],
@@ -1188,6 +1426,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     return nodes;
   }
   function makeMap(seed,version,floor=1){
+    if(version>=7)return E.build(seed,floor);
     if(version>=4){const nodes=wovenMap(seed,floor,true);if(version>=5)for(const n of nodes){n.groupCombat=true;n.squadSeed=hash(seed+':'+n.id);n.statusCombat=version>=6;}return nodes;}
     if(version===3)return wovenMap(seed);
     const random=rng(seed^0x6a09e667),normals=legacyPool('battle');
@@ -1197,7 +1436,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
       return {id:'r'+r+'c'+lane,row:r,lane,type,variant:pool.length?pick(pool,random):null};
     }));
   }
-  const connects=(a,b,version=4)=>b.row===a.row+1&&(version>=3?a.next.includes(b.id):(b.type==='boss'||Math.abs(a.lane-b.lane)<=(version===2&&[5,8].includes(a.row)?2:1)));
+  const connects=(a,b,version=4)=>version>=7?a.next.includes(b.id):b.row===a.row+1&&(version>=3?a.next.includes(b.id):(b.type==='boss'||Math.abs(a.lane-b.lane)<=(version===2&&[5,8].includes(a.row)?2:1)));
   const masks=[
     [7,8,9,10,6,11,1,2,3,4,13,14,15,16,19,20],
     [7,8,9,13,14,15,19,20,21],
@@ -1212,9 +1451,10 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     return cells;
   }
   function encounter(node){
-    const d=R.enemies[node.variant],hp=d.hp+(d.kind==='battle'?Math.min(3,Math.floor(node.row/3)):d.kind==='elite'?Math.min(2,Math.floor(node.row/4)):0);
+    const base=R.enemies[node.variant],wave=node.pursuitLevel||0,d=wave?{...base,name:'追猎者 · '+base.name,hp:Math.min(214,base.hp+4*(wave-1)),intents:base.intents.map(a=>({...a,damage:a.damage?a.damage+Math.min(10,wave-1):0}))}:base,hp=d.hp+(d.kind==='battle'?Math.min(3,Math.floor(node.row/3)):d.kind==='elite'?Math.min(2,Math.floor(node.row/4)):0);
     const floor=node.floorNumber||1;
     const lead={...d,id:node.id,floorNumber:floor,statusesEnabled:!!node.statusCombat,enemyId:node.variant,layers:layers(hp,d.style),reward:(d.kind==='boss'?85:d.kind==='elite'?42:22+node.row*2)+(floor-1)*(d.kind==='boss'?25:10),role:types[d.kind].name+' · '+d.name,sceneCell:d.kind==='boss'?5:d.kind==='elite'?4:node.row%3===0?3:null};
+    if(wave){lead.kind='pursuit';lead.role='追猎 · 第'+wave+'波';lead.reward=0;}
     if(!node.groupCombat)return lead;
     const random=rng(node.squadSeed),count=d.kind==='battle'?(node.row===0?1:floor>=3&&random()<.35?3:2):d.kind==='elite'?2:floor===1?1:floor>=4?3:2;
     if(count===1)return lead;
@@ -1238,16 +1478,31 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   const number=(v,min,max)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
   const ids=(v,allowed,min,max)=>Array.isArray(v)&&v.length>=min&&v.length<=max&&v.every(x=>typeof x==='string'&&allowed.includes(x));
   class Floor{
-    constructor({seed=(Date.now()>>>0)||1,routeVersion=6,floorNumber=1}={}){
+    constructor({seed=(Date.now()>>>0)||1,routeVersion=7,floorNumber=1,profile=new P.Profile(),techs=null,journeyId=P.journeyId()}={}){
+      this.profile=profile;this.techs=[...(techs||profile.unlocked)];if(!P.validTechs(this.techs)||!this.techs.every(id=>profile.unlocked.includes(id))||!P.validId(journeyId))throw new Error('本局科技或旅途编号无效。');this.journeyId=journeyId;this.tech=P.bonuses(this.techs);
       this.seed=seed>>>0||1;this.rngState=this.seed;this.floorNumber=floorNumber;this.history=[];this.mapSeed=mapSeed(this.seed,floorNumber);this.routeVersion=routeVersion;this.nodes=makeMap(this.mapSeed,routeVersion,floorNumber);this.stations=routeVersion===1?8:12;
       this.gold=60;this.deck=[...R.deck];this.relics=[];this.hero=new Body();this.visited=[];this.nodeId=null;this.screen='map';this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.pendingDeckAction=null;this.migrated=false;
+      this.exploration=routeVersion>=7?E.create(this.nodes,floorNumber):null;if(this.exploration)this.stations=this.nodes.length-1;
+      this.gold+=this.tech.gold;if(this.tech.startCompass)this.addRelic('compass');
     }
     random(){let x=this.rngState;x^=x<<13;x^=x>>>17;x^=x<<5;this.rngState=x>>>0;return this.rngState/4294967296;}
     get node(){return this.nodes.find(n=>n.id===this.nodeId);}
     get theme(){return R.floors[this.floorNumber-1];}
     get label(){return '第'+this.floorNumber+' / 5层 · '+this.theme.name;}
     get completed(){return this.screen==='cleared'&&this.floorNumber===5;}
-    get mapName(){return this.theme.name+' · '+(this.routeVersion===1?'旧日石径':routeNames[routeStyle(this.mapSeed)]);}
+    get completedFloors(){return this.floorNumber-1+(this.screen==='cleared'?1:0);}
+    get mapName(){return this.theme.name+' · '+(this.exploration?E.styles[this.nodes[0].seaStyle]:this.routeVersion===1?'旧日石径':routeNames[routeStyle(this.mapSeed)]);}
+    get combatNode(){return this.exploration?.pursuing?{...this.nodes.find(n=>n.id===this.exploration.position),id:this.exploration.position+':hunt-'+this.exploration.pursuits,type:'elite',variant:enemyPool('elite',this.floorNumber)[0],groupCombat:false,statusCombat:true,pursuitLevel:this.exploration.pursuits}:this.node;}
+    routePlan(id){return this.exploration?E.plan(this.nodes,this.exploration,this.visited,id):null;}
+    startPursuit(Battle){
+      if(!this.exploration||this.screen!=='map'||this.exploration.steps!==0||this.exploration.pursuing||this.exploration.pursuits>=100000)return false;
+      this.exploration.pursuing=true;this.exploration.pursuits++;this.nodeId=this.exploration.position;this.bought=[];this.offers=[];this.roomRelics=[];this.lastLoot=null;this.beginBattle(Battle);return true;
+    }
+    beginBattle(Battle){
+      this.hero.block=0;this.hero.boostTurns=0;this.hero.bandages=3;this.hero.stimulants=this.relics.includes('supplies')?2:1;this.hero.lastHits=[];
+      if(this.relics.includes('phoenix'))this.hero.blood=Math.min(100,this.hero.blood+15);
+      this.battle=new Battle({hero:this.hero,relics:this.relics,techs:this.techs,deck:this.deck,encounter:encounter(this.combatNode),rng:()=>this.random()});this.screen='battle';
+    }
     get cardPool(){return R.rewardPool.filter(id=>(R.cards[id].minFloor||1)<=this.floorNumber);}
     get relicPool(){return Object.keys(R.relics).filter(id=>(R.relics[id].minFloor||1)<=this.floorNumber);}
     get treasureGold(){return 55+(this.floorNumber-1)*15;}
@@ -1264,7 +1519,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
       return{x:90+node.lane*145+Math.sin(node.row*.65+phase)*25+(jitter%17-8),y:1080-node.row*90+((jitter>>>8)%15-7)};
     }
     linked(a,b){return connects(a,b,this.routeVersion);}
-    get available(){if(this.screen!=='map')return[];const last=this.nodes.find(n=>n.id===this.visited.at(-1));return this.nodes.filter(n=>last?this.linked(last,n):n.row===0);}
+    get available(){if(this.screen!=='map')return[];if(this.exploration)return this.nodes.filter(n=>this.routePlan(n.id).ok);const last=this.nodes.find(n=>n.id===this.visited.at(-1));return this.nodes.filter(n=>last?this.linked(last,n):n.row===0);}
     get event(){return R.events[this.node?.variant];}
     get trainingCard(){return pick(this.floorNumber===1?['cross','ring','cleave','retreat','suture','spear']:this.cardPool.filter(id=>R.cards[id].minFloor===this.floorNumber),rng(this.mapSeed^hash(this.nodeId||'')));}
     get shop(){
@@ -1282,11 +1537,12 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     }
     dropRelic(){const pool=this.relicPool.filter(id=>!this.relics.includes(id));if(!pool.length){this.gold+=45;return null;}const id=pick(pool,()=>this.random());this.addRelic(id);return id;}
     enter(id,Battle){
-      if(!this.available.some(n=>n.id===id))return false;this.nodeId=id;this.bought=[];this.offers=[];this.lastLoot=null;this.roomRelics=[];
+      if(this.screen!=='map')return false;
+      if(this.exploration){if(!E.travel(this.nodes,this.exploration,this.visited,id).ok)return false;if(this.visited.includes(id)||this.nodes.find(n=>n.id===id).type==='origin'){this.nodeId=null;this.battle=null;return true;}}
+      else if(!this.available.some(n=>n.id===id))return false;
+      this.nodeId=id;this.bought=[];this.offers=[];this.lastLoot=null;this.roomRelics=[];
       if(['battle','elite','boss'].includes(this.node.type)){
-        this.hero.block=0;this.hero.boostTurns=0;this.hero.bandages=3;this.hero.stimulants=this.relics.includes('supplies')?2:1;this.hero.lastHits=[];
-        if(this.relics.includes('phoenix'))this.hero.blood=Math.min(100,this.hero.blood+15);
-        this.battle=new Battle({hero:this.hero,relics:this.relics,deck:this.deck,encounter:encounter(this.node),rng:()=>this.random()});this.screen='battle';
+        this.beginBattle(Battle);
       }else{
         this.battle=null;this.screen='node';
         if(this.node.type==='treasure')this.roomRelics=shuffle(this.relicPool.filter(id=>!this.relics.includes(id)),()=>this.random()).slice(0,2);
@@ -1295,11 +1551,12 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     finishBattle(){
       if(this.screen!=='battle'||!this.battle||this.battle.status==='playing')return;
       if(this.battle.status==='lost'){this.screen='lost';return;}
+      if(this.exploration?.pursuing){this.lastLoot={gold:0,relics:[],fallbackGold:0};this.offers=[];if(this.relics.includes('chalice'))this.heal(.08,12);this.screen='reward';return;}
       const gold=Math.ceil(encounter(this.node).reward*(this.relics.includes('coin')?1.25:1));this.gold+=gold;
       this.lastLoot={gold,relics:[],fallbackGold:0};
       if(['elite','boss'].includes(this.node.type)){const id=this.dropRelic();if(id)this.lastLoot.relics.push(id);else this.lastLoot.fallbackGold=45;}
       if(this.relics.includes('chalice'))this.heal(.08,12);
-      if(this.node.type==='boss'){this.visited.push(this.nodeId);this.screen='cleared';return;}
+      if(this.node.type==='boss'){this.visited.push(this.nodeId);this.screen='cleared';this.lastLoot.techPoints=this.profile.claim(this.journeyId,this.completedFloors);return;}
       // Upper floors guarantee one newly unlocked card, plus two from the full unlocked pool.
       const fresh=this.cardPool.filter(id=>R.cards[id].minFloor===this.floorNumber),first=fresh.length?pick(fresh,()=>this.random()):null;
       this.offers=first?[first,...shuffle(this.cardPool.filter(id=>id!==first),()=>this.random()).slice(0,2)]:shuffle(this.cardPool,()=>this.random()).slice(0,3);this.screen='reward';
@@ -1317,14 +1574,14 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
       this.history.push({floor:this.floorNumber,routeVersion:this.routeVersion,boss:this.node.variant,visited:[...this.visited],boon});
       this.hero.block=0;this.hero.boostTurns=0;this.heal(.6,100);
       if(boon==='renewal'){if(!this.hero.parts.some(p=>p.missing))this.heal(1,0);else this.restorePart();}
-      if(this.deck.length<120)this.deck.push(choice.card);this.gold+=35;this.floorNumber++;this.mapSeed=mapSeed(this.seed,this.floorNumber);this.routeVersion=6;this.nodes=makeMap(this.mapSeed,6,this.floorNumber);this.stations=12;
+      if(this.deck.length<120)this.deck.push(choice.card);this.gold+=35;this.floorNumber++;this.mapSeed=mapSeed(this.seed,this.floorNumber);this.routeVersion=7;this.nodes=makeMap(this.mapSeed,7,this.floorNumber);this.stations=this.nodes.length-1;this.exploration=E.create(this.nodes,this.floorNumber);
       this.visited=[];this.nodeId=null;this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.screen='map';return true;
     }
     leave(){
       this.visited.push(this.nodeId);this.hero.block=0;this.hero.boostTurns=0;this.heal(.05+(this.relics.includes('silverthread')?.08:0),10+(this.relics.includes('silverthread')?10:0));
       this.nodeId=null;this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.screen=this.hero.failureReason?'lost':'map';
     }
-    chooseCard(id){if(this.screen!=='reward'||(id!=='skip'&&(!this.offers.includes(id)||this.deck.length>=120)))return false;if(id!=='skip')this.deck.push(id);this.leave();return true;}
+    chooseCard(id){if(this.screen!=='reward'||(id!=='skip'&&(!this.offers.includes(id)||this.deck.length>=120)))return false;if(this.exploration?.pursuing){if(id!=='skip')return false;this.exploration.steps=4;this.exploration.pursuing=false;this.nodeId=null;this.battle=null;this.offers=[];this.lastLoot=null;this.hero.block=0;this.hero.boostTurns=0;this.screen='map';return true;}if(id!=='skip')this.deck.push(id);this.leave();return true;}
     canEffect(e,cost=0){
       if(this.gold<cost)return'金币不足。';
       if(e.card&&this.deck.length>=120)return'牌组已满（120张），请先精简。';
@@ -1350,7 +1607,9 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
         if(action==='rest')this.heal(.4,45);else{const reason=this.canEffect({card:this.trainingCard});if(reason)return{ok:false,reason};this.deck.push(this.trainingCard);}
       }else if(type==='treasure'){
         if(action==='gold')this.gold+=this.treasureGold;else{const id=action.startsWith('relic:')?action.slice(6):action;if(!this.roomRelics.includes(id)||!this.addRelic(id))return{ok:false,reason:'这件遗物无法领取。'};}
-      }else if(!(type==='shop'&&action==='leave'))return{ok:false};
+      }else if(type==='cache'&&action==='resupply'){this.exploration.steps+=4;this.exploration.devices.grapple++;}
+      else if(type==='beacon'&&action==='survey')E.reveal(this.exploration,this.nodes,this.nodeId,2);
+      else if(!(type==='shop'&&action==='leave'))return{ok:false};
       this.leave();return{ok:true};
     }
     buy(id){
@@ -1386,45 +1645,60 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     }
     snapshot(options={}){
       const h=this.hero,b=this.battle;
-      return{format:'ember-corridor',version:6,savedAt:new Date().toISOString(),options:{auto:!!options.auto,sound:!!options.sound},run:{
+      return{format:'ember-corridor',version:8,savedAt:new Date().toISOString(),profile:this.profile.snapshot(),options:{auto:!!options.auto,sound:!!options.sound},run:{
+        exploration:this.exploration?E.snapshot(this.exploration):null,
+        journeyId:this.journeyId,techs:[...this.techs],
         pendingDeckAction:this.pendingDeckAction?{...this.pendingDeckAction}:null,
         floorNumber:this.floorNumber,history:this.history.map(h=>({...h,visited:[...h.visited]})),
-        seed:this.seed,rngState:this.rngState,routeVersion:this.routeVersion,gold:this.gold,deck:[...this.deck],relics:[...this.relics],visited:[...this.visited],nodeId:this.nodeId,screen:this.screen,offers:[...this.offers],bought:[...this.bought],roomRelics:[...this.roomRelics],lastLoot:this.lastLoot?{gold:this.lastLoot.gold,relics:[...this.lastLoot.relics],fallbackGold:this.lastLoot.fallbackGold}:null,
+        seed:this.seed,rngState:this.rngState,routeVersion:this.routeVersion,gold:this.gold,deck:[...this.deck],relics:[...this.relics],visited:[...this.visited],nodeId:this.nodeId,screen:this.screen,offers:[...this.offers],bought:[...this.bought],roomRelics:[...this.roomRelics],lastLoot:this.lastLoot?{gold:this.lastLoot.gold,relics:[...this.lastLoot.relics],fallbackGold:this.lastLoot.fallbackGold,techPoints:this.lastLoot.techPoints||0}:null,
         hero:{parts:h.parts.map(p=>({id:p.id,hp:p.hp,bleed:p.bleed,missing:p.missing,detachedBy:p.detachedBy})),block:h.block,blood:h.blood,boostTurns:h.boostTurns,bandages:3,stimulants:h.stimulants},
         battle:b?{heroState:S.snapshot(b.heroState),enemies:b.members.map(e=>({state:S.snapshot(e),cells:[...e.cells],armor:[...e.armor],maxHp:e.maxHp,strength:e.strength,intentIndex:e.intentIndex})),targetIndex:b.targetIndex,energy:b.energy,turn:b.turn,status:b.status,played:b.played,attackRemainder:b.attackRemainder,hand:b.hand.map(c=>c.uid),draw:b.drawPile.map(c=>c.uid),discard:b.discardPile.map(c=>c.uid),exhaust:b.exhaustPile.map(c=>c.uid),pendingDraw:b.pendingDraw.map(c=>c.uid),overflowSelection:[...b.overflowSelection],log:b.log.slice(-120)}:null}};
     }
     static restore(data,Battle){
-      assert(data&&data.format==='ember-corridor'&&[1,2,3,4,5,6].includes(data.version),'不是本游戏支持的存档版本。');
-      const old=data.version===1,campaign=data.version>=3,group=data.version>=4,upgrades=data.version>=5,statuses=data.version>=6,s=data.run;assert(s&&typeof s==='object');
+      assert(data&&data.format==='ember-corridor'&&[1,2,3,4,5,6,7,8].includes(data.version),'不是本游戏支持的存档版本。');
+      const old=data.version===1,campaign=data.version>=3,group=data.version>=4,upgrades=data.version>=5,statuses=data.version>=6,permanent=data.version>=7,roaming=data.version>=8,s=data.run;assert(s&&typeof s==='object');
       assert(integer(s.seed,1,4294967295)&&integer(s.rngState,1,4294967295)&&integer(s.gold,0,100000));
       const version=old?1:s.routeVersion,floorNumber=campaign?s.floorNumber:1;
-      assert(integer(floorNumber,1,5)&&[1,2,3,4,5,6].includes(version)&&(campaign||version<4)&&(group||version<5)&&(statuses||version<6)&&(floorNumber===1||version>=4));
-      const run=new Floor({seed:s.seed,routeVersion:version,floorNumber}),nodeIds=run.nodes.map(n=>n.id),relicIds=Object.keys(R.relics);
+      assert(integer(floorNumber,1,5)&&[1,2,3,4,5,6,7].includes(version)&&(campaign||version<4)&&(group||version<5)&&(statuses||version<6)&&(roaming||version<7)&&(floorNumber===1||version>=4));
+      const profile=permanent?P.Profile.restore(data.profile):new P.Profile(),techs=permanent?s.techs:[],journeyId=permanent?s.journeyId:'legacy-'+s.seed;
+      assert(P.validTechs(techs)&&techs.every(id=>profile.unlocked.includes(id))&&P.validId(journeyId));
+      const run=new Floor({seed:s.seed,routeVersion:version,floorNumber,profile,techs,journeyId}),nodeIds=run.nodes.map(n=>n.id),relicIds=Object.keys(R.relics);
       if(campaign){
         assert(Array.isArray(s.history)&&s.history.length===floorNumber-1);
         s.history.forEach((h,i)=>{
-          assert(h&&h.floor===i+1&&[1,2,3,4,5,6].includes(h.routeVersion)&&(group||h.routeVersion<5)&&(statuses||h.routeVersion<6)&&(i===0||h.routeVersion>=4)&&['assault','shelter','renewal'].includes(h.boon));
+          assert(h&&h.floor===i+1&&[1,2,3,4,5,6,7].includes(h.routeVersion)&&(group||h.routeVersion<5)&&(statuses||h.routeVersion<6)&&(roaming||h.routeVersion<7)&&(i===0||h.routeVersion>=4)&&['assault','shelter','renewal'].includes(h.boon));
           const nodes=makeMap(mapSeed(s.seed,h.floor),h.routeVersion,h.floor),steps=h.routeVersion===1?8:12;
-          assert(ids(h.visited,nodes.map(n=>n.id),steps,steps)&&new Set(h.visited).size===steps);
-          h.visited.forEach((id,j)=>assert(j?connects(nodes.find(n=>n.id===h.visited[j-1]),nodes.find(n=>n.id===id),h.routeVersion):nodes.find(n=>n.id===id).row===0));
+          if(h.routeVersion>=7){assert(ids(h.visited,nodes.filter(n=>n.type!=='origin').map(n=>n.id),1,nodes.length-1)&&new Set(h.visited).size===h.visited.length);}
+          else{assert(ids(h.visited,nodes.map(n=>n.id),steps,steps)&&new Set(h.visited).size===steps);h.visited.forEach((id,j)=>assert(j?connects(nodes.find(n=>n.id===h.visited[j-1]),nodes.find(n=>n.id===id),h.routeVersion):nodes.find(n=>n.id===id).row===0));}
           const boss=nodes.find(n=>n.id===h.visited.at(-1));assert(boss.type==='boss'&&h.boss===boss.variant);
           run.history.push({floor:h.floor,routeVersion:h.routeVersion,boss:h.boss,visited:[...h.visited],boon:h.boon});
         });
       }
       assert(ids(s.deck,upgrades?Object.keys(R.cards):R.baseCardIds,5,120)&&ids(s.relics,relicIds,0,relicIds.length)&&new Set(s.relics).size===s.relics.length);
+      if(run.tech.startCompass)assert(s.relics.includes('compass'));
       assert(ids(s.visited,nodeIds,0,run.stations)&&new Set(s.visited).size===s.visited.length);
-      s.visited.forEach((id,i)=>assert(i?run.linked(run.nodes.find(n=>n.id===s.visited[i-1]),run.nodes.find(n=>n.id===id)):run.nodes.find(n=>n.id===id).row===0));
+      if(version>=7){assert(!s.visited.includes(run.nodes.find(n=>n.type==='origin').id));run.exploration=E.restore(s.exploration,run.nodes,floorNumber,s.visited);}
+      else{if(roaming)assert(s.exploration===null);s.visited.forEach((id,i)=>assert(i?run.linked(run.nodes.find(n=>n.id===s.visited[i-1]),run.nodes.find(n=>n.id===id)):run.nodes.find(n=>n.id===id).row===0));}
+      const pursuing=!!run.exploration?.pursuing;
       assert(['map','node','battle','reward','lost','cleared'].includes(s.screen));
       const n=run.nodes.find(n=>n.id===s.nodeId),last=run.nodes.find(n=>n.id===s.visited.at(-1));
       assert(s.nodeId===null||!!n);if(s.screen==='map')assert(s.nodeId===null&&(!last||last.type!=='boss'));
-      if(n&&s.screen!=='cleared')assert(!s.visited.includes(n.id)&&(last?run.linked(last,n):n.row===0));
+      if(version>=7){
+        const position=run.nodes.find(n=>n.id===run.exploration.position);
+        if(n)assert(n.id===position.id);
+        if(s.screen==='map')assert(position.type==='origin'||s.visited.includes(position.id));
+        if(pursuing)assert(['battle','reward','lost'].includes(s.screen)&&!!n&&position.type!=='boss'&&(position.type==='origin'||s.visited.includes(position.id)));
+        else if(n&&s.screen!=='cleared')assert(!s.visited.includes(n.id)&&n.type!=='origin');
+        if(s.screen!=='cleared')assert(!s.visited.some(id=>run.nodes.find(node=>node.id===id).type==='boss'));
+      }else if(n&&s.screen!=='cleared')assert(!s.visited.includes(n.id)&&(last?run.linked(last,n):n.row===0));
       if(['node','battle','reward','cleared'].includes(s.screen))assert(!!n);
       if(s.screen==='node')assert(!['battle','elite','boss'].includes(n.type));
-      if(['battle','reward','cleared'].includes(s.screen))assert(['battle','elite','boss'].includes(n.type));
+      if(['battle','reward','cleared'].includes(s.screen))assert(pursuing||['battle','elite','boss'].includes(n.type));
       if(s.screen==='cleared')assert(n.type==='boss'&&s.visited.at(-1)===n.id);
-      assert(ids(s.offers,R.rewardPool,s.screen==='reward'?3:0,s.screen==='reward'?3:0)&&new Set(s.offers).size===s.offers.length);
+      assert(ids(s.offers,R.rewardPool,s.screen==='reward'&&!pursuing?3:0,s.screen==='reward'&&!pursuing?3:0)&&new Set(s.offers).size===s.offers.length);
       run.rngState=s.rngState;run.gold=s.gold;run.deck=[...s.deck];run.relics=[...s.relics];run.visited=[...s.visited];run.nodeId=s.nodeId;run.screen=s.screen;run.offers=[...s.offers];
       assert(ids(s.bought,n?.type==='shop'?run.shop.map(i=>i.id):[],0,8)&&new Set(s.bought).size===s.bought.length);run.bought=[...s.bought];
+      if(pursuing)assert(!s.bought.length&&!s.roomRelics.length&&s.pendingDeckAction===null);
       const room=old?[]:s.roomRelics;assert(ids(room,relicIds,0,2)&&new Set(room).size===room.length);assert(!room.length||(s.screen==='node'&&n.type==='treasure'&&room.every(id=>!s.relics.includes(id))));run.roomRelics=[...room];
       if(old&&s.screen==='node'&&n.type==='treasure')run.roomRelics=R.legacy.relics.filter(id=>!run.relics.includes(id)).slice(0,2);
       const h=s.hero;assert(h&&Array.isArray(h.parts)&&h.parts.length===Body.partDefinitions.length);run.hero=new Body({relic:s.relics.includes('heart')?'heart':null});
@@ -1439,7 +1713,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
         run.pendingDeckAction={source:p.source,action:p.action,selectedIndex:p.selectedIndex};
       }
       if(s.battle!==null){
-        assert(n&&['battle','elite','boss'].includes(n.type)&&['battle','reward','lost','cleared'].includes(s.screen));const x=s.battle,e=encounter(n),configs=e.members||[e],oldE=old?oldEncounter(n):null;
+        assert(n&&(pursuing||['battle','elite','boss'].includes(n.type))&&['battle','reward','lost','cleared'].includes(s.screen));const x=s.battle,e=encounter(run.combatNode),configs=e.members||[e],oldE=old?oldEncounter(n):null;
         const enemies=group?x.enemies:[x],targetIndex=group?x.targetIndex:0;
         assert(Array.isArray(enemies)&&enemies.length===configs.length&&integer(targetIndex,0,enemies.length-1));
         enemies.forEach((m,j)=>{
@@ -1454,7 +1728,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
         for(const key of areas)assert(ids(x[key],uids,0,key==='hand'?9:120));const all=areas.flatMap(key=>x[key]);assert(all.length===cards.length&&new Set(all).size===cards.length);assert(x.exhaust.every(uid=>!!R.cards[cards.find(c=>c.uid===uid).id].exhaust));
         if(group){assert(!x.pendingDraw.length||(x.status==='playing'&&x.hand.length===9));assert(ids(x.overflowSelection,[...x.hand,...x.pendingDraw],0,x.pendingDraw.length)&&new Set(x.overflowSelection).size===x.overflowSelection.length);}
         assert(Array.isArray(x.log)&&x.log.length<=120&&x.log.every(l=>typeof l==='string'&&l.length<=500));
-        const b=new Battle({hero:run.hero,relics:run.relics,deck:run.deck,encounter:e,rng:()=>0});b.rng=()=>run.random();b.allCards=cards;
+        const b=new Battle({hero:run.hero,relics:run.relics,techs:run.techs,deck:run.deck,encounter:e,rng:()=>0});b.rng=()=>run.random();b.allCards=cards;
         // Constructor may grant opening block; replace it with the exact saved value.
         run.hero.block=h.block;
         b.heroState=statuses?S.restore(x.heroState):S.create();assert(b.heroState.stagger<8);
@@ -1474,11 +1748,15 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
       if(s.screen==='reward')assert(n.type!=='boss');if(!['lost','cleared'].includes(s.screen))assert(!run.hero.failureReason);if(s.screen==='lost')assert(!!run.hero.failureReason);
       if(!old&&s.lastLoot!==null){const loot=s.lastLoot;assert(['reward','cleared'].includes(s.screen)&&loot&&integer(loot.gold,0,1000)&&integer(loot.fallbackGold,0,45)&&ids(loot.relics,relicIds,0,1)&&loot.relics.every(id=>run.relics.includes(id)));run.lastLoot={gold:loot.gold,relics:[...loot.relics],fallbackGold:loot.fallbackGold};}
       if(old&&['reward','cleared'].includes(s.screen)){run.lastLoot={gold:0,relics:[],fallbackGold:0};if(['elite','boss'].includes(n.type)){const id=run.dropRelic();if(id)run.lastLoot.relics.push(id);else run.lastLoot.fallbackGold=45;}}
-      run.migrated=!statuses;
-      return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:!statuses};
+      if(permanent&&s.lastLoot!==null){assert(integer(s.lastLoot.techPoints,0,9));assert(!s.lastLoot.techPoints||s.screen==='cleared');run.lastLoot.techPoints=s.lastLoot.techPoints;}
+      if(pursuing&&run.lastLoot)assert(!run.lastLoot.gold&&!run.lastLoot.relics.length&&!run.lastLoot.fallbackGold&&!run.lastLoot.techPoints);
+      const granted=run.profile.claim(run.journeyId,run.completedFloors);
+      if(granted&&run.screen==='cleared'&&run.lastLoot)run.lastLoot.techPoints=Math.max(run.lastLoot.techPoints||0,granted);
+      run.migrated=!roaming||granted>0;
+      return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:run.migrated};
     }
   }
-  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,6);Floor.connects=connects;
+  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,7);Floor.connects=connects;
   root.EmberFloor=Floor;if(typeof module!=='undefined'&&module.exports)module.exports=Floor;
 })(typeof globalThis!=='undefined'?globalThis:this);
 
@@ -1489,21 +1767,23 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   const R = root.EmberRules || (typeof require === 'function' ? require('./balance.js') : null);
   const Body = root.EmberBody || (typeof require === 'function' ? require('./body.js').HeroBody : null);
   const S = root.EmberStatuses || (typeof require === 'function' ? require('./statuses.js') : null);
+  const P = root.EmberProgression || (typeof require === 'function' ? require('./progression.js') : null);
+  const E = root.EmberExploration || (typeof require === 'function' ? require('./exploration.js') : null);
   class Battle {
-    constructor({ rng = Math.random, relic = null, relics = [], hero = null, deck = R.deck, encounter = null } = {}) {
-      this.rng = rng; this.relic = relic; this.relics = [...relics]; this.baseEncounter=encounter;
+    constructor({ rng = Math.random, relic = null, relics = [], techs = [], hero = null, deck = R.deck, encounter = null } = {}) {
+      this.rng = rng; this.relic = relic; this.relics = [...relics]; this.techs=[...techs];this.tech=P.bonuses(techs);this.baseEncounter=encounter;
       this.hero = hero || new Body({ relic }); this.attackRemainder = 0;this.heroState=S.create();this.statusEvents=[];this.statusHits=[];
       this.columns = R.gridColumns; this.rows = R.gridRows;
       this.maxCellLayers = R.maxCellLayers;
       this.encounters=encounter?.members||[encounter];this.targetIndex=0;
       this.members=this.encounters.map(e=>{const cells=Array.from({length:this.columns*this.rows},(_,i)=>this.clampLayers((e?.layers||R.enemyLayers)[i])),hp=cells.reduce((a,b)=>a+b,0);return{...S.create(),hp,maxHp:hp,block:0,strength:0,intentIndex:0,cells,armor:Array(cells.length).fill(false)};});
-      this.energy = this.effects.energy + (encounter ? this.relicBonus('openingEnergy') : 0); this.turn = 1; this.intentIndex = 0; this.status = 'playing'; this.phase = 'player'; this.played = 0;
+      this.energy = this.effects.energy + (encounter ? this.relicBonus('openingEnergy')+this.tech.openingEnergy : 0); this.turn = 1; this.intentIndex = 0; this.status = 'playing'; this.phase = 'player'; this.played = 0;
       this.allCards = deck.map((id, i) => ({ id, uid: `card-${i}` }));
       const opening = encounter ? this.shuffle(this.allCards) : this.allCards;
-      const initialDraw=this.effects.draw+(encounter?this.relicBonus('openingDraw'):0);
+      const initialDraw=this.effects.draw+(encounter?this.relicBonus('openingDraw')+this.tech.openingDraw:0);
       this.hand = opening.slice(0,Math.min(9,initialDraw));this.pendingDraw=opening.slice(9,initialDraw);this.overflowSelection=[];
       this.drawPile = encounter ? opening.slice(initialDraw) : this.shuffle(opening.slice(initialDraw)); this.discardPile = []; this.exhaustPile = [];
-      if(encounter) this.hero.block += this.relicBonus('openingBlock')+this.relicBonus('turnBlock');
+      if(encounter) this.hero.block += this.relicBonus('openingBlock')+this.relicBonus('turnBlock')+this.tech.openingBlock+this.tech.turnBlock;
       this.log = [`你举起提灯，${encounter?.name || '石门守卫'}从沉眠中醒来。`];
     }
     get enemy(){return this.members[this.targetIndex];}
@@ -1525,13 +1805,14 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
       return a;
     }
     relicBonus(key) { return this.relics.reduce((sum,id)=>sum+(R.relics[id]?.[key]||0),0); }
-    get effects() { const e={...this.hero.effects}; e.attack*=(1+this.relicBonus('attack')+(this.hero.boostTurns?this.relicBonus('boostAttack'):0))*Math.max(.25,1-this.heroState.dread*.1);e.block*=1+this.relicBonus('guard');e.energy=Math.min(6,e.energy+this.relicBonus('energy'));e.draw+=this.relicBonus('draw');e.healing+=this.relicBonus('healing');e.incoming*=this.heroState.staggered?1.25:1;return e; }
+    get effects() { const e={...this.hero.effects}; e.attack*=(1+this.relicBonus('attack')+this.tech.attack+(this.hero.boostTurns?this.relicBonus('boostAttack'):0))*Math.max(.25,1-this.heroState.dread*.1);e.block*=1+this.relicBonus('guard')+this.tech.guard;e.energy=Math.min(6,e.energy+this.relicBonus('energy'));e.draw+=this.relicBonus('draw');e.healing+=this.relicBonus('healing')+this.tech.healing;e.incoming*=this.heroState.staggered?1.25:1;return e; }
     get intent() {return this.intentFor(this.targetIndex);}
     definition(card) {
       const d = { ...R.cards[typeof card === 'string' ? card : card.id] }, effects = this.effects;
       if (d.shape) { d.damage = d.shape.length; d.power = effects.attack * (1+(d.powerBonus||0))*(this.enemy.staggered?1.25:1); d.pierce = !!d.pierce || this.relic === 'blade' || this.relics.includes('blade'); }
       d.block = Math.max(0, Math.floor(d.block * effects.block + 1e-8));
       if (d.draw) d.draw = Math.max(1, Math.round(d.draw * this.hero.capacities.consciousness));
+      if(d.inflict)d.inflict=d.inflict.map(a=>({...a,potency:Math.min(20,a.potency+this.tech.statusPotency)}));
       d.description = [d.shape ? `${d.shape.length}格${d.shapeName}攻击，当前攻效${Math.round(d.power * 100)}%。` : '',d.pierce?'穿甲。':'', d.block ? `获得${d.block}点格挡。` : '', d.draw ? `抽${d.draw}张牌。` : '', d.energy ? `获得${d.energy}能量。` : '',d.heal?`修复最重的存活伤处约${Math.round(d.heal*this.hero.capacities.metabolism)}点。`:'',d.cleanse?'全部止血。':'',d.exhaust?'消耗。':''].filter(Boolean).join('');
       d.description+=R.describeAffliction(d);
       return d;
@@ -1683,7 +1964,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
       if (this.status !== 'playing' || this.phase !== 'player') return { ok: false, reason: '现在无法医疗。' };
       if(this.overflowCount)return{ok:false,reason:'请先确认弃牌。'};
       if (this.energy < 1) return { ok: false, reason: '医疗需要1点能量。' };
-      const result = action === 'bandage' ? this.hero.canTreat(partId)?this.hero.treat(partId,this.relicBonus('healing')):this.heroState.ailments.bleed?{ok:true,part:'战术出血',healed:0,stopped:0}:{ok:false,reason:'没有需要处理的伤口或战术出血。'} : action === 'boost' ? this.hero.stimulate() : { ok: false, reason: '未知医疗操作。' };
+      const result = action === 'bandage' ? this.hero.canTreat(partId)?this.hero.treat(partId,this.relicBonus('healing')+this.tech.healing):this.heroState.ailments.bleed?{ok:true,part:'战术出血',healed:0,stopped:0}:{ok:false,reason:'没有需要处理的伤口或战术出血。'} : action === 'boost' ? this.hero.stimulate() : { ok: false, reason: '未知医疗操作。' };
       if (!result.ok) return result;
       if(action==='bandage')S.purge(this.heroState,['bleed']);else S.purge(this.heroState,['sinking','tremor']);
       this.energy--;
@@ -1726,7 +2007,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
       if (recovery.bleeding > 0) this.log.push(`流血 ${recovery.bleeding.toFixed(1)}，恢复血容量 ${recovery.recovered.toFixed(1)}；血容量 ${this.hero.blood.toFixed(1)}%。`);
       if (recovery.expired) this.log.push('强化剂到期，身体能力重新计算。');
       if (this.checkResult() !== 'playing') return finish(recovery);
-      this.turn++; this.hero.block = this.relicBonus('turnBlock'); this.phase = 'player';
+      this.turn++; this.hero.block = this.relicBonus('turnBlock')+this.tech.turnBlock; this.phase = 'player';
       this.energy = this.effects.energy; this.draw(this.effects.draw);
       return finish(recovery);
     }
@@ -1736,7 +2017,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   if (typeof document === 'undefined') return;
 
   const $ = id => document.getElementById(id);
-  const Floor = root.EmberFloor, A = root.EmberArt, SAVE_KEY = 'ember-corridor.save.v1', BACKUP_KEY = SAVE_KEY + '.backup';
+  const Floor = root.EmberFloor, A = root.EmberArt, SAVE_KEY = 'ember-corridor.save.v1', BACKUP_KEY = SAVE_KEY + '.backup', PROFILE_KEY='ember-corridor.profile.v1', PROFILE_BACKUP_KEY=PROFILE_KEY+'.backup', MAX_SAVE_SIZE=2097152;
   const phoneUI=document.documentElement.dataset.ui==='phone';
   const artErrors=new Set(),artReady=new Set();
   function setArtImage(element,key){element.hidden=artErrors.has(key);if(element.dataset.artKey!==key){element.dataset.artKey=key;element.src=A[key];}}
@@ -1744,13 +2025,18 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   setArtImage($('hero-figure'),'hero');setArtImage($('scene-image'),'scene');setArtImage($('expedition-backdrop'),'scene');
   setArtImage($('scene-room-image'),'rooms');setArtImage($('enemy-atlas-image'),'enemies');
   const escapeHtml = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let run = new Floor(), battle = new Battle({hero:run.hero,deck:run.deck}), busy = false, sound = false, auto = false, context, modalOpen = false;
+  let profile=new P.Profile(),profileIssue='';
+  try{const raw=localStorage.getItem(PROFILE_KEY);if(raw){if(raw.length>MAX_SAVE_SIZE)throw new Error();profile=P.Profile.restore(JSON.parse(raw));}}catch(_){profileIssue='永久科技记录暂时无法读取，将尝试从旅途存档恢复。';}
+  let run = new Floor({profile}), battle = new Battle({hero:run.hero,deck:run.deck,techs:run.techs}), busy = false, sound = false, auto = false, context, modalOpen = false;
   let savedAt = null, saveError = '', memoryBackup = null, pendingImport = null, startupNotice = '';
   let selectedUid = null, rotation = 0, anchor = { x: 1, y: 1 }, anchorChosen = false;
   let aim = { x: (battle.columns - 1) / 2, y: (battle.rows - 1) / 2 }, aimSource = 'keyboard', edgeSnapped = false;
   let aimFrame = 0, queuedAim = null, wheelAmount = 0, lastWheelAt = 0, lastWheelTurn = -Infinity;
   let selectedPart = 'torso';
   let toastTimer, impactTimer, battleSerial = 0;
+  let selectedTech='grip',relicBarKey=null;
+  let selectedSeaNode=null,seaViewKey='';
+  let seaDrag=null,ignoreSeaClick=false;
   const shakeTimers = new WeakMap();
   const icon = (kind, cls = '') => `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">${{
     sword: '<path d="m5 19 4-4m-3-2 5 5M8 15l9-11 3-1-1 4-10 9M4 20l2-2"/>',
@@ -1836,12 +2122,20 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     tone(hit.lost ? 150 : 360, .2, hit.lost ? 'sawtooth' : 'triangle');
   }
   function saveRun(backup = false) {
-    const data=run.snapshot({auto,sound}), raw=JSON.stringify(data);
-    if(backup) memoryBackup=raw;
+    const errors=[];
+    // Merge other tabs' permanent records before either copy is saved. Active run bonuses stay frozen.
     try {
-      if(backup) { const previous=localStorage.getItem(SAVE_KEY); if(previous) { memoryBackup=previous; localStorage.setItem(BACKUP_KEY,previous); } }
-      localStorage.setItem(SAVE_KEY,raw); savedAt=data.savedAt; saveError='';
-    } catch (_) { saveError='自动存档不可用，请导出'; }
+      const stored=localStorage.getItem(PROFILE_KEY);
+      if(stored){try{if(stored.length>MAX_SAVE_SIZE)throw new Error();profile.merge(P.Profile.restore(JSON.parse(stored)));}catch(_){localStorage.setItem(PROFILE_BACKUP_KEY,stored);}}
+      localStorage.setItem(PROFILE_KEY,JSON.stringify(profile.snapshot()));
+    }catch(_){errors.push('永久科技保存失败');}
+    const data=run.snapshot({auto,sound}),raw=JSON.stringify(data);
+    if(backup)memoryBackup=raw;
+    try {
+      if(backup){const previous=localStorage.getItem(SAVE_KEY);if(previous){memoryBackup=previous;localStorage.setItem(BACKUP_KEY,previous);}}
+      localStorage.setItem(SAVE_KEY,raw);savedAt=data.savedAt;
+    }catch(_){errors.push('旅途保存失败');}
+    saveError=errors.length?errors.join('，')+'，请导出':'';
     updateSaveBadge();
   }
   function updateSaveBadge() {
@@ -1852,8 +2146,10 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   }
   function commitAction() { run.finishBattle(); saveRun(); }
   function adoptRun(next) {
+    profile.merge(next.profile);next.profile=profile;
+    selectedSeaNode=null;
     battleSerial++; clearPlacement(); busy=false; run=next;
-    battle=run.battle || new Battle({hero:run.hero,relics:run.relics,deck:run.deck,rng:()=>0});
+    battle=run.battle || new Battle({hero:run.hero,relics:run.relics,techs:run.techs,deck:run.deck,rng:()=>0});
     selectedPart=battle.hero.bestTreatment()?.id || 'torso'; aim={x:2.5,y:1.5}; aimSource='keyboard';
     clearTimeout(impactTimer); $('combat-effects').replaceChildren(); $('combat-banner').classList.remove('visible');
   }
@@ -1865,9 +2161,10 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   function showSaveMenu() {
     if(busy) return;
     let backup=memoryBackup; try { backup=backup || localStorage.getItem(BACKUP_KEY); } catch (_) { /* Export remains available. */ }
-    openModal('旅途存档',`<p class="modal-note">每次出牌、回合结算、选择节点和领取奖励后自动保存。再次打开同一个本地网站会继续当前旅途；导出文件可在不同浏览器或电脑间转移。</p><div class="save-summary"><b>${run.label} · ${run.visited.length}/${run.stations}站</b><span>${run.gold} 金币 · ${run.deck.length} 张牌 · 身体 ${run.hero.hp}/${run.hero.maxHp}</span><span>${escapeHtml(saveError || (savedAt?'已保存于 '+new Date(savedAt).toLocaleString():'尚未保存'))}</span></div><div class="save-actions"><button class="gold-button" data-save-export>导出当前存档 ↓</button><button class="outline-button" data-save-import>导入存档 ↑</button>${backup?'<button class="outline-button" data-save-backup>导出替换前备份</button>':''}</div><p class="modal-note">导入会先校验并显示确认；替换前的当前进度会另存一份本机备份。浏览器清理数据或切换本地网址可能使自动存档不再可见，请用导出文件保留进度。</p>`);
+    openModal('旅途存档',`<p class="modal-note">每次出牌、回合结算、选择节点和领取奖励后自动保存。再次打开同一个本地网站会继续当前旅途；永久科技和点数重开保留，导出文件可在不同浏览器或电脑间转移。</p><div class="save-summary"><b>${run.label} · ${run.visited.length}/${run.stations}站</b><span>${run.gold} 金币 · ${run.deck.length} 张牌 · 身体 ${run.hero.hp}/${run.hero.maxHp}</span><span>${escapeHtml(saveError || (savedAt?'已保存于 '+new Date(savedAt).toLocaleString():'尚未保存'))}</span></div><div class="save-actions"><button class="gold-button" data-save-export>导出旅途与永久科技 ↓</button><button class="outline-button" data-save-import>导入存档 ↑</button>${backup?'<button class="outline-button" data-save-backup>导出替换前备份</button>':''}</div><p class="modal-note">导入会先校验并显示确认；替换前的当前进度会另存一份本机备份。浏览器清理数据或切换本地网址可能使自动存档不再可见，请用导出文件保留进度。</p>`);
   }
   function mapMarkup(interactive=true) {
+    if(run.exploration)return seaMapMarkup(interactive);
     const available=new Set(run.available.map(n=>n.id)),seen=new Set(run.visited),expanded=run.routeVersion!==1,w=expanded?760:540,h=expanded?1160:710;
     const point=n=>run.point(n);
     const edges=run.nodes.flatMap(a=>run.nodes.filter(b=>run.linked(a,b)).map(b=>{
@@ -1882,10 +2179,50 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     }).join('')+'</div>';
   }
   function nodeAction(action,title,note,disabled=false) { return '<button class="node-choice" data-node-choice="'+action+'" '+(disabled?'disabled':'')+'><b>'+title+'</b><span>'+note+'</span><i>↗</i></button>'; }
+  function seaDisplay(n){if(n.type==='origin')return'origin';if(run.visited.includes(n.id))return'clearing';if(run.exploration.seen.includes(n.id))return n.type;return ['battle','elite'].includes(n.type)?'unknown-combat':'unknown';}
+  function seaName(n){const type=seaDisplay(n);return type==='clearing'?E.labels.clearing:type.startsWith('unknown')?E.labels[type]:['battle','elite','boss'].includes(type)?R.enemies[n.variant].name:type==='event'?run.event&&run.nodeId===n.id?run.event.title:R.events[n.variant].title:E.labels[type];}
+  function seaMapMarkup(interactive){
+    const state=run.exploration,available=new Set(run.available.map(n=>n.id)),selected=run.nodes.find(n=>n.id===selectedSeaNode),route=selected?run.routePlan(selected.id):null,at=run.nodes.find(n=>n.id===state.position),path=route?.path.length?[at.id,...route.path]:[],pair=(a,b)=>[a,b].sort().join('|'),highlight=new Set(path.slice(1).map((id,i)=>pair(path[i],id)));
+    const edges=run.nodes.flatMap(n=>n.next.filter(id=>n.id<id).map(id=>{const end=run.nodes.find(v=>v.id===id);return '<path class="sea-edge '+(highlight.has(pair(n.id,id))?'preview':'')+'" d="M'+n.x+' '+n.y+' L'+end.x+' '+end.y+'"/>';})).join('');
+    const jump=route?.mode!=='walk'&&path.length?'<path class="sea-jump" d="M'+at.x+' '+at.y+' L'+selected.x+' '+selected.y+'"/>':'';
+    const modes=interactive?'<div class="sea-modes" aria-label="移动方式">'+Object.entries(E.modes).map(([id,m])=>'<button data-sea-mode="'+id+'" aria-pressed="'+(state.mode===id)+'" '+(id!=='walk'&&!state.devices[id]?'disabled':'')+'>'+m.name+(id==='walk'?'':' <b>'+state.devices[id]+'</b>')+'</button>').join('')+'</div>':'';
+    return '<div class="sea-map-frame '+(interactive?'':'readonly')+'"><div class="sea-toolbar"><div class="sea-movement-count"><span>行动力</span><b>'+state.steps+'</b><small>步</small><em>本层初始 '+E.budgets[run.floorNumber-1]+' 步</em></div>'+modes+'<button class="sea-guide-button" data-sea-help aria-label="探索与移动说明">?</button></div><div class="sea-map-viewport" tabindex="0" aria-label="四向探索地图，可滚动"><div class="route-canvas sea-map" style="aspect-ratio:'+E.width+'/'+E.height+'"><svg class="sea-paths" viewBox="0 0 '+E.width+' '+E.height+'" preserveAspectRatio="none" aria-hidden="true">'+edges+jump+'</svg>'+run.nodes.map(n=>{const type=seaDisplay(n),current=n.id===state.position,chosen=n.id===selectedSeaNode;return '<button class="route-node sea-node sea-'+type+' '+(available.has(n.id)?'available':'')+' '+(current?'current':'')+' '+(chosen?'chosen':'')+'" style="left:'+n.x/E.width*100+'%;top:'+n.y/E.height*100+'%" data-node="'+n.id+'" '+(interactive&&run.screen==='map'?'':'disabled')+' title="'+escapeHtml(seaName(n))+'" aria-label="'+escapeHtml(seaName(n))+(current?'，当前位置':'，点击预览路线')+'" aria-pressed="'+chosen+'">'+E.glyph(type)+'<span class="sea-label">'+E.labels[type]+'</span>'+(current?'<strong class="sea-position">旅人</strong>':'')+'</button>';}).join('')+'</div></div><div class="sea-map-caption"><span>四向连通 · 空地可回走 · 未知地点靠近后揭示</span><button data-sea-locate>定位旅人 ⊕</button></div></div>';
+  }
+  function locateSea(){const viewport=$('route-map').querySelector('.sea-map-viewport'),current=$('route-map').querySelector('.sea-node.current');if(viewport&&current){viewport.scrollTop=Math.max(0,current.offsetTop-viewport.clientHeight/2);viewport.scrollLeft=Math.max(0,current.offsetLeft-viewport.clientWidth/2);}}
+  function seaPanel(){
+    const state=run.exploration,n=run.nodes.find(n=>n.id===selectedSeaNode),plan=n?run.routePlan(n.id):null;
+    const exhausted=state.steps===0?'<div class="sea-pursuit"><b>行动力耗尽 · 追猎将至</b><p>迎战第 '+(state.pursuits+1)+' 波追猎。胜利后返回地图恢复4步；没有金币、卡牌或遗物奖励，追猎逐波增强。</p><button class="gold-button" data-start-pursuit>迎战追猎 · 恢复4步</button></div>':'';
+    return '<div class="sea-preview">'+exhausted+'<span class="eyebrow">'+E.modes[state.mode].name+' · '+state.steps+' 步剩余</span><h2>'+(n?escapeHtml(seaName(n)):'选择探索目的地')+'</h2><p>'+(n?(seaDisplay(n).startsWith('unknown')?'此处内容尚未揭示。靠近后会揭雾，移动装置可越过未完成节点。':seaDisplay(n)==='clearing'?'已经完成的节点，仅供通行，不能重复领取奖励。':Floor.types[n.type].note):'点击地图节点预览路线、距离与消耗，再确认移动。')+'</p><p class="sea-mode-note">'+E.modes[state.mode].note+'</p>'+(plan?'<div class="sea-route-cost"><b>'+(plan.cost?plan.cost+' 步':'—')+'</b><span>'+(plan.ok?(plan.mode==='walk'?'沿小径经过 '+plan.path.length+' 格':'消耗1次'+E.modes[plan.mode].name):escapeHtml(plan.reason))+'</span></div><button class="gold-button sea-confirm" data-sea-move="'+n.id+'" '+(plan.ok?'':'disabled')+'>确认前往'+(plan.cost?' · '+plan.cost+'步':'')+'</button>':'')+'<small class="sea-progress">已处理 '+run.visited.length+' / '+run.stations+' 个节点 · 击败本层首领可前往下一层</small></div>';
+  }
+  function showExplorationHelp(){openModal('树海探索 · 移动与行动力','<p class="modal-note">沿四向连通的小径自由探索，也可以返回已经完成的空地。点节点先看路线，再确认移动。徒步按经过格数扣行动力，途中不能穿过未完成节点。</p><div class="status-guide">'+Object.entries(E.modes).map(([id,m])=>'<article><h3>'+m.name+'</h3><p>'+m.note+'</p></article>').join('')+'<article><h3>补给、观测与追猎</h3><p>每层补给节点一次增加4步及1次折跃索；观测台揭示2格内节点。行动力耗尽后迎战追猎，胜利确认返回时恢复4步，不给其他战利品，下一波更强。</p></article></div><p class="modal-note">五层初始14/13/12/11/10步，每层重置装置为2次折跃索与1次滑翔翼。已完成地点变空地，只能走过，不反复治疗或给奖。旧档当前层保留旧路线，下一层进入新地图。位置、步数、装置与迷雾自动保存。</p>');}
   function roomArt(cell) { return '<div class="room-illustration" aria-hidden="true">'+atlasArt('rooms',cell,3,2)+'</div>'; }
-  function relicMarkup(id) { const r=R.relics[id];return '<div class="loot-relic"><span>✦</span><div><b>'+r.name+'</b><p>'+r.description+'</p></div></div>'; }
+  function relicIcon(id){const [color,path]=P.relicIcons[id]||['#e8bd7c','m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z'];return '<svg class="relic-mark" style="color:'+color+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+path+'"/></svg>';}
+  function relicMarkup(id) { const r=R.relics[id];return '<div class="loot-relic"><span>'+relicIcon(id)+'</span><div><b>'+r.name+'</b><p>'+r.description+'</p></div></div>'; }
+  function hideRelicTooltip(){$('relic-tooltip').hidden=true;}
+  function showRelicTooltip(button){
+    if(phoneUI||modalOpen||!button)return;const id=button.dataset.relicId,r=R.relics[id];if(!r)return;
+    const tip=$('relic-tooltip');tip.innerHTML='<b>'+r.name+'</b><p>'+r.description+'</p>';tip.hidden=false;
+    const rect=button.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(rect.left,innerWidth-tip.offsetWidth-8))+'px';tip.style.top=Math.min(rect.bottom+8,Math.max(8,innerHeight-tip.offsetHeight-8))+'px';
+  }
+  function renderRelics(){
+    const key=run.relics.join('|');if(key!==relicBarKey){hideRelicTooltip();relicBarKey=key;$('relic-slots').innerHTML=run.relics.length?run.relics.map((id,i)=>'<button class="relic-slot" data-relic-id="'+id+'" aria-label="'+R.relics[id].name+'，第'+(i+1)+'件遗物，点击查看效果">'+relicIcon(id)+'</button>').join(''):'<span class="relic-empty">尚无遗物</span>';}
+    $('relic-count').textContent=run.relics.length;$('tech-points').textContent=profile.points;$('tech-button').disabled=busy;
+    $('tech-button').setAttribute('aria-label','永久科技树，可用'+profile.points+'点');
+  }
+  function showRelic(id){if(busy||!run.relics.includes(id))return;if(run.screen==='battle'&&battle.overflowCount){showOverflow();return;}openModal(R.relics[id].name,relicMarkup(id)+'<p class="modal-note">本次旅途的第 '+(run.relics.indexOf(id)+1)+' 件遗物 · 跨层持续生效</p><button class="outline-button" data-open-relics>查看遗物图鉴</button>');}
+  function showTech(){
+    if(busy)return;if(run.screen==='battle'&&battle.overflowCount){showOverflow();return;}
+    const oldTree=$('modal-body').querySelector('.tech-tree-scroll'),treeScroll=oldTree?.scrollLeft||0,keepTechFocus=!!document.activeElement?.closest('[data-tech-select],[data-tech-unlock]');
+    const selected=P.nodes.find(n=>n.id===selectedTech)||P.nodes[0],owned=profile.unlocked.includes(selected.id),reason=profile.reason(selected.id);
+    const branches=P.branches.map((b,i)=>'<div class="tech-branch" style="left:'+(i*300+150)/9+'%"><b>'+b.name+'</b><span>'+b.note+'</span></div>').join('');
+    const links=P.nodes.map(n=>{const x=P.branches.findIndex(b=>b.id===n.branch)*300+150,y=n.tier*170;return '<path class="'+(profile.unlocked.includes(n.id)?'lit':'')+'" d="M'+x+' '+(n.tier===1?80:y-170+56)+' V'+(y-56)+'"/>';}).join('');
+    const techNodes=P.nodes.map(n=>{const unlocked=profile.unlocked.includes(n.id),available=!profile.reason(n.id),active=run.techs.includes(n.id);return '<button class="tech-node '+(unlocked?'unlocked':available?'available':'locked')+' '+(selected.id===n.id?'selected':'')+'" style="left:'+(P.branches.findIndex(b=>b.id===n.branch)*300+150)/9+'%;top:'+n.tier*170+'px" data-tech-select="'+n.id+'" aria-pressed="'+(selected.id===n.id)+'"><small>'+['Ⅰ','Ⅱ','Ⅲ'][n.tier-1]+' · '+(unlocked?'已解锁':n.cost+' 点')+'</small><b>'+n.name+'</b><span>'+n.description+'</span><em>'+(active?'本局生效':unlocked?'下次新旅途生效':'曾通第'+n.minFloor+'层')+'</em></button>';}).join('');
+    openModal('余火传承 · 永久科技','<div class="tech-summary"><div><b>'+profile.points+'</b><span>可用科技点</span></div><div><b>'+profile.bestFloor+' / 5</b><span>最高通层</span></div><div><b>'+profile.unlocked.length+' / 9</b><span>永久解锁</span></div></div><p class="modal-note">击败各层首领分别获得 <strong>1 / 1 / 2 / 2 / 3 点</strong>。同一旅途的同一层只计一次；新旅途可以再次赚取。点数与已解锁科技在重开时保留，<strong>新解锁能力下次新旅途生效</strong>。</p><div class="tech-tree-scroll" tabindex="0" aria-label="科技树，窄屏可左右滑动"><div class="tech-tree"><svg viewBox="0 0 900 610" preserveAspectRatio="none" aria-hidden="true"><path d="M150 65H750"/>'+links+'</svg>'+branches+techNodes+'</div></div><div class="tech-detail" aria-live="polite"><div><small>'+P.branches.find(b=>b.id===selected.branch).name+' · '+selected.cost+' 点</small><h3>'+selected.name+'</h3><p>'+selected.description+'</p><span>'+(owned?(run.techs.includes(selected.id)?'已永久解锁 · 本局生效':'已永久解锁 · 下次新旅途生效'):reason||'条件满足，可以解锁。')+'</span></div><button class="gold-button" data-tech-unlock="'+selected.id+'" '+(reason?'disabled':'')+'>'+(owned?'已解锁':'解锁 · '+selected.cost+' 点')+'</button></div><div class="save-actions"><button class="outline-button" data-save-export>导出旅途与永久科技</button><button class="outline-button" data-save-import>导入存档</button>'+(['reward','lost','cleared'].includes(run.screen)?'<button class="outline-button" data-open-result>返回结算</button>':'')+'</div><p class="modal-note">树中的连线表示前置科技，三条分支可同时发展。永久科技会独立保存在本地，并随旅途存档导出；导入会合并通层记录和已解锁科技。'+escapeHtml(saveError)+'</p>','tech-panel');
+    $('modal-body').querySelector('.tech-tree-scroll').scrollLeft=treeScroll;
+    if(keepTechFocus)$('modal-body').querySelector('[data-tech-select="'+selected.id+'"]').focus({preventScroll:true});
+  }
   function cardEffects(id){
-    const d=R.cards[id];return '<span class="choice-effect"><span class="effect-meta">'+d.cost+' 能量 · '+(d.upgraded?'已强化':d.type==='attack'?'形状攻击':'技能')+'</span>'+(d.shape?'<span class="effect-shape" aria-label="'+d.shapeName+'形状">'+shapeArt(d.shape)+'</span>':'')+'<span class="effect-copy">'+d.description+'</span><small>基础效果；战斗时受身体机能与遗物影响。</small></span>';
+    const d=R.cards[id];return '<span class="choice-effect"><span class="effect-meta">'+d.cost+' 能量 · '+(d.upgraded?'已强化':d.type==='attack'?'形状攻击':'技能')+'</span>'+(d.shape?'<span class="effect-shape" aria-label="'+d.shapeName+'形状">'+shapeArt(d.shape)+'</span>':'')+'<span class="effect-copy">'+d.description+'</span><small>基础效果；战斗时受身体机能、遗物与本局科技影响。</small></span>';
   }
   function effectDetails(e){return(e.card?'<span class="choice-detail"><b>卡牌 · '+R.cards[e.card].name+'</b>'+cardEffects(e.card)+'</span>':'')+(e.relic?'<span class="choice-detail"><b>遗物 · '+R.relics[e.relic].name+'</b><span class="effect-copy">'+R.relics[e.relic].description+'</span></span>':'')+(e.randomRelic?'<span class="choice-detail">随机获得一件本层已解锁且未拥有的遗物；全部拥有则改为45金币。</span>':'');}
   function bloodMarkup(h,withShield=false){
@@ -1940,14 +2277,18 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     openModal('手牌超限 · 选择弃'+count+'张','<p class="modal-note">上限9张。新抽到的牌已经保留，可以从原手牌和新牌中选择弃置。先选牌，再确认；确认前可以更换选择。</p><p class="overflow-count" aria-live="polite">已选 '+selected.size+' / '+count+' 张 · 确认后保留9张</p><div class="overflow-cards">'+[...battle.hand,...battle.pendingDraw].map(c=>{const d=battle.definition(c);return '<button class="overflow-card '+(selected.has(c.uid)?'picked':'')+'" data-overflow-pick="'+c.uid+'" aria-pressed="'+selected.has(c.uid)+'"><span class="mini-art">'+art(c.id)+'</span><b>'+d.name+' <small>'+d.cost+'能量</small></b><span>'+d.description+'</span><em>'+(selected.has(c.uid)?'✓ 待弃置':fresh.has(c.uid)?'新抽到':'手牌')+'</em></button>';}).join('')+'</div><div class="overflow-confirm"><button class="gold-button" data-confirm-overflow '+(selected.size===count?'':'disabled')+'>确认弃牌（'+selected.size+'/'+count+'）</button><small>点已选中的牌可取消选择</small></div>','overflow-panel');
     const focus=confirmFocused?$('modal-body').querySelector('[data-confirm-overflow]'):focused?$('modal-body').querySelector('[data-overflow-pick="'+focused+'"]'):$('modal-body').querySelector('[data-overflow-pick]');focus?.focus({preventScroll:true});
   }
-  function showRelics() { if(busy)return;openModal('旅人遗物 · '+run.relics.length+' / '+Object.keys(R.relics).length,'<p class="modal-note">遗物效果跨层持续生效。精英与Boss自动掉落本层已解锁且未拥有的遗物，该池全齐时改给45金币。</p><div class="relic-collection">'+Object.keys(R.relics).map(id=>'<div class="'+(run.relics.includes(id)?'owned':'unowned')+'">'+relicMarkup(id)+'<small>'+(run.relics.includes(id)?'已拥有':(R.relics[id].minFloor||1)>run.floorNumber?'第'+R.relics[id].minFloor+'层解锁':'尚未获得')+'</small></div>').join('')+'</div>'); }
+  function showRelics() { if(busy)return;if(run.screen==='battle'&&battle.overflowCount){showOverflow();return;}openModal('旅人遗物 · '+run.relics.length+' / '+Object.keys(R.relics).length,'<p class="modal-note">已拥有的遗物按获得顺序排列，效果跨层持续生效。精英与Boss自动掉落本层已解锁且未拥有的遗物，该池全齐时改给45金币。遗物随本次旅途结算；永久科技重开保留。</p><div class="relic-collection">'+[...run.relics,...Object.keys(R.relics).filter(id=>!run.relics.includes(id))].map(id=>'<div class="'+(run.relics.includes(id)?'owned':'unowned')+'">'+relicMarkup(id)+'<small>'+(run.relics.includes(id)?'第 '+(run.relics.indexOf(id)+1)+' 件 · 已拥有':(R.relics[id].minFloor||1)>run.floorNumber?'第'+R.relics[id].minFloor+'层解锁':'尚未获得')+'</small></div>').join('')+'</div>'); }
   function renderRoute() {
+    const previousView=$('route-map').querySelector('.sea-map-viewport'),scroll=previousView?{x:previousView.scrollLeft,y:previousView.scrollTop}:null,viewKey=run.journeyId+':'+run.floorNumber+':'+run.routeVersion;
     $('route-map').innerHTML=mapMarkup();
+    const nextView=$('route-map').querySelector('.sea-map-viewport');if(nextView){if(scroll&&viewKey===seaViewKey){nextView.scrollLeft=scroll.x;nextView.scrollTop=scroll.y;}else locateSea();}seaViewKey=viewKey;
     const h=run.hero,type=Floor.types[run.node?.type],boss=run.nodes.find(n=>n.type==='boss');
     let content='';
     if(run.screen==='node') {
-      const n=run.node,cell={camp:0,shop:1,treasure:2,event:3}[n.type];
-      content=roomArt(cell)+'<span class="room-emblem">'+nodeIcon(n.type)+'</span><span class="eyebrow">第 '+(n.row+1)+' / '+run.stations+' 站</span><h2>'+(n.type==='event'?run.event.title:type.name)+'</h2><p>'+(n.type==='event'?run.event.story:type.note)+'</p><div class="node-choices">';
+      const n=run.node,cell={camp:0,shop:1,treasure:2,event:3,cache:2,beacon:3}[n.type];
+      content=roomArt(cell)+'<span class="room-emblem">'+(run.exploration?E.glyph(n.type):nodeIcon(n.type))+'</span><span class="eyebrow">'+(run.exploration?'树海坐标 '+(n.gridX+1)+' / '+(n.gridY+1)+' · 剩余'+run.exploration.steps+'步':'第 '+(n.row+1)+' / '+run.stations+' 站')+'</span><h2>'+(n.type==='event'?run.event.title:type.name)+'</h2><p>'+(n.type==='event'?run.event.story:type.note)+'</p><div class="node-choices">';
+      if(n.type==='cache')content+=nodeAction('resupply','整理应急补给','行动力+4，折跃索使用次数+1。每个补给点仅能领取一次。');
+      if(n.type==='beacon')content+=nodeAction('survey','登上观测台','揭示周围曼哈顿距离2格内的节点内容。');
       if(n.type==='camp')content+=nodeAction('rest','靠近营火','存活部位修复40%，止血，血容量+45。')+nodeAction('upgrade','强化卡牌','自由选择一张未强化卡牌，查看前后对比并永久强化。',!!run.canEffect({upgrade:true}))+nodeAction('train','学习「'+R.cards[run.trainingCard].name+'」',cardEffects(run.trainingCard),!!run.canEffect({card:run.trainingCard}))+nodeAction('purge','移除卡牌','自由选择移除一张牌；牌组至少保留5张。',!!run.canEffect({remove:'any'}));
       if(n.type==='event')content+=run.event.choices.map(c=>nodeAction(c.id,c.label+(c.cost?' · ¤ '+c.cost:''),c.text+effectDetails(c.effects),!!run.canEffect(c.effects,c.cost))).join('');
       if(n.type==='treasure')content+=run.roomRelics.map(id=>nodeAction('relic:'+id,R.relics[id].name,'<span class="effect-copy">'+R.relics[id].description+'</span>')).join('')+nodeAction('gold','带走钱币','获得'+run.treasureGold+'金币。');
@@ -1956,25 +2297,29 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
         content+=nodeAction('leave','离开商店','保留剩余金币，继续选择路线。');
       }
       content+='</div>';
-    } else content='<div class="journey-illustration" aria-hidden="true"><img data-art-key="hero" src="'+A.hero+'" alt="" draggable="false"></div><span class="eyebrow">'+run.mapName+'</span><h2>'+(run.visited.length?'余火仍在前方':'踏入'+run.theme.name)+'</h2><p>'+run.theme.story+'</p><div class="journey-meter"><b>'+run.visited.length+'<small> / '+run.stations+' 站</small></b><span>终点 · '+R.enemies[boss.variant].name+'</span></div><p class="node-tip">沿连线选择下一站。精英与Boss掉落遗物；过层可整备身体并选择补给。'+(run.routeVersion<4?'旧存档保留原图，下一层使用新路线。':'各层路线独立生成，岔口与宽窄随旅途变化。')+'</p>';
+    } else content=run.exploration?seaPanel():'<div class="journey-illustration" aria-hidden="true"><img data-art-key="hero" src="'+A.hero+'" alt="" draggable="false"></div><span class="eyebrow">'+run.mapName+'</span><h2>'+(run.visited.length?'余火仍在前方':'踏入'+run.theme.name)+'</h2><p>'+run.theme.story+'</p><div class="journey-meter"><b>'+run.visited.length+'<small> / '+run.stations+' 站</small></b><span>终点 · '+R.enemies[boss.variant].name+'</span></div><p class="node-tip">沿连线选择下一站。精英与Boss掉落遗物；过层可整备身体并选择补给。'+(run.routeVersion<4?'旧存档保留原图，下一层使用新路线。':'各层路线独立生成，岔口与宽窄随旅途变化。')+'</p>';
     $('node-panel').innerHTML=campaignTrail()+content+'<div class="journey-health"><span>旅人身体 <b>'+h.hp+'/'+h.maxHp+'</b></span>'+bloodMarkup(h)+'<span>意识 <b>'+Math.round(h.capacities.consciousness*100)+'%</b></span><button class="outline-button" data-open-health>身体与无限包扎 ↗</button></div><div class="journey-relics"><button class="outline-button" data-open-relics>✦ 遗物 '+run.relics.length+' / '+Object.keys(R.relics).length+'</button></div>';
-    $('map-legend').innerHTML=Object.entries(Floor.types).map(([id,t])=>'<span><b>'+nodeIcon(id)+'</b>'+t.name+'</span>').join('');
+    $('map-legend').innerHTML=Object.entries(Floor.types).filter(([id])=>run.exploration?!['origin'].includes(id):!['origin','clearing','cache','beacon'].includes(id)).map(([id,t])=>'<span><b>'+(run.exploration?E.glyph(id):nodeIcon(id))+'</b>'+t.name+'</span>').join('');
   }
 
   function renderRun() {
     const inCombat=['battle','reward','lost','cleared'].includes(run.screen);
     document.body.dataset.floor=run.floorNumber;document.documentElement.style.setProperty('--floor-hue',run.theme.hue+'deg');
+    $('expedition-view').classList.toggle('sea-exploration',!!run.exploration);
     $('floor-label').textContent=run.label;
     document.querySelector('.map-intro h1').textContent=run.theme.name;
     document.querySelector('.map-intro .eyebrow').textContent='ACT '+run.floorNumber+' / 5 · '+run.theme.subtitle;
     document.querySelector('.map-intro p').textContent=run.theme.story;
-    $('expedition-view').setAttribute('aria-label',run.label+'路线');
+    $('expedition-view').setAttribute('aria-label',run.label+(run.exploration?'，四向树海探索':'路线'));
+    $('route-map').setAttribute('aria-label',run.exploration?'四向连通探索地图，移动消耗行动力':'分岔路线，'+run.stations+'站');
+    document.querySelector('.map-instruction').textContent=run.exploration?'点节点预览 · 确认移动 · 留意行动力':'从下往上 · 点亮的节点可前往';
     document.querySelector('.game-shell').classList.toggle('map-mode',!inCombat);
     $('arena').hidden=!inCombat; document.querySelector('.hand-zone').hidden=!inCombat; $('expedition-view').hidden=inCombat;
     $('run-progress').textContent=`${run.visited.length} / ${run.stations}`;
     $('run-gold').textContent=run.gold; $('route-button').textContent=['reward','lost','cleared'].includes(run.screen)?'查看结算':'路线';
     $('deck-button').innerHTML=`${icon('cards')} <span>牌组</span> <b>${run.deck.length}</b>`;
     $('footer-status').textContent=run.node?`第${run.floorNumber}层 · 第${run.node.row+1}站 · ${Floor.types[run.node.type].name}`:`${run.label} · ${run.stations}站`;
+    if(run.exploration)$('footer-status').textContent=run.exploration.pursuing?'树海追猎 · 第'+run.exploration.pursuits+'波':run.label+' · 行动力 '+run.exploration.steps+'步';
     const e=battle.encounter;
     $('encounter-name').textContent=battle.members.length>1?'敌群 · '+battle.living.length+' / '+battle.members.length+'名存活':e?.name || '残火之径'; $('enemy-name').textContent=e?.name || '石门守卫'; $('enemy-role').textContent=e?.role || '';
     $('encounter-eyebrow').textContent=`第${run.floorNumber}层 · ${run.theme.name} · 第${(run.node?.row || 0)+1}站${e?.kind==='boss'?' · BOSS':e?.kind==='elite'?' · 精英':''}`;
@@ -1990,8 +2335,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     $('enemy-grid-panel').querySelector('h2').textContent=battle.members.length>1?'目标 · '+e.name:'生命方格';
     $('enemy-health').setAttribute('aria-label','敌人剩余总生命');
     $('sound-button').classList.toggle('active',sound); $('sound-button').setAttribute('aria-pressed',String(sound));
-    $('relic-badge').hidden=!run.relics.length; $('relic-badge').textContent=`✦ ${run.relics.length} 件遗物 · 点击查看`;
-    $('relic-badge').title=run.relics.map(id=>R.relics[id].name+'：'+R.relics[id].description).join('\n');
+    $('relic-badge').hidden=true;renderRelics();
     if(!inCombat) renderRoute(); updateSaveBadge();
   }
   function routeAction(id) {
@@ -2229,14 +2573,14 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     }, 650+Math.max(0,result.actions.length-1)*180);
   }
   function openModal(title, content, className = '') {
-    const panel=$('modal-panel'),keepScroll=(phoneUI||className==='overflow-panel'||className==='deck-action-panel')&&modalOpen&&panel.className===`modal-panel ${className}`,scroll=panel.scrollTop;
+    hideRelicTooltip();const panel=$('modal-panel'),keepScroll=(phoneUI||className==='overflow-panel'||className==='deck-action-panel'||className==='tech-panel')&&modalOpen&&panel.className===`modal-panel ${className}`,scroll=panel.scrollTop;
     modalOpen = true; $('modal-title').textContent = title; $('modal-body').innerHTML = content; panel.className = `modal-panel ${className}`; $('modal').hidden = false;
     $('modal-close').disabled=className==='overflow-panel';
     if(keepScroll)panel.scrollTop=scroll;else if(phoneUI){panel.scrollTop=0;$('modal-close').focus({preventScroll:true});}else $('modal-close').focus();
     if(phoneUI)document.dispatchEvent(new CustomEvent('ember:modal'));
   }
   function closeModal() {if(run.screen==='battle'&&battle.overflowCount)return;if(run.pendingDeckAction&&$('modal-panel').classList.contains('deck-action-panel')){run.cancelDeckAction();saveRun();}modalOpen = false; $('modal').hidden = true;$('modal-close').disabled=false; const target=run.screen==='battle'?$('end-turn'):$('route-button');if(phoneUI)target.focus({preventScroll:true});else target.focus();renderHealth();if(phoneUI)document.dispatchEvent(new CustomEvent('ember:modal')); }
-  function restart() { saveRun(true); adoptRun(new Floor()); saveRun(); closeModal(); render(); }
+  function restart() { saveRun(true); adoptRun(new Floor({profile})); saveRun(); closeModal(); render(); }
   function showPile(pile) {
     const names = { draw: '抽牌堆', discard: '弃牌堆', deck: '初始牌组', exhaust: '消耗区' };
     const cards = pile === 'draw' ? battle.drawPile : pile === 'discard' ? battle.discardPile : pile === 'exhaust' ? battle.exhaustPile : battle.allCards;
@@ -2244,25 +2588,37 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     openModal(`${names[pile]} · ${cards.length} 张`, `<p class="modal-note">${pile === 'draw' ? '以下按类型展示，不代表抽取顺序。抽牌堆耗尽时，弃牌会重新洗入。' : pile === 'discard' ? '打出的牌和回合结束时的手牌会进入这里。' : pile === 'exhaust' ? '消耗的牌在本局战斗中不会再被抽到。' : '跨五层延续的完整牌组。战斗奖励、商店和营火可加入新牌，下一场战斗会重新洗牌。'}</p><div class="pile-list">${Object.entries(counts).map(([id, count]) => { const d = battle.definition(id); return `<div class="pile-item"><span class="mini-art ${id}">${art(id)}</span><div><strong>${d.name} <small>×${count}</small></strong><p>${d.description}</p></div><span class="mini-cost">${d.cost}</span></div>`; }).join('') || '<p class="empty-pile">这里暂时没有牌。</p>'}</div>`);
   }
   function showHelp() {
+    if(run.exploration){openModal('提灯旅人 · 树海探索手册','<div class="help-grid"><div><h3>四向探索与有限步数</h3><p>点节点预览路线，再确认移动。徒步每经过一格消耗1步，途中不能越过未完成节点；完成的节点变空地，可回走。折跃索与滑翔翼消耗装置次数和1步，可越过节点。迷雾靠近后揭示，地图可拖动浏览。</p></div><div><h3>补给、观测与追猎</h3><p>五层初始14/13/12/11/10步。应急补给一次增加4步及1次折跃索，观测台揭示2格。0步后可迎战追猎，胜利确认返回恢复4步，没有其他战利品，逐波增强；到达首领后仍可用完最后一步完成战斗。</p></div><div><h3>战斗与医疗</h3><p>多敌战斗先点目标，再选攻击牌并点生命格立即攻击；AUTO免放置。手牌最多9张，超额后勾选并确认弃牌。包扎无限次，每次1能量，点身体选择部位；技能、部位伤势和五种负面状态沿用原规则。</p></div><div><h3>余火传承</h3><p>首领给予遗物及科技点。遗物在顶部按获得顺序排列，点图标看效果；永久科技三条分支重开保留，新解锁下次新旅途生效。当前旅途和永久科技一起导出、确认后导入合并；旧档本层保留旧图，过层进入新地图。</p></div></div><div class="save-actions"><button class="outline-button" data-sea-help>详细移动规则</button><button class="outline-button" data-open-tech>永久科技树</button><button class="outline-button" data-open-statuses>战斗状态说明</button></div>');return;}
     if(phoneUI){
       openModal('手机操作手册','<div class="help-grid"><div><h3>滑动手牌，点格攻击</h3><p>左右滑动底部手牌。多敌战斗先点敌人选目标，再选攻击牌、点它的生命格打出；图案以触点为中心。下方按钮可以旋转、取消，开启AUTO后点攻击牌便自动放置。技能点牌直接使用。滑动浏览不会出牌。</p></div><div><h3>把常用操作放在手边</h3><p>能量、抽牌堆、弃牌堆和结束回合位于手牌下方。底部「身体」查看伤势、选择部位包扎或注射强化剂；包扎次数无限，每次1能量。健康面板可上下滑动。</p></div><div><h3>滑动探索回廊</h3><p>地图可以上下和左右滑动，点亮的节点可前往。进入房间后显示事件或商店等选择，处理完再继续走图。旅途共五层，每层独立路线、逐层增强的敌人和关底首领。营火可永久强化一张牌或自由移除卡牌，先选后确认。精英与首领掉落遗物，可在「更多」查看；前四层首领结算选择补给进入下一层，第五层胜利才完成旅途。</p></div><div><h3>把旅途带到手机</h3><p>操作后自动保存。切换设备前在「存档」导出，再在新设备导入。手牌超出9张会显示原手牌与新牌，选足数量后点击确认弃牌，确认前可修改选择。横屏会将战斗与手牌放在两侧；竖屏时手牌与常用按钮保持在底部。</p></div></div>');
       return;
     }
-    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>五层独立路线</h3><p>从残火之径，穿过潮汐书库、铜炉工坊和碎镜天台，抵达群星熔心。每层十二站47节点，四种走向。首层随机挑战三位首领之一，后四层各有专属首领。</p></div><div>'+icon('sword')+'<h3>54张卡牌</h3><p>新卡随楼层解锁，高层战斗奖励保证一张本层新卡。支持多层削伤、穿甲、格挡、抽牌、能量、治疗和止血。营火可选一张牌强化一次，名称带+；移除牌也可自由选择，选后确认。鼠标居中放置，点格即出；R/滚轮旋转，右键取消，AUTO按所选目标自动放置。每场可有1–3名敌人，各自行动，全灭后领奖；手牌超过9张时选牌并确认弃牌，可保留新抽到的牌。</p></div><div>'+icon('shield')+'<h3>医疗与过层补给</h3><p>包扎无限次，每次1能量，不能再生。强化默认每场1次，炼金试管增加至2次。前四层胜利可选择补给，修复存活部位60%、止血、补满血容量、获得35金币和一张卡；再生补给可修复一支缺失部位树。</p></div><div>'+icon('flame')+'<h3>逐层增强的敌人</h3><p>共55种敌人、28件遗物、24类双选事件。首层普通生命10–18，首领34–42；后四层首领生命60/82/108/144。护甲、攻击和狂怒逐渐增强。精英与首领掉落本层已解锁且未拥有的遗物。</p></div></div><p class="modal-note">第五层首领胜利才完成旅途。进度、伤势、牌组和遗物跨层延续；过层、动作与奖励后自动保存。支持v1–v6存档，旧路线与战斗保留，旧首层通关可继续第二层。导入前预览并备份。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
+    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>五层独立路线</h3><p>从残火之径，穿过潮汐书库、铜炉工坊和碎镜天台，抵达群星熔心。每层十二站47节点，四种走向。首层随机挑战三位首领之一，后四层各有专属首领。</p></div><div>'+icon('sword')+'<h3>54张卡牌</h3><p>新卡随楼层解锁，高层战斗奖励保证一张本层新卡。支持多层削伤、穿甲、格挡、抽牌、能量、治疗和止血。营火可选一张牌强化一次，名称带+；移除牌也可自由选择，选后确认。鼠标居中放置，点格即出；R/滚轮旋转，右键取消，AUTO按所选目标自动放置。每场可有1–3名敌人，各自行动，全灭后领奖；手牌超过9张时选牌并确认弃牌，可保留新抽到的牌。</p></div><div>'+icon('shield')+'<h3>医疗与过层补给</h3><p>包扎无限次，每次1能量，不能再生。强化默认每场1次，炼金试管增加至2次。前四层胜利可选择补给，修复存活部位60%、止血、补满血容量、获得35金币和一张卡；再生补给可修复一支缺失部位树。</p></div><div>'+icon('flame')+'<h3>逐层增强的敌人</h3><p>共55种敌人、28件遗物、24类双选事件。首层普通生命10–18，首领34–42；后四层首领生命60/82/108/144。护甲、攻击和狂怒逐渐增强。精英与首领掉落本层已解锁且未拥有的遗物。</p></div></div><p class="modal-note">第五层首领胜利才完成旅途。进度、伤势、牌组和遗物跨层延续；过层、动作与奖励后自动保存。支持v1–v8存档，旧路线与战斗保留，旧首层通关可继续第二层。导入前预览并备份。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
   }
   function showResult() {
     if(!['reward','lost','cleared'].includes(run.screen))return;
     const cleared=run.screen==='cleared',won=run.screen==='reward'||cleared,loot=run.lastLoot;
+    if(run.exploration?.pursuing){openModal(won?'摆脱追猎':'倒在追猎之中','<div class="result-emblem">'+icon(won?'flame':'shield')+'</div><p class="result-story">'+(won?'追猎者暂时退去。确认返回地图后恢复4步行动力；本场不发放金币、卡牌、遗物或科技点。下一波追猎会更强。':escapeHtml(run.hero.failureReason)+'。此前获得的永久科技与点数仍会保留。')+'</p>'+(won?'<button class="gold-button" data-card-reward="skip">返回地图 · 恢复4步</button>':'<button class="gold-button" data-new-run>开始新旅途</button>')+'<div class="save-actions"><button class="outline-button" data-open-tech>永久科技树</button><button class="outline-button" data-save-export>导出旅途与科技</button></div>','result-panel');return;}
     const defeated=battle.encounters.filter(Boolean).map(e=>e.name).join('、')||'敌人';
     const cards=run.offers.map(id=>{const d=R.cards[id];return '<button class="reward-card" data-card-reward="'+id+'" '+(run.deck.length>=120?'disabled':'')+'><span class="mini-art">'+art(id)+'</span><b>'+d.name+'</b>'+cardEffects(id)+'</button>';}).join('');
     const drops=loot?.relics.length?'<div class="loot-section"><p>已自动获得遗物</p>'+loot.relics.map(relicMarkup).join('')+'</div>':'';
+    const techReward=cleared?'<div class="tech-clear-reward"><b>余火传承 +'+(loot?.techPoints||0)+' 点 · 已入账</b><span>可用 '+profile.points+' 点，重开保留</span><button class="outline-button" data-open-tech>查看永久科技树 ↗</button></div>':'';
     const story=cleared?escapeHtml(defeated)+'已被击败。<br>'+(run.completed?'五层首领尽数倒下，余火终于化为黎明。':'下一层：'+R.floors[run.floorNumber].name+'。选择一份补给继续旅途。'):won?escapeHtml(defeated)+'已被击败。<br>'+(loot?.gold?'获得 '+loot.gold+' 金币。':'金币奖励已入账。')+'选择一张卡牌，或跳过。':escapeHtml(run.hero.failureReason)+'。<br>这次旅途结束，存档仍可导出留存。';
     let actions=run.screen==='reward'?'<div class="card-rewards">'+cards+'</div><button class="outline-button" data-card-reward="skip">跳过卡牌，继续路线 →</button>':'<button class="gold-button" data-new-run>重新点亮提灯</button>';
     if(cleared&&!run.completed)actions='<p class="ascent-note">前往下一层时：存活部位修复60% · 全部止血 · 血容量补满 · 获得35金币。'+(run.deck.length>=120?'牌组已满，本次不添加补给卡牌。':'')+'</p><div class="ascent-choices">'+run.ascentChoices.map(c=>'<button class="node-choice" data-next-floor="'+c.id+'"><b>'+c.title+' · '+R.cards[c.card].name+'</b><span>'+c.note+cardEffects(c.card)+'</span><i>↗</i></button>').join('')+'</div>';
-    openModal(run.completed?'五层旅途 · 黎明已至':cleared?'第'+run.floorNumber+'层 · 首领已败':won?'战利品':'提灯熄灭',campaignTrail()+'<div class="result-emblem">'+icon(won?'flame':'shield')+'</div><p class="result-eyebrow">'+(run.completed?'THE DAWN RETURNS':cleared?'FLOOR '+run.floorNumber+' CLEARED':won?'ENCOUNTER CLEARED':'THE EMBERS WILL RETURN')+'</p><p class="result-story">'+story+'</p>'+drops+(loot?.fallbackGold?'<p class="modal-note">本层已解锁遗物已集齐，掉落转为45金币。</p>':'')+'<div class="result-stats"><div><b>'+(run.history.reduce((sum,h)=>sum+h.visited.length,0)+run.visited.length+(won&&!cleared?1:0))+'</b><span>完成节点</span></div><div><b>'+run.gold+'</b><span>金币</span></div><div><b>'+run.deck.length+'</b><span>牌组</span></div></div><button class="result-health-link" data-open-health>查看身体与无限包扎 ↗</button>'+actions+'<button class="outline-button" data-save-export>导出这次旅途</button><p class="result-footnote">奖励已结算 · 过层选择后自动保存</p>','result-panel');
+    openModal(run.completed?'五层旅途 · 黎明已至':cleared?'第'+run.floorNumber+'层 · 首领已败':won?'战利品':'提灯熄灭',campaignTrail()+'<div class="result-emblem">'+icon(won?'flame':'shield')+'</div><p class="result-eyebrow">'+(run.completed?'THE DAWN RETURNS':cleared?'FLOOR '+run.floorNumber+' CLEARED':won?'ENCOUNTER CLEARED':'THE EMBERS WILL RETURN')+'</p><p class="result-story">'+story+'</p>'+techReward+drops+(loot?.fallbackGold?'<p class="modal-note">本层已解锁遗物已集齐，掉落转为45金币。</p>':'')+'<div class="result-stats"><div><b>'+(run.history.reduce((sum,h)=>sum+h.visited.length,0)+run.visited.length+(won&&!cleared?1:0))+'</b><span>完成节点</span></div><div><b>'+run.gold+'</b><span>金币</span></div><div><b>'+run.deck.length+'</b><span>牌组</span></div></div><button class="result-health-link" data-open-health>查看身体与无限包扎 ↗</button>'+actions+(!cleared?'<button class="outline-button" data-open-tech>永久科技 · '+profile.points+' 点</button>':'')+'<button class="outline-button" data-save-export>导出这次旅途</button><p class="result-footnote">奖励已结算 · 过层选择后自动保存</p>','result-panel');
   }
 
   document.addEventListener('click', e => {
+    const moveMode=e.target.closest('[data-sea-mode]');if(moveMode&&!moveMode.disabled&&run.exploration&&run.screen==='map'&&!busy&&!modalOpen){run.exploration.mode=moveMode.dataset.seaMode;saveRun();render();}
+    if(e.target.closest('[data-sea-help]'))showExplorationHelp();
+    if(e.target.closest('[data-sea-locate]'))locateSea();
+    const seaMove=e.target.closest('[data-sea-move]');if(seaMove&&!seaMove.disabled)routeAction(seaMove.dataset.seaMove);
+    if(e.target.closest('[data-start-pursuit]')&&!busy&&!modalOpen&&run.startPursuit(Battle)){adoptRun(run);saveRun();render();}
+    if(e.target.closest('[data-open-tech]'))showTech();
+    const techSelect=e.target.closest('[data-tech-select]');if(techSelect){selectedTech=techSelect.dataset.techSelect;showTech();}
+    const techUnlock=e.target.closest('[data-tech-unlock]');if(techUnlock&&!techUnlock.disabled){saveRun();const result=profile.unlock(techUnlock.dataset.techUnlock);if(result.ok){saveRun();renderRelics();showTech();toast('科技已解锁，下次新旅途生效。');}else{showTech();toast(result.reason);}}
+    const relicSlot=e.target.closest('[data-relic-id]');if(relicSlot)showRelic(relicSlot.dataset.relicId);
     if(e.target.closest('[data-open-statuses]'))showStatuses();
     const deckPick=e.target.closest('[data-deck-pick]');if(deckPick&&!deckPick.disabled&&run.selectDeckCard(Number(deckPick.dataset.deckPick))){saveRun();showDeckAction();}
     if(e.target.closest('[data-cancel-deck]'))closeModal();
@@ -2276,7 +2632,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     if (e.target.closest('[data-open-result]')) showResult();
     if (e.target.closest('[data-open-relics]')) showRelics();
     const card = e.target.closest('[data-uid]'); if (card) play(card.dataset.uid);
-    const node=e.target.closest('[data-node]'); if(node && !node.disabled) routeAction(node.dataset.node);
+    const node=e.target.closest('[data-node]'); if(node && !node.disabled){if(run.exploration&&!busy&&!modalOpen&&run.screen==='map'){selectedSeaNode=node.dataset.node;render();$('route-map').querySelector('[data-node="'+selectedSeaNode+'"]')?.focus({preventScroll:true});}else routeAction(node.dataset.node);}
     const choice=e.target.closest('[data-node-choice]'); if(choice && !choice.disabled && !modalOpen) { const result=run.choose(choice.dataset.nodeChoice); if(result.ok){if(result.pending){saveRun();render();}else afterNodeAction();} else if(result.reason)toast(result.reason); }
     const buy=e.target.closest('[data-buy]'); if(buy && !buy.disabled && !modalOpen) { const result=run.buy(buy.dataset.buy); if(result.ok) { adoptRun(run); saveRun(); render(); } else if(result.reason)toast(result.reason); }
     const cardReward=e.target.closest('[data-card-reward]'); if(cardReward && run.chooseCard(cardReward.dataset.cardReward)) afterNodeAction();
@@ -2285,9 +2641,15 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     if(e.target.closest('[data-save-import]')) { $('save-file').value=''; $('save-file').click(); }
     if(e.target.closest('[data-save-backup]')) { let raw=memoryBackup; try { raw=raw||localStorage.getItem(BACKUP_KEY); } catch (_) {} if(raw) downloadSave(raw,'余烬回廊-替换前备份.json'); }
     if(e.target.closest('[data-confirm-import]') && pendingImport) { saveRun(true); const imported=pendingImport; pendingImport=null; adoptRun(imported.run); auto=imported.options.auto; sound=imported.options.sound; saveRun(); closeModal(); render(); if(['reward','lost','cleared'].includes(run.screen)) showResult(); }
-    if(e.target.closest('[data-new-run]')) openModal('开始新的旅途？','<p class="modal-note">当前旅途将被替换。替换前进度会保存为本机备份，也可先导出文件。</p><div class="save-actions"><button class="outline-button" data-save-export>先导出当前存档</button><button class="gold-button" id="confirm-restart">开始新旅途</button></div>');
+    if(e.target.closest('[data-new-run]')) showRestart();
   });
+  function showRestart(){if(busy)return;openModal('开始新的旅途？','<p class="modal-note">当前旅途将被替换，并保存为本机备份。<strong>永久科技、通层记录和剩余科技点保留</strong>，所有已解锁能力在新旅途生效。</p><div class="save-actions"><button class="outline-button" data-save-export>先导出当前存档</button><button class="gold-button" id="confirm-restart">开始新旅途</button></div>');}
   $('end-turn').addEventListener('click', endTurn); $('help-button').addEventListener('click', showHelp);
+  $('route-map').addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0)return;ignoreSeaClick=false;const viewport=e.target.closest('.sea-map-viewport');if(viewport)seaDrag={id:e.pointerId,x:e.clientX,y:e.clientY,left:viewport.scrollLeft,top:viewport.scrollTop,viewport,moved:false};});
+  $('route-map').addEventListener('pointermove',e=>{if(!seaDrag||seaDrag.id!==e.pointerId||!e.buttons)return;const dx=e.clientX-seaDrag.x,dy=e.clientY-seaDrag.y;if(!seaDrag.moved&&Math.hypot(dx,dy)>6){seaDrag.moved=true;seaDrag.viewport.setPointerCapture(e.pointerId);seaDrag.viewport.classList.add('grabbing');}if(seaDrag.moved){e.preventDefault();seaDrag.viewport.scrollLeft=seaDrag.left-dx;seaDrag.viewport.scrollTop=seaDrag.top-dy;}});
+  function stopSeaDrag(e){if(!seaDrag||seaDrag.id!==e.pointerId)return;ignoreSeaClick=seaDrag.moved;seaDrag.viewport.classList.remove('grabbing');if(seaDrag.viewport.hasPointerCapture(e.pointerId))seaDrag.viewport.releasePointerCapture(e.pointerId);seaDrag=null;}
+  $('route-map').addEventListener('pointerup',stopSeaDrag);$('route-map').addEventListener('pointercancel',stopSeaDrag);
+  $('route-map').addEventListener('click',e=>{if(ignoreSeaClick&&e.detail!==0){e.preventDefault();e.stopImmediatePropagation();ignoreSeaClick=false;}},true);
   $('health-button').addEventListener('click', showHealth); $('bandage-button').addEventListener('click', () => useMedical('bandage')); $('boost-button').addEventListener('click', () => useMedical('boost'));
   $('treatment-part').addEventListener('change', e => selectBodyPart(e.target.value));
   $('enemy-grid').addEventListener('pointermove', queuePointerAim);
@@ -2313,21 +2675,27 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   $('draw-pile').addEventListener('click', () => showPile('draw')); $('discard-pile').addEventListener('click', () => showPile('discard'));
   $('deck-button').addEventListener('click', () => showPile('deck'));
   $('log-button').addEventListener('click', () => openModal('战斗记录', `<ol class="battle-log">${battle.log.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ol>`));
-  $('restart-button').addEventListener('click', () => { if(!busy) openModal('开始新的旅途？', '<p class="modal-note">当前这一层的进度将被替换，替换前会保存一份本机备份。</p><div class="save-actions"><button class="outline-button" data-save-export>先导出存档</button><button class="gold-button" id="confirm-restart">开始新旅途</button></div>'); });
+  $('restart-button').addEventListener('click',showRestart);
   $('modal-body').addEventListener('click', e => { if (e.target.closest('#confirm-restart')) restart(); });
   $('sound-button').addEventListener('click', () => { sound = !sound; saveRun(); $('sound-button').classList.toggle('active', sound); $('sound-button').setAttribute('aria-pressed', String(sound)); $('sound-button').title = sound ? '关闭音效' : '开启音效'; toast(sound ? '音效已开启' : '音效已关闭'); if (sound) tone(500); });
   $('route-button').addEventListener('click',showRoute); $('save-button').addEventListener('click',showSaveMenu);
   $('relic-badge').addEventListener('click',showRelics);
+  $('relic-slots').addEventListener('pointerover',e=>showRelicTooltip(e.target.closest('[data-relic-id]')));
+  $('relic-slots').addEventListener('focusin',e=>showRelicTooltip(e.target.closest('[data-relic-id]')));
+  $('relic-slots').addEventListener('pointerout',e=>{if(!e.target.closest('[data-relic-id]')?.contains(e.relatedTarget))hideRelicTooltip();});$('relic-slots').addEventListener('focusout',hideRelicTooltip);
+  root.addEventListener('scroll',hideRelicTooltip,true);root.addEventListener('resize',hideRelicTooltip);
+  root.addEventListener('storage',e=>{if(e.key===PROFILE_KEY&&e.newValue){try{if(e.newValue.length>MAX_SAVE_SIZE)return;profile.merge(P.Profile.restore(JSON.parse(e.newValue)));renderRelics();if(modalOpen&&$('modal-panel').classList.contains('tech-panel'))showTech();}catch(_){/* Keep valid in-memory progress. */}}});
   $('asset-warning').addEventListener('click',()=>openModal('图片资源未完整加载','<p class="modal-note">以下本地图片加载失败：'+[...artErrors].map(escapeHtml).join('、')+'。已尽量保留基础场景和角色作为回退。</p><p class="modal-note">可以刷新页面，或直接打开项目中的独立离线HTML；使用dist版本时，请保持assets目录完整。</p>'));
   $('save-file').addEventListener('change',async e=>{
     const file=e.target.files[0]; if(!file) return;
     try {
-      if(file.size>131072) throw new Error('存档文件过大，请选择本游戏导出的 JSON 文件。');
+      if(file.size>MAX_SAVE_SIZE) throw new Error('存档文件过大，请选择本游戏导出的 JSON 文件。');
       const raw=await file.text(); let data;
       try { data=JSON.parse(raw); } catch (_) { throw new Error('文件不是有效的 JSON 存档。'); }
       pendingImport=Floor.restore(data,Battle);
       const imported=pendingImport.run;
-      openModal('确认导入这次旅途？',`<p class="modal-note">文件：${escapeHtml(file.name)}</p><div class="save-summary"><b>${imported.label} · ${imported.visited.length}/${imported.stations}站</b><span>${imported.gold} 金币 · ${imported.deck.length} 张牌</span><span>身体 ${imported.hero.hp}/${imported.hero.maxHp} · ${imported.screen==='cleared'?(imported.completed?'五层已通关':'本层已完成，待选择补给'):imported.screen==='lost'?'旅途结束':'旅途中'}</span></div><p class="modal-note">导入将替换当前进度，并保留替换前的本机备份。</p><button class="gold-button" data-confirm-import>确认导入</button>`);
+      const merged=P.Profile.restore(profile.snapshot()).merge(imported.profile);
+      openModal('确认导入这次旅途？',`<p class="modal-note">文件：${escapeHtml(file.name)}</p><div class="save-summary"><b>${imported.label} · ${imported.visited.length}/${imported.stations}站</b><span>${imported.gold} 金币 · ${imported.deck.length} 张牌</span><span>身体 ${imported.hero.hp}/${imported.hero.maxHp} · ${imported.screen==='cleared'?(imported.completed?'五层已通关':'本层已完成，待选择补给'):imported.screen==='lost'?'旅途结束':'旅途中'}</span><span>合并后永久科技 ${merged.unlocked.length} / 9 · 可用 ${merged.points} 点</span></div><p class="modal-note">确认后替换当前旅途并备份，永久科技与通层记录合并。重复导入同一旅途不会重复加点；不同备份已解锁的科技均保留，点数按总收入减解锁成本重新计算。若合并了分开消费的备份，超出的消费先由后续收入补足。本局仍使用导入旅途开始时的科技。</p><button class="gold-button" data-confirm-import>确认导入并合并科技</button>`);
     } catch(error) { pendingImport=null; openModal('未导入存档',`<p class="modal-note">${escapeHtml(error instanceof SyntaxError?'文件不是有效的存档。':error.message)}</p><p class="modal-note">当前旅途没有改变。</p>`); }
   });
   $('modal-close').addEventListener('click', closeModal); $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
@@ -2335,7 +2703,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     if (e.key === 'Tab') aimSource = 'keyboard';
     if (!modalOpen && e.target.closest('[data-body-part]') && ['Enter', ' '].includes(e.key)) { e.preventDefault(); selectBodyPart(e.target.closest('[data-body-part]').dataset.bodyPart); return; }
     if (e.key === 'Escape' && modalOpen) { closeModal(); return; }
-    if (modalOpen) { if (e.key === 'Tab') { const list = [...$('modal').querySelectorAll('button:not([disabled])')]; if (e.shiftKey && document.activeElement === list[0]) { e.preventDefault(); list.at(-1).focus(); } else if (!e.shiftKey && document.activeElement === list.at(-1)) { e.preventDefault(); list[0].focus(); } } return; }
+    if (modalOpen) { if (e.key === 'Tab') { const list = [...$('modal').querySelectorAll('button:not([disabled]),[tabindex="0"]')]; if (e.shiftKey && document.activeElement === list[0]) { e.preventDefault(); list.at(-1).focus(); } else if (!e.shiftKey && document.activeElement === list.at(-1)) { e.preventDefault(); list[0].focus(); } } return; }
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || run.screen!=='battle') return;
     if (e.key === 'Escape' && selectedUid) { e.preventDefault(); cancelAttack(); return; }
     if (e.key.toLowerCase() === 'a') { e.preventDefault(); toggleAuto(); return; }
@@ -2350,16 +2718,18 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   $('draw-symbol').innerHTML = icon('cards'); $('discard-symbol').innerHTML = icon('cards');
   $('end-turn').innerHTML = `结束回合 ${icon('arrow')}<kbd>E</kbd>`;
   $('layer-legend').innerHTML = `<span class="layer-legend-label">层数</span>${R.layerColors.map((color, i) => `<span class="layer-swatch" style="--layer-color:${color}" title="${i + 1}层生命">${i + 1}</span>`).join('')}`;
-  root.emberGame = { get run() { return run; }, get battle() { return battle; }, get auto() { return auto; }, restart, play, endTurn, showResult, showHealth, useMedical, confirmAttack, rotateAttack, cancelAttack, toggleAuto, exportSave };
+  root.emberGame = { get run() { return run; }, get battle() { return battle; }, get profile(){return profile;}, get auto() { return auto; }, restart, play, endTurn, showResult, showHealth, showTech, useMedical, confirmAttack, rotateAttack, cancelAttack, toggleAuto, exportSave };
   try {
     const raw=localStorage.getItem(SAVE_KEY);
     if(raw) {
-      if(raw.length>131072) throw new Error('已有存档过大');
+      if(raw.length>MAX_SAVE_SIZE) throw new Error('已有存档过大');
       const data=JSON.parse(raw),restored=Floor.restore(data,Battle);
       adoptRun(restored.run); auto=restored.options.auto; sound=restored.options.sound; savedAt=typeof data.savedAt==='string'&&!isNaN(Date.parse(data.savedAt))?data.savedAt:null;
-      if(restored.migrated)saveRun(true);
+      saveRun(restored.migrated);
+      if(profileIssue)startupNotice='已从旅途存档恢复永久科技；不可读的原科技记录已尝试另存本机备份。'+(saveError?'请立即导出保存进度。':'');
     } else saveRun();
   } catch (_) { saveError='存档不可读，可导出或重开'; startupNotice='本地存档暂时无法读取，原记录尚未替换。你可在存档菜单导出备份，或开始新旅途。'; try { memoryBackup=localStorage.getItem(SAVE_KEY); if(memoryBackup) localStorage.setItem(BACKUP_KEY,memoryBackup); } catch (_) {} }
+  if(profileIssue&&!startupNotice)startupNotice=profileIssue+'原记录在覆盖前会尝试另存备份，请保留已有导出文件。';
   $('sound-button').classList.toggle('active',sound); $('sound-button').setAttribute('aria-pressed',String(sound));
   render();
   // Browser load events update presentation only; they never advance or save the run.
@@ -2411,7 +2781,7 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   document.addEventListener('ember:modal',()=>{
     if(!$('modal').hidden)closeMenu();sync();
     const preview=$('modal').querySelector('.route-preview');
-    if(preview)scheduleLayout(()=>{const current=preview.querySelector('.route-node.current');if(current){preview.scrollTop=Math.max(0,current.offsetTop-preview.clientHeight*.6);preview.scrollLeft=Math.max(0,(preview.scrollWidth-preview.clientWidth)/2);}});
+    if(preview)scheduleLayout(()=>{const current=preview.querySelector('.route-node.current'),viewport=preview.querySelector('.sea-map-viewport')||preview;if(current){viewport.scrollTop=Math.max(0,current.offsetTop-viewport.clientHeight*.6);viewport.scrollLeft=Math.max(0,current.offsetLeft-viewport.clientWidth/2);}});
   });
   function guardSwipe(element){
     let touch=null,ignoreClick=false;
@@ -2428,8 +2798,8 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
   }
   function focusAvailable(){
     if(game.run.screen!=='map')return;
-    const node=map.querySelector('.route-node.available');
-    if(node){map.scrollTop=Math.max(0,node.offsetTop-map.clientHeight*.68);map.scrollLeft=Math.max(0,(map.scrollWidth-map.clientWidth)/2);}
+    const node=map.querySelector('.sea-node.current')||map.querySelector('.route-node.available'),viewport=map.querySelector('.sea-map-viewport')||map;
+    if(node){viewport.scrollTop=Math.max(0,node.offsetTop-viewport.clientHeight*.6);viewport.scrollLeft=Math.max(0,node.offsetLeft-viewport.clientWidth/2);}
   }
   function revealGrid(){
     if(game.run.screen!=='battle'||!$('modal').hidden)return;
@@ -2443,14 +2813,14 @@ body.phone{--phone-hand:clamp(220px,29dvh,250px);--phone-top:calc(50px + env(saf
     $('phone-health-button').disabled=busy;$('save-button').disabled=busy;$('route-button').disabled=busy;
     const title=document.querySelector('.map-intro h1'),note=document.querySelector('.map-intro p');
     if(title.textContent!==run.mapName)title.textContent=run.mapName;
-    note.textContent=run.screen==='node'?'处理当前房间后继续前行。':'滑动浏览地图 · 点亮的节点可前往';
+    note.textContent=run.screen==='node'?'处理当前房间后继续前行。':run.exploration?'滑动地图 · 点节点预览 · 确认移动':'滑动浏览地图 · 点亮的节点可前往';
     const nextHand=[run.seed,run.floorNumber,run.nodeId,battle.turn].join(':');
     if(nextHand!==handKey){handKey=nextHand;hand.scrollLeft=0;}
     const chosen=hand.querySelector('.card.selected')?.dataset.uid||null;
     if(chosen&&chosen!==lastSelected)scheduleLayout(revealGrid);
     lastSelected=chosen;
     if(run.screen==='map'){
-      const nextMap=[run.seed,run.floorNumber,run.routeVersion,run.visited.at(-1)||'start'].join(':');
+      const nextMap=[run.seed,run.floorNumber,run.routeVersion,run.exploration?.position||run.visited.at(-1)||'start'].join(':');
       if(nextMap!==mapKey){mapKey=nextMap;scheduleLayout(focusAvailable);}
     }
     const nextRoom=run.seed+':'+run.floorNumber+':'+run.nodeId;
