@@ -62,7 +62,7 @@
     return nodes;
   }
   function makeMap(seed,version,floor=1){
-    if(version===4)return wovenMap(seed,floor,true);
+    if(version>=4){const nodes=wovenMap(seed,floor,true);if(version>=5)for(const n of nodes){n.groupCombat=true;n.squadSeed=hash(seed+':'+n.id);}return nodes;}
     if(version===3)return wovenMap(seed);
     const random=rng(seed^0x6a09e667),normals=legacyPool('battle');
     const layout=version===1?legacyLayout:rows.map(([lanes,kinds])=>{const shuffled=shuffle(kinds,random);return lanes.map((lane,i)=>[lane,shuffled[i]]);});
@@ -88,7 +88,19 @@
   function encounter(node){
     const d=R.enemies[node.variant],hp=d.hp+(d.kind==='battle'?Math.min(3,Math.floor(node.row/3)):d.kind==='elite'?Math.min(2,Math.floor(node.row/4)):0);
     const floor=node.floorNumber||1;
-    return {...d,id:node.id,floorNumber:floor,enemyId:node.variant,layers:layers(hp,d.style),reward:(d.kind==='boss'?85:d.kind==='elite'?42:22+node.row*2)+(floor-1)*(d.kind==='boss'?25:10),role:types[d.kind].name+' · '+d.name,sceneCell:d.kind==='boss'?5:d.kind==='elite'?4:node.row%3===0?3:null};
+    const lead={...d,id:node.id,floorNumber:floor,enemyId:node.variant,layers:layers(hp,d.style),reward:(d.kind==='boss'?85:d.kind==='elite'?42:22+node.row*2)+(floor-1)*(d.kind==='boss'?25:10),role:types[d.kind].name+' · '+d.name,sceneCell:d.kind==='boss'?5:d.kind==='elite'?4:node.row%3===0?3:null};
+    if(!node.groupCombat)return lead;
+    const random=rng(node.squadSeed),count=d.kind==='battle'?(node.row===0?1:floor>=3&&random()<.35?3:2):d.kind==='elite'?2:floor===1?1:floor>=4?3:2;
+    if(count===1)return lead;
+    const available=shuffle(enemyPool('battle',floor).filter(id=>id!==node.variant),random),ids=[node.variant,...available.slice(0,count-1)];
+    const portions=count===2?[.6,.4]:[.45,.3,.25],budgets=portions.map(p=>Math.floor(hp*p));budgets[count-1]+=hp-budgets.reduce((a,b)=>a+b,0);
+    const members=ids.map((id,i)=>{
+      const e=R.enemies[id],common=d.kind==='battle',scale=common?(count===2?.6:.4):i===0?1:d.kind==='elite'?.45:.3;
+      const health=common?budgets[i]:i===0?hp:Math.max(3,Math.ceil(e.hp*(d.kind==='elite'?.25:count===3?.2:.3)));
+      return{...e,id:node.id+':'+i,enemyId:id,floorNumber:floor,layers:layers(health,e.style),role:(i?'同伴 · ':'')+e.name,sceneCell:lead.sceneCell,
+        intents:e.intents.map(a=>({...a,damage:a.damage?Math.max(1,Math.ceil(a.damage*scale)):0,block:a.block?Math.max(1,Math.ceil(a.block*scale)):0,strength:i===0?a.strength:0}))};
+    });
+    return{...lead,members};
   }
   function oldEncounter(node){
     const r=node.row,boss=node.type==='boss',elite=node.type==='elite',damage=boss?10:elite?9:5+Math.floor(r/2);
@@ -100,7 +112,7 @@
   const number=(v,min,max)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
   const ids=(v,allowed,min,max)=>Array.isArray(v)&&v.length>=min&&v.length<=max&&v.every(x=>typeof x==='string'&&allowed.includes(x));
   class Floor{
-    constructor({seed=(Date.now()>>>0)||1,routeVersion=4,floorNumber=1}={}){
+    constructor({seed=(Date.now()>>>0)||1,routeVersion=5,floorNumber=1}={}){
       this.seed=seed>>>0||1;this.rngState=this.seed;this.floorNumber=floorNumber;this.history=[];this.mapSeed=mapSeed(this.seed,floorNumber);this.routeVersion=routeVersion;this.nodes=makeMap(this.mapSeed,routeVersion,floorNumber);this.stations=routeVersion===1?8:12;
       this.gold=60;this.deck=[...R.deck];this.relics=[];this.hero=new Body();this.visited=[];this.nodeId=null;this.screen='map';this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.migrated=false;
     }
@@ -179,7 +191,7 @@
       this.history.push({floor:this.floorNumber,routeVersion:this.routeVersion,boss:this.node.variant,visited:[...this.visited],boon});
       this.hero.block=0;this.hero.boostTurns=0;this.heal(.6,100);
       if(boon==='renewal'){if(!this.hero.parts.some(p=>p.missing))this.heal(1,0);else this.restorePart();}
-      if(this.deck.length<120)this.deck.push(choice.card);this.gold+=35;this.floorNumber++;this.mapSeed=mapSeed(this.seed,this.floorNumber);this.routeVersion=4;this.nodes=makeMap(this.mapSeed,4,this.floorNumber);this.stations=12;
+      if(this.deck.length<120)this.deck.push(choice.card);this.gold+=35;this.floorNumber++;this.mapSeed=mapSeed(this.seed,this.floorNumber);this.routeVersion=5;this.nodes=makeMap(this.mapSeed,5,this.floorNumber);this.stations=12;
       this.visited=[];this.nodeId=null;this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.screen='map';return true;
     }
     leave(){
@@ -221,23 +233,23 @@
     }
     snapshot(options={}){
       const h=this.hero,b=this.battle;
-      return{format:'ember-corridor',version:3,savedAt:new Date().toISOString(),options:{auto:!!options.auto,sound:!!options.sound},run:{
+      return{format:'ember-corridor',version:4,savedAt:new Date().toISOString(),options:{auto:!!options.auto,sound:!!options.sound},run:{
         floorNumber:this.floorNumber,history:this.history.map(h=>({...h,visited:[...h.visited]})),
         seed:this.seed,rngState:this.rngState,routeVersion:this.routeVersion,gold:this.gold,deck:[...this.deck],relics:[...this.relics],visited:[...this.visited],nodeId:this.nodeId,screen:this.screen,offers:[...this.offers],bought:[...this.bought],roomRelics:[...this.roomRelics],lastLoot:this.lastLoot?{gold:this.lastLoot.gold,relics:[...this.lastLoot.relics],fallbackGold:this.lastLoot.fallbackGold}:null,
         hero:{parts:h.parts.map(p=>({id:p.id,hp:p.hp,bleed:p.bleed,missing:p.missing,detachedBy:p.detachedBy})),block:h.block,blood:h.blood,boostTurns:h.boostTurns,bandages:3,stimulants:h.stimulants},
-        battle:b?{cells:[...b.enemy.cells],armor:[...b.enemy.armor],maxHp:b.enemy.maxHp,strength:b.enemy.strength,energy:b.energy,turn:b.turn,intentIndex:b.intentIndex,status:b.status,played:b.played,attackRemainder:b.attackRemainder,hand:b.hand.map(c=>c.uid),draw:b.drawPile.map(c=>c.uid),discard:b.discardPile.map(c=>c.uid),exhaust:b.exhaustPile.map(c=>c.uid),log:b.log.slice(-120)}:null}};
+        battle:b?{enemies:b.members.map(e=>({cells:[...e.cells],armor:[...e.armor],maxHp:e.maxHp,strength:e.strength,intentIndex:e.intentIndex})),targetIndex:b.targetIndex,energy:b.energy,turn:b.turn,status:b.status,played:b.played,attackRemainder:b.attackRemainder,hand:b.hand.map(c=>c.uid),draw:b.drawPile.map(c=>c.uid),discard:b.discardPile.map(c=>c.uid),exhaust:b.exhaustPile.map(c=>c.uid),pendingDraw:b.pendingDraw.map(c=>c.uid),overflowSelection:[...b.overflowSelection],log:b.log.slice(-120)}:null}};
     }
     static restore(data,Battle){
-      assert(data&&data.format==='ember-corridor'&&[1,2,3].includes(data.version),'不是本游戏支持的存档版本。');
-      const old=data.version===1,campaign=data.version===3,s=data.run;assert(s&&typeof s==='object');
+      assert(data&&data.format==='ember-corridor'&&[1,2,3,4].includes(data.version),'不是本游戏支持的存档版本。');
+      const old=data.version===1,campaign=data.version>=3,group=data.version===4,s=data.run;assert(s&&typeof s==='object');
       assert(integer(s.seed,1,4294967295)&&integer(s.rngState,1,4294967295)&&integer(s.gold,0,100000));
       const version=old?1:s.routeVersion,floorNumber=campaign?s.floorNumber:1;
-      assert(integer(floorNumber,1,5)&&[1,2,3,4].includes(version)&&(campaign||version<4)&&(floorNumber===1||version===4));
+      assert(integer(floorNumber,1,5)&&[1,2,3,4,5].includes(version)&&(campaign||version<4)&&(group||version<5)&&(floorNumber===1||version>=4));
       const run=new Floor({seed:s.seed,routeVersion:version,floorNumber}),nodeIds=run.nodes.map(n=>n.id),relicIds=Object.keys(R.relics);
       if(campaign){
         assert(Array.isArray(s.history)&&s.history.length===floorNumber-1);
         s.history.forEach((h,i)=>{
-          assert(h&&h.floor===i+1&&[1,2,3,4].includes(h.routeVersion)&&(i===0||h.routeVersion===4)&&['assault','shelter','renewal'].includes(h.boon));
+          assert(h&&h.floor===i+1&&[1,2,3,4,5].includes(h.routeVersion)&&(group||h.routeVersion<5)&&(i===0||h.routeVersion>=4)&&['assault','shelter','renewal'].includes(h.boon));
           const nodes=makeMap(mapSeed(s.seed,h.floor),h.routeVersion,h.floor),steps=h.routeVersion===1?8:12;
           assert(ids(h.visited,nodes.map(n=>n.id),steps,steps)&&new Set(h.visited).size===steps);
           h.visited.forEach((id,j)=>assert(j?connects(nodes.find(n=>n.id===h.visited[j-1]),nodes.find(n=>n.id===id),h.routeVersion):nodes.find(n=>n.id===id).row===0));
@@ -267,32 +279,43 @@
       assert(number(h.blood,0,100)&&integer(h.block,0,10000)&&integer(h.boostTurns,0,3)&&integer(h.bandages,0,3)&&integer(h.stimulants,0,run.relics.includes('supplies')?2:1));
       for(const key of ['block','blood','boostTurns','stimulants'])run.hero[key]=h[key];
       if(s.battle!==null){
-        assert(n&&['battle','elite','boss'].includes(n.type)&&['battle','reward','lost','cleared'].includes(s.screen));const x=s.battle,e=encounter(n),oldE=old?oldEncounter(n):null,maxHp=e.layers.reduce((a,b)=>a+b,0);
-        assert(Array.isArray(x.cells)&&x.cells.length===24&&x.cells.every((v,i)=>integer(v,0,old?oldE.layers[i]:9)));
-        assert(Array.isArray(x.armor)&&x.armor.length===24&&x.armor.every((v,i)=>typeof v==='boolean'&&(!v||x.cells[i]>0)));
-        if(!old)assert(x.maxHp===maxHp&&x.cells.reduce((a,b)=>a+b,0)<=maxHp);
-        assert(integer(x.strength,0,100000)&&integer(x.energy,0,100)&&integer(x.turn,1,10000)&&integer(x.intentIndex,0,2)&&integer(x.played,0,100000)&&number(x.attackRemainder,0,1-Number.EPSILON));
-        assert(['playing','won','lost'].includes(x.status));const cards=s.deck.map((id,i)=>({id,uid:'card-'+i})),uids=cards.map(c=>c.uid),areas=['hand','draw','discard','exhaust'];
+        assert(n&&['battle','elite','boss'].includes(n.type)&&['battle','reward','lost','cleared'].includes(s.screen));const x=s.battle,e=encounter(n),configs=e.members||[e],oldE=old?oldEncounter(n):null;
+        const enemies=group?x.enemies:[x],targetIndex=group?x.targetIndex:0;
+        assert(Array.isArray(enemies)&&enemies.length===configs.length&&integer(targetIndex,0,enemies.length-1));
+        enemies.forEach((m,j)=>{
+          const maxHp=configs[j].layers.reduce((a,b)=>a+b,0);
+          assert(m&&Array.isArray(m.cells)&&m.cells.length===24&&m.cells.every((v,i)=>integer(v,0,old?oldE.layers[i]:9)));
+          assert(Array.isArray(m.armor)&&m.armor.length===24&&m.armor.every((v,i)=>typeof v==='boolean'&&(!v||m.cells[i]>0)));
+          if(!old)assert(m.maxHp===maxHp&&m.cells.reduce((a,b)=>a+b,0)<=maxHp);
+          assert(integer(m.strength,0,100000)&&integer(m.intentIndex,0,2));
+        });
+        assert(integer(x.energy,0,100)&&integer(x.turn,1,10000)&&integer(x.played,0,100000)&&number(x.attackRemainder,0,1-Number.EPSILON));
+        assert(['playing','won','lost'].includes(x.status));const cards=s.deck.map((id,i)=>({id,uid:'card-'+i})),uids=cards.map(c=>c.uid),areas=['hand','draw','discard','exhaust',...(group?['pendingDraw']:[])];
         for(const key of areas)assert(ids(x[key],uids,0,key==='hand'?9:120));const all=areas.flatMap(key=>x[key]);assert(all.length===cards.length&&new Set(all).size===cards.length);assert(x.exhaust.every(uid=>!!R.cards[cards.find(c=>c.uid===uid).id].exhaust));
+        if(group){assert(!x.pendingDraw.length||(x.status==='playing'&&x.hand.length===9));assert(ids(x.overflowSelection,[...x.hand,...x.pendingDraw],0,x.pendingDraw.length)&&new Set(x.overflowSelection).size===x.overflowSelection.length);}
         assert(Array.isArray(x.log)&&x.log.length<=120&&x.log.every(l=>typeof l==='string'&&l.length<=500));
         const b=new Battle({hero:run.hero,relics:run.relics,deck:run.deck,encounter:e,rng:()=>0});b.rng=()=>run.random();b.allCards=cards;
         // Constructor may grant opening block; replace it with the exact saved value.
         run.hero.block=h.block;
         for(const[from,to]of[['hand','hand'],['draw','drawPile'],['discard','discardPile'],['exhaust','exhaustPile']])b[to]=x[from].map(uid=>cards.find(c=>c.uid===uid));
-        b.enemy.cells=[...x.cells];b.enemy.armor=[...x.armor];b.enemy.strength=old?Math.floor(x.strength/2):x.strength;
-        if(old){const oldMax=oldE.layers.reduce((a,b)=>a+b,0),sum=b.enemy.cells.reduce((a,b)=>a+b,0),target=Math.min(sum,Math.ceil(sum/oldMax*maxHp));let remaining=sum;while(remaining>target){const largest=Math.max(...b.enemy.cells),i=b.enemy.cells.indexOf(largest);b.enemy.cells[i]--;remaining--;}}
-        b.syncEnemy();b.enemy.maxHp=maxHp;
-        for(const key of ['energy','turn','intentIndex','status','played','attackRemainder'])b[key]=x[key];b.phase=b.status==='playing'?'player':'finished';b.log=[...x.log];if(old)b.log.push('存档已升级：当前敌人按剩余比例降低生命，包扎次数限制解除。');run.battle=b;
-        assert((b.status==='won'&&b.enemy.hp===0)||(b.status==='lost'&&b.enemy.hp>0&&!!run.hero.failureReason)||(b.status==='playing'&&b.enemy.hp>0&&!run.hero.failureReason));
+        b.pendingDraw=group?x.pendingDraw.map(uid=>cards.find(c=>c.uid===uid)):[];b.overflowSelection=group?[...x.overflowSelection]:[];
+        enemies.forEach((m,j)=>{
+          b.targetIndex=j;const maxHp=configs[j].layers.reduce((a,b)=>a+b,0);b.enemy.cells=[...m.cells];b.enemy.armor=[...m.armor];b.enemy.strength=old?Math.floor(m.strength/2):m.strength;b.intentIndex=m.intentIndex;
+          if(old){const oldMax=oldE.layers.reduce((a,b)=>a+b,0),sum=b.enemy.cells.reduce((a,b)=>a+b,0),target=Math.min(sum,Math.ceil(sum/oldMax*maxHp));let remaining=sum;while(remaining>target){const largest=Math.max(...b.enemy.cells),i=b.enemy.cells.indexOf(largest);b.enemy.cells[i]--;remaining--;}}
+          b.syncEnemy();b.enemy.maxHp=maxHp;
+        });
+        b.targetIndex=targetIndex;
+        for(const key of ['energy','turn','status','played','attackRemainder'])b[key]=x[key];b.phase=b.status==='playing'?'player':'finished';b.log=[...x.log];if(old)b.log.push('存档已升级：当前敌人按剩余比例降低生命，包扎次数限制解除。');run.battle=b;
+        assert((b.status==='won'&&!b.living.length)||(b.status==='lost'&&b.living.length>0&&!!run.hero.failureReason)||(b.status==='playing'&&b.living.length>0&&b.enemy.hp>0&&!run.hero.failureReason));
         assert(s.screen==='battle'?b.status==='playing':s.screen==='lost'?b.status==='lost':b.status==='won');
       }else assert(!['battle','reward','cleared'].includes(s.screen));
       if(s.screen==='reward')assert(n.type!=='boss');if(!['lost','cleared'].includes(s.screen))assert(!run.hero.failureReason);if(s.screen==='lost')assert(!!run.hero.failureReason);
       if(!old&&s.lastLoot!==null){const loot=s.lastLoot;assert(['reward','cleared'].includes(s.screen)&&loot&&integer(loot.gold,0,1000)&&integer(loot.fallbackGold,0,45)&&ids(loot.relics,relicIds,0,1)&&loot.relics.every(id=>run.relics.includes(id)));run.lastLoot={gold:loot.gold,relics:[...loot.relics],fallbackGold:loot.fallbackGold};}
       if(old&&['reward','cleared'].includes(s.screen)){run.lastLoot={gold:0,relics:[],fallbackGold:0};if(['elite','boss'].includes(n.type)){const id=run.dropRelic();if(id)run.lastLoot.relics.push(id);else run.lastLoot.fallbackGold=45;}}
-      run.migrated=!campaign;
-      return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:!campaign};
+      run.migrated=!group;
+      return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:!group};
     }
   }
-  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,4);Floor.connects=connects;
+  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,5);Floor.connects=connects;
   root.EmberFloor=Floor;if(typeof module!=='undefined'&&module.exports)module.exports=Floor;
 })(typeof globalThis!=='undefined'?globalThis:this);

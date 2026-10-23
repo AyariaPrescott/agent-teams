@@ -4,28 +4,37 @@
   const Body = root.EmberBody || (typeof require === 'function' ? require('./body.js').HeroBody : null);
   class Battle {
     constructor({ rng = Math.random, relic = null, relics = [], hero = null, deck = R.deck, encounter = null } = {}) {
-      this.rng = rng; this.relic = relic; this.relics = [...relics]; this.encounter = encounter;
+      this.rng = rng; this.relic = relic; this.relics = [...relics]; this.baseEncounter=encounter;
       this.hero = hero || new Body({ relic }); this.attackRemainder = 0;
       this.columns = R.gridColumns; this.rows = R.gridRows;
       this.maxCellLayers = R.maxCellLayers;
-      this.enemy = { hp: 0, maxHp: 0, block: 0, strength: 0, cells: Array.from({ length: this.columns * this.rows }, (_, i) => this.clampLayers((encounter?.layers || R.enemyLayers)[i])), armor: Array(this.columns * this.rows).fill(false) };
-      this.syncEnemy(); this.enemy.maxHp = this.enemy.hp;
+      this.encounters=encounter?.members||[encounter];this.targetIndex=0;
+      this.members=this.encounters.map(e=>{const cells=Array.from({length:this.columns*this.rows},(_,i)=>this.clampLayers((e?.layers||R.enemyLayers)[i])),hp=cells.reduce((a,b)=>a+b,0);return{hp,maxHp:hp,block:0,strength:0,intentIndex:0,cells,armor:Array(cells.length).fill(false)};});
       this.energy = this.effects.energy + (encounter ? this.relicBonus('openingEnergy') : 0); this.turn = 1; this.intentIndex = 0; this.status = 'playing'; this.phase = 'player'; this.played = 0;
       this.allCards = deck.map((id, i) => ({ id, uid: `card-${i}` }));
       const opening = encounter ? this.shuffle(this.allCards) : this.allCards;
-      const initialDraw=Math.min(9,this.effects.draw+(encounter?this.relicBonus('openingDraw'):0));
-      this.hand = opening.slice(0, initialDraw); this.drawPile = encounter ? opening.slice(initialDraw) : this.shuffle(opening.slice(initialDraw)); this.discardPile = []; this.exhaustPile = [];
+      const initialDraw=this.effects.draw+(encounter?this.relicBonus('openingDraw'):0);
+      this.hand = opening.slice(0,Math.min(9,initialDraw));this.pendingDraw=opening.slice(9,initialDraw);this.overflowSelection=[];
+      this.drawPile = encounter ? opening.slice(initialDraw) : this.shuffle(opening.slice(initialDraw)); this.discardPile = []; this.exhaustPile = [];
       if(encounter) this.hero.block += this.relicBonus('openingBlock')+this.relicBonus('turnBlock');
       this.log = [`你举起提灯，${encounter?.name || '石门守卫'}从沉眠中醒来。`];
     }
+    get enemy(){return this.members[this.targetIndex];}
+    get encounter(){return this.encounters[this.targetIndex];}
+    get intentIndex(){return this.enemy.intentIndex;}
+    set intentIndex(value){this.enemy.intentIndex=value;}
+    get living(){return this.members.map((e,i)=>e.hp>0?i:-1).filter(i=>i>=0);}
+    get overflowCount(){return this.pendingDraw.length;}
+    selectTarget(index){if(!Number.isInteger(index)||!this.members[index]?.hp||this.phase!=='player'||this.status!=='playing')return false;this.targetIndex=index;return true;}
+    intentFor(index){const e=this.encounters[index],m=this.members[index],base=(e?.intents||R.intents)[m.intentIndex],enraged=e?.kind==='boss'&&m.hp<=m.maxHp/2;return{...base,name:base.name+(enraged&&base.damage?' · 狂怒':''),damage:base.damage?base.damage+m.strength+(enraged?e.enrage||0:0):0};}
     shuffle(cards) {
       const a = [...cards];
       for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
       return a;
     }
     relicBonus(key) { return this.relics.reduce((sum,id)=>sum+(R.relics[id]?.[key]||0),0); }
-    get effects() { const e={...this.hero.effects}; e.attack*=1+this.relicBonus('attack')+(this.hero.boostTurns?this.relicBonus('boostAttack'):0);e.block*=1+this.relicBonus('guard');e.energy=Math.min(6,e.energy+this.relicBonus('energy'));e.draw=Math.min(9,e.draw+this.relicBonus('draw'));e.healing+=this.relicBonus('healing');return e; }
-    get intent() { const base = (this.encounter?.intents || R.intents)[this.intentIndex], enraged = this.encounter?.kind === 'boss' && this.enemy.hp <= this.enemy.maxHp / 2; return { ...base, name: base.name + (enraged && base.damage ? ' · 狂怒' : ''), damage: base.damage ? base.damage + this.enemy.strength + (enraged ? this.encounter.enrage || 0 : 0) : 0 }; }
+    get effects() { const e={...this.hero.effects}; e.attack*=1+this.relicBonus('attack')+(this.hero.boostTurns?this.relicBonus('boostAttack'):0);e.block*=1+this.relicBonus('guard');e.energy=Math.min(6,e.energy+this.relicBonus('energy'));e.draw+=this.relicBonus('draw');e.healing+=this.relicBonus('healing');return e; }
+    get intent() {return this.intentFor(this.targetIndex);}
     definition(card) {
       const d = { ...R.cards[typeof card === 'string' ? card : card.id] }, effects = this.effects;
       if (d.shape) { d.damage = d.shape.length; d.power = effects.attack * (1+(d.powerBonus||0)); d.pierce = !!d.pierce || this.relic === 'blade' || this.relics.includes('blade'); }
@@ -81,22 +90,35 @@
       this.syncEnemy();
     }
     draw(count) {
-      for (let i = 0; i < count && this.hand.length < 9; i++) {
+      for (let i = 0; i < count; i++) {
         if (!this.drawPile.length && this.discardPile.length) { this.drawPile = this.shuffle(this.discardPile); this.discardPile = []; this.log.push('弃牌重新洗入抽牌堆。'); }
         if (!this.drawPile.length) break;
-        this.hand.push(this.drawPile.shift());
+        (this.hand.length<9?this.hand:this.pendingDraw).push(this.drawPile.shift());
       }
     }
+    toggleOverflow(uid){
+      if(!this.overflowCount||this.status!=='playing'||![...this.hand,...this.pendingDraw].some(c=>c.uid===uid))return false;
+      const i=this.overflowSelection.indexOf(uid);if(i>=0)this.overflowSelection.splice(i,1);else if(this.overflowSelection.length<this.overflowCount)this.overflowSelection.push(uid);else return false;return true;
+    }
+    confirmOverflow(){
+      if(!this.overflowCount||this.status!=='playing'||this.overflowSelection.length!==this.overflowCount)return false;
+      const all=[...this.hand,...this.pendingDraw],selected=new Set(this.overflowSelection);
+      if(selected.size!==this.overflowCount||![...selected].every(uid=>all.some(c=>c.uid===uid)))return false;
+      const discarded=all.filter(c=>selected.has(c.uid));this.hand=all.filter(c=>!selected.has(c.uid));this.discardPile.push(...discarded);this.pendingDraw=[];this.overflowSelection=[];
+      this.log.push('整理手牌：确认弃置'+discarded.map(c=>R.cards[c.id].name).join('、')+'，保留'+this.hand.length+'张。');return true;
+    }
     checkResult() {
-      if (this.enemy.hp <= 0) { this.status = 'won'; this.phase = 'finished'; this.log.push(`${this.encounter?.name || '石门守卫'}崩解。余烬之后，仍有前路。`); }
+      if (!this.living.length) { this.status = 'won'; this.phase = 'finished'; this.log.push('全部敌人已被击败。余烬之后，仍有前路。'); }
       else if (this.hero.failureReason) { this.status = 'lost'; this.phase = 'finished'; this.log.push(`提灯熄灭：${this.hero.failureReason}。`); }
+      else if(!this.enemy.hp)this.targetIndex=this.living[0];
       return this.status;
     }
     play(uid, placement = null) {
       if (this.status !== 'playing' || this.phase !== 'player') return { ok: false, reason: '现在不能出牌。' };
+      if(this.overflowCount)return{ok:false,reason:'请先选择并确认超出上限的弃牌。'};
       const index = this.hand.findIndex(c => c.uid === uid);
       if (index < 0) return { ok: false, reason: '这张牌不在手中。' };
-      const card = this.hand[index], d = this.definition(card);
+      const card = this.hand[index], d = this.definition(card),targetIndex=this.targetIndex,targetName=this.encounter?.name||'石门守卫';
       if (d.cost > this.energy) return { ok: false, reason: '能量不足，可以结束回合恢复能量。' };
       let plan = null;
       if (d.shape) {
@@ -119,11 +141,12 @@
       const parts = [plan ? `${d.shapeName}在第${plan.y + 1}行第${plan.x + 1}列 / ${((plan.rotation % 4) + 4) % 4 * 90}°，削去 ${hit.lost} 层生命、击碎 ${hit.cleared} 格${hit.blocked ? `，破甲 ${hit.blocked} 格` : ''}` : '', d.block ? `+${d.block} 格挡` : '', d.draw ? `抽 ${d.draw} 张` : '', d.energy ? '+1 能量 · 消耗' : ''].filter(Boolean);
       if(d.energy) parts[parts.length-1]=`+${d.energy}能量${d.exhaust?' · 消耗':''}`;
       if(recovery) parts.push(`${recovery.part||'身体'}修复${recovery.healed}${d.cleanse?'，全部止血':''}`);
-      this.log.push(`第 ${this.turn} 回合 · ${d.name}：${parts.join('，')}。`); this.checkResult();
-      return { ok: true, card, definition: d, hit, plan, recovery };
+      this.log.push(`第 ${this.turn} 回合 · ${d.name}${plan?' → '+targetName:''}：${parts.join('，')}。`); this.checkResult();
+      return { ok: true, card, definition: d, hit, plan, recovery,targetIndex,targetName };
     }
     medical(action, partId) {
       if (this.status !== 'playing' || this.phase !== 'player') return { ok: false, reason: '现在无法医疗。' };
+      if(this.overflowCount)return{ok:false,reason:'请先确认弃牌。'};
       if (this.energy < 1) return { ok: false, reason: '医疗需要1点能量。' };
       const result = action === 'bandage' ? this.hero.treat(partId,this.relicBonus('healing')) : action === 'boost' ? this.hero.stimulate() : { ok: false, reason: '未知医疗操作。' };
       if (!result.ok) return result;
@@ -132,23 +155,31 @@
       return { ...result, action };
     }
     endTurn() {
-      if (this.status !== 'playing' || this.phase !== 'player') return { ok: false };
+      if (this.status !== 'playing' || this.phase !== 'player'||this.overflowCount) return { ok: false };
       this.phase = 'enemy'; this.discardPile.push(...this.hand); this.hand = [];
-      this.enemy.armor.fill(false); this.syncEnemy();
-      const intent = this.intent;
-      const hit = intent.damage ? this.hero.receiveAttack(intent.damage, this.rng) : { lost: 0, blocked: 0, hits: [] };
-      if (intent.block) this.grantArmor(intent.block);
-      this.enemy.strength += intent.strength;
-      this.log.push(`${intent.name}：${intent.damage ? `造成 ${hit.lost} 伤害，格挡吸收 ${hit.blocked}` : `为 ${this.enemy.block} 个生命格覆甲`}${intent.strength ? `，随后力量 +${intent.strength}` : ''}。`);
-      for (const wound of hit.hits) this.log.push(`命中${wound.name} −${wound.damage}${wound.destroyed ? ' · 部位毁坏' : ''}${wound.detached.length ? ` · 连带缺失：${wound.detached.join('、')}` : ''}。`);
-      if (this.checkResult() === 'lost') return { ok: true, intent, hit };
+      const focused=this.targetIndex,actions=[],hit={lost:0,blocked:0,hits:[]};
+      for(const m of this.members){m.armor.fill(false);m.block=0;}
+      for(const index of this.living){
+        this.targetIndex=index;const intent=this.intent,name=this.encounter?.name||'石门守卫';
+        const damage=intent.damage?this.hero.receiveAttack(intent.damage,this.rng):{lost:0,blocked:0,hits:[]};
+        if(intent.block)this.grantArmor(intent.block);this.enemy.strength+=intent.strength;
+        actions.push({index,name,intent,hit:damage});hit.lost+=damage.lost;hit.blocked+=damage.blocked;hit.hits.push(...damage.hits);
+        this.log.push(`${name} · ${intent.name}：${intent.damage?`造成 ${damage.lost} 伤害，格挡吸收 ${damage.blocked}`:`为 ${this.enemy.block} 个生命格覆甲`}${intent.strength?`，力量 +${intent.strength}`:''}。`);
+        for(const wound of damage.hits)this.log.push(`命中${wound.name} −${wound.damage}${wound.destroyed?' · 部位毁坏':''}${wound.detached.length?' · 连带缺失：'+wound.detached.join('、'):''}。`);
+        this.intentIndex=(this.intentIndex+1)%(this.encounter?.intents||R.intents).length;
+        if(this.hero.failureReason)break;
+      }
+      this.targetIndex=this.members[focused].hp?focused:this.living[0];
+      this.hero.lastHits=[...hit.hits];
+      const intent=actions.length===1?actions[0].intent:{name:'敌方联合行动',type:actions.some(a=>a.intent.damage)?'attack':'defend',damage:actions.reduce((s,a)=>s+a.intent.damage,0),block:actions.reduce((s,a)=>s+a.intent.block,0),strength:0};
+      if (this.checkResult() === 'lost') return { ok: true, intent, hit,actions };
       const recovery = this.hero.advanceTurn();
       if (recovery.bleeding > 0) this.log.push(`流血 ${recovery.bleeding.toFixed(1)}，恢复血容量 ${recovery.recovered.toFixed(1)}；血容量 ${this.hero.blood.toFixed(1)}%。`);
       if (recovery.expired) this.log.push('强化剂到期，身体能力重新计算。');
-      if (this.checkResult() === 'lost') return { ok: true, intent, hit, recovery };
-      this.intentIndex = (this.intentIndex + 1) % (this.encounter?.intents || R.intents).length; this.turn++; this.hero.block = this.relicBonus('turnBlock'); this.phase = 'player';
+      if (this.checkResult() === 'lost') return { ok: true, intent, hit, recovery,actions };
+      this.turn++; this.hero.block = this.relicBonus('turnBlock'); this.phase = 'player';
       this.energy = this.effects.energy; this.draw(this.effects.draw);
-      return { ok: true, intent, hit, recovery };
+      return { ok: true, intent, hit, recovery,actions };
     }
   }
   root.EmberBattle = Battle;
@@ -216,7 +247,8 @@
   function floatText(target, text, kind = '') { const e = document.createElement('span'); e.className = `float-text ${kind}`; e.textContent = text; $(target).appendChild(e); setTimeout(() => e.remove(), 1300); }
   function shake(target, cls = 'hit') { const e = $(target); clearTimeout(shakeTimers.get(e)); e.classList.remove('hit', 'attacking', 'shield-up', 'impact-pulse'); void e.offsetWidth; e.classList.add(cls); shakeTimers.set(e, setTimeout(() => e.classList.remove(cls), 650)); }
   function effectPoint(element) {
-    const a = $('arena').getBoundingClientRect(), b = element.getBoundingClientRect();
+    const a = $('arena').getBoundingClientRect();let b = element.getBoundingClientRect();
+    if(!b.width&&!b.height&&element.id==='hero-figure')b=$('hero-actor').getBoundingClientRect();
     if(phoneUI)return{x:b.left+b.width/2,y:b.top+b.height/2};
     return { x: b.left + b.width / 2 - a.left, y: b.top + b.height / 2 - a.top };
   }
@@ -239,9 +271,10 @@
   }
   function attackFeedback(result) {
     const { hit, plan, definition: d } = result;
-    shake('hero-figure', 'attacking'); shake('enemy-figure'); shake('enemy-grid-panel', 'impact-pulse');
-    strikeEffect('hero-figure', 'enemy-figure', !hit.lost);
-    for (const cell of plan.cells.filter(c => c.lost > 0 || c.breaksArmor)) {
+    const target=battle.members.length>1?'enemy-slot-'+result.targetIndex:'enemy-figure',sameTarget=result.targetIndex===battle.targetIndex;
+    shake('hero-figure', 'attacking'); shake(target);if(sameTarget)shake('enemy-grid-panel', 'impact-pulse');
+    strikeEffect('hero-figure', target, !hit.lost);
+    for (const cell of plan.cells.filter(c => sameTarget&&(c.lost > 0 || c.breaksArmor))) {
       const element = $('enemy-grid').children[cell.index], blocked = cell.lost === 0;
       element.classList.add(blocked ? 'cell-cracked' : cell.layers > cell.lost ? 'cell-peeled' : 'cell-shattered');
       const point = effectPoint(element);
@@ -249,8 +282,8 @@
       const shards = !blocked && cell.layers > cell.lost ? 3 : 5;
       for (let i = 0; i < shards; i++) effect(`cell-shard ${blocked ? 'armor-effect' : 'layer-shard'}`, point, { '--layer-color': R.layerColors[cell.layers - 1], '--dx': `${Math.cos(i * Math.PI * .4) * (22 + i * 3)}px`, '--dy': `${Math.sin(i * Math.PI * .4) * 25 - 16}px`, '--spin': `${i * 87 + 45}deg` });
     }
-    floatText('enemy-actor', hit.lost ? `−${hit.lost}` : hit.blocked ? `破甲 ${hit.blocked}` : '弱击', hit.lost ? 'damage' : 'block');
-    announceImpact(d.name, hit.lost ? `−${hit.lost}` : hit.blocked ? '破甲' : '弱击', `${hit.lost ? `削去 ${hit.lost} 层 · 击碎 ${hit.cleared} 格` : hit.blocked ? '护甲碎裂' : '能力不足，本次未造成伤害'}${hit.blocked ? ` · 破甲 ${hit.blocked} 格` : ''}`, hit.lost ? 'damage' : 'block');
+    floatText(battle.members.length>1?target:'enemy-actor', hit.lost ? `−${hit.lost}` : hit.blocked ? `破甲 ${hit.blocked}` : '弱击', hit.lost ? 'damage' : 'block');
+    announceImpact(d.name, hit.lost ? `−${hit.lost}` : hit.blocked ? '破甲' : '弱击', `${result.targetName} · ${hit.lost ? `削去 ${hit.lost} 层 · 击碎 ${hit.cleared} 格` : hit.blocked ? '护甲碎裂' : '本次未造成伤害'}${hit.blocked ? ` · 破甲 ${hit.blocked} 格` : ''}`, hit.lost ? 'damage' : 'block');
     tone(hit.lost ? 150 : 360, .2, hit.lost ? 'sawtooth' : 'triangle');
   }
   function saveRun(backup = false) {
@@ -303,6 +336,23 @@
   function roomArt(cell) { return '<div class="room-illustration" aria-hidden="true">'+atlasArt('rooms',cell,3,2)+'</div>'; }
   function relicMarkup(id) { const r=R.relics[id];return '<div class="loot-relic"><span>✦</span><div><b>'+r.name+'</b><p>'+r.description+'</p></div></div>'; }
   function campaignTrail(){return '<ol class="campaign-trail" aria-label="五层旅途">'+R.floors.map((f,i)=>'<li class="'+(i+1<run.floorNumber||run.completed?'done':i+1===run.floorNumber?'current':'locked')+'" title="'+f.name+(run.history[i]?' · 已击败'+R.enemies[run.history[i].boss].name:'')+'"><b>'+(i+1<run.floorNumber||run.completed?'✓':i+1)+'</b><span>'+f.name+'</span></li>').join('')+'</ol>';}
+  function renderEnemies(){
+    const group=battle.members.length>1;$('arena').classList.toggle('multi-enemy',group);$('enemy-formation').hidden=!group;
+    if(!group){$('enemy-formation').replaceChildren();return;}
+    $('enemy-formation').style.setProperty('--enemy-count',battle.members.length);
+    $('enemy-formation').innerHTML=battle.members.map((m,i)=>{
+      const e=battle.encounters[i],intent=battle.intentFor(i),atlas=typeof e.sprite==='number'&&artReady.has('enemies')&&!artErrors.has('enemies'),key=typeof e.sprite==='string'?e.sprite:(e.kind==='boss'?'boss':e.kind==='elite'?'elite':'sentinel');
+      const fallback=artErrors.has(key)?'sentinel':key;
+      const portrait=atlas?atlasArt('enemies',e.sprite,4,2):!artErrors.has(fallback)?'<img data-art-key="'+fallback+'" src="'+A[fallback]+'" alt="" draggable="false">':'<span class="art-placeholder">✦</span>';
+      return '<button id="enemy-slot-'+i+'" class="formation-card '+(i===battle.targetIndex?'targeted ':'')+(!m.hp?'fallen':'')+'" data-enemy-target="'+i+'" aria-pressed="'+(i===battle.targetIndex)+'" aria-label="'+e.name+'，生命'+m.hp+'/'+m.maxHp+'，'+(!m.hp?'已击败':intent.name+'，'+(intent.damage?'攻击'+intent.damage:'覆甲'+intent.block))+'" '+(busy||!m.hp||battle.status!=='playing'?'disabled':'')+'><strong class="formation-intent">'+(!m.hp?'已击败':(intent.damage?'⚔ '+intent.damage:'◇ '+intent.block)+(intent.strength?' · 力量+'+intent.strength:''))+'</strong><span class="formation-portrait">'+portrait+'</span><b>'+e.name+'</b><span class="formation-hp"><i><em style="width:'+m.hp/m.maxHp*100+'%"></em></i><small>'+m.hp+' / '+m.maxHp+(m.block?' · ◇'+m.block:'')+'</small></span><span class="formation-target">'+(!m.hp?'已击败':i===battle.targetIndex?'当前目标':'点击选为目标')+'</span></button>';
+    }).join('');
+  }
+  function showOverflow(){
+    if(run.screen!=='battle'||busy||!battle.overflowCount)return;
+    const focused=document.activeElement?.dataset?.overflowPick,confirmFocused=!!document.activeElement?.matches('[data-confirm-overflow]'),count=battle.overflowCount,selected=new Set(battle.overflowSelection),fresh=new Set(battle.pendingDraw.map(c=>c.uid));
+    openModal('手牌超限 · 选择弃'+count+'张','<p class="modal-note">上限9张。新抽到的牌已经保留，可以从原手牌和新牌中选择弃置。先选牌，再确认；确认前可以更换选择。</p><p class="overflow-count" aria-live="polite">已选 '+selected.size+' / '+count+' 张 · 确认后保留9张</p><div class="overflow-cards">'+[...battle.hand,...battle.pendingDraw].map(c=>{const d=battle.definition(c);return '<button class="overflow-card '+(selected.has(c.uid)?'picked':'')+'" data-overflow-pick="'+c.uid+'" aria-pressed="'+selected.has(c.uid)+'"><span class="mini-art">'+art(c.id)+'</span><b>'+d.name+' <small>'+d.cost+'能量</small></b><span>'+d.description+'</span><em>'+(selected.has(c.uid)?'✓ 待弃置':fresh.has(c.uid)?'新抽到':'手牌')+'</em></button>';}).join('')+'</div><div class="overflow-confirm"><button class="gold-button" data-confirm-overflow '+(selected.size===count?'':'disabled')+'>确认弃牌（'+selected.size+'/'+count+'）</button><small>点已选中的牌可取消选择</small></div>','overflow-panel');
+    const focus=confirmFocused?$('modal-body').querySelector('[data-confirm-overflow]'):focused?$('modal-body').querySelector('[data-overflow-pick="'+focused+'"]'):$('modal-body').querySelector('[data-overflow-pick]');focus?.focus({preventScroll:true});
+  }
   function showRelics() { if(busy)return;openModal('旅人遗物 · '+run.relics.length+' / '+Object.keys(R.relics).length,'<p class="modal-note">遗物效果跨层持续生效。精英与Boss自动掉落本层已解锁且未拥有的遗物，该池全齐时改给45金币。</p><div class="relic-collection">'+Object.keys(R.relics).map(id=>'<div class="'+(run.relics.includes(id)?'owned':'unowned')+'">'+relicMarkup(id)+'<small>'+(run.relics.includes(id)?'已拥有':(R.relics[id].minFloor||1)>run.floorNumber?'第'+R.relics[id].minFloor+'层解锁':'尚未获得')+'</small></div>').join('')+'</div>'); }
   function renderRoute() {
     $('route-map').innerHTML=mapMarkup();
@@ -339,10 +389,10 @@
     $('deck-button').innerHTML=`${icon('cards')} <span>牌组</span> <b>${run.deck.length}</b>`;
     $('footer-status').textContent=run.node?`第${run.floorNumber}层 · 第${run.node.row+1}站 · ${Floor.types[run.node.type].name}`:`${run.label} · ${run.stations}站`;
     const e=battle.encounter;
-    $('encounter-name').textContent=e?.name || '残火之径'; $('enemy-name').textContent=e?.name || '石门守卫'; $('enemy-role').textContent=e?.role || '';
+    $('encounter-name').textContent=battle.members.length>1?'敌群 · '+battle.living.length+' / '+battle.members.length+'名存活':e?.name || '残火之径'; $('enemy-name').textContent=e?.name || '石门守卫'; $('enemy-role').textContent=e?.role || '';
     $('encounter-eyebrow').textContent=`第${run.floorNumber}层 · ${run.theme.name} · 第${(run.node?.row || 0)+1}站${e?.kind==='boss'?' · BOSS':e?.kind==='elite'?' · 精英':''}`;
     $('encounter-note').textContent=e?.kind==='boss'?`半血后攻击额外+${e.enrage||0} · 胜利掉落遗物`:phoneUI?'触点居中放置 · 点格即攻击':'鼠标居中放置 · 点击即攻击';
-    $('arena').classList.toggle('boss-encounter',e?.kind==='boss'); $('arena').classList.toggle('elite-encounter',e?.kind==='elite');
+    $('arena').classList.toggle('boss-encounter',battle.baseEncounter?.kind==='boss'); $('arena').classList.toggle('elite-encounter',battle.baseEncounter?.kind==='elite');
     const sprite=e?.sprite??'sentinel',atlas=typeof sprite==='number'&&artReady.has('enemies')&&!artErrors.has('enemies'),fallback=typeof sprite==='string'?sprite:(e?.kind==='boss'?'boss':e?.kind==='elite'?'elite':'sentinel');
     setArtImage($('enemy-fallback'),artErrors.has(fallback)?'sentinel':fallback);
     $('enemy-fallback').style.visibility=atlas?'hidden':'visible';$('enemy-atlas-sprite').hidden=!atlas;
@@ -350,7 +400,7 @@
     const cell=e?.sceneCell;$('scene-room').hidden=cell==null||artErrors.has('rooms');
     if(cell!=null)cropAtlas($('scene-room-image'),cell,3,2);
     $('arena').setAttribute('aria-label',`${e?.name || '回廊'}战斗场景`); $('enemy-actor').setAttribute('aria-label',e?.name || '敌人'); $('enemy-grid-panel').setAttribute('aria-label',`${e?.name || '敌人'}的生命方格`);
-    $('enemy-grid-panel').querySelector('h2').textContent='生命方格';
+    $('enemy-grid-panel').querySelector('h2').textContent=battle.members.length>1?'目标 · '+e.name:'生命方格';
     $('enemy-health').setAttribute('aria-label','敌人剩余总生命');
     $('sound-button').classList.toggle('active',sound); $('sound-button').setAttribute('aria-pressed',String(sound));
     $('relic-badge').hidden=!run.relics.length; $('relic-badge').textContent=`✦ ${run.relics.length} 件遗物 · 点击查看`;
@@ -511,7 +561,7 @@
     $('enemy-intent').title = intent.damage ? `攻击 ${intent.damage}，按当前受击倍率约 ${Math.round(intent.damage * battle.hero.effects.incoming)} 点；先格挡，再按部位权重分配最多3段${intent.strength ? `，随后力量+${intent.strength}` : ''}` : `为${intent.block}个生命格覆甲，护甲在下一次敌方行动前清空`;
     $('draw-count').textContent = battle.drawPile.length; $('discard-count').textContent = battle.discardPile.length;
     $('hand-count').textContent = battle.hand.length; $('exhaust-count').textContent = battle.exhaustPile.length ? `已消耗 ${battle.exhaustPile.length}` : '';
-    $('phase-label').textContent = busy ? '敌方行动' : battle.status === 'playing' ? '你的回合' : '战斗结束'; $('end-turn').disabled = busy || run.screen !== 'battle' || battle.status !== 'playing';
+    $('phase-label').textContent = busy ? '敌方行动' : battle.overflowCount?'需要确认弃牌':battle.status === 'playing' ? '你的回合' : '战斗结束'; $('end-turn').disabled = busy || !!battle.overflowCount || run.screen !== 'battle' || battle.status !== 'playing';
     $('hand').style.setProperty('--cards', battle.hand.length);
     $('hand').innerHTML = battle.hand.map((card, i) => {
       const d = battle.definition(card), affordable = d.cost <= battle.energy;
@@ -520,11 +570,13 @@
     }).join('');
     if(phoneUI)$('hand').scrollLeft=handScroll;
     $('arena').classList.toggle('victory', battle.status === 'won'); $('enemy-figure').classList.toggle('defeated', battle.status === 'won');
-    renderGrid(); renderHealth(); renderRun();
+    renderGrid(); renderHealth(); renderRun();renderEnemies();
     if(phoneUI)document.dispatchEvent(new CustomEvent('ember:render',{detail:{screen:run.screen,nodeId:run.nodeId,selectedUid,busy}}));
+    if(battle.overflowCount&&!busy)showOverflow();
   }
   function play(uid) {
     if (busy || modalOpen || run.screen !== 'battle') return;
+    if(battle.overflowCount){showOverflow();return;}
     const card = battle.hand.find(c => c.uid === uid); if (!card || battle.status !== 'playing') return;
     const d = battle.definition(card);
     if (d.cost > battle.energy) { toast('能量不足，可以结束回合恢复能量。'); return; }
@@ -552,36 +604,39 @@
   function confirmAttack() { const card = selectedCard(); if (!card || busy || modalOpen || !anchorChosen) return; const plan = battle.planAttack(card, { ...anchor, rotation }); if (!plan.ok) { toast(plan.reason); return; } resolvePlay(card.uid, { ...anchor, rotation }); }
   function endTurn() {
     if (busy || modalOpen || run.screen !== 'battle' || battle.status !== 'playing') return;
-    clearPlacement(); const serial = battleSerial, intent=battle.intent;
+    if(battle.overflowCount){showOverflow();return;}
+    clearPlacement(); const serial = battleSerial;
     // Resolve and save atomically before playing feedback; reloading cannot skip this enemy turn.
-    const result=battle.endTurn(); commitAction();
+    const result=battle.endTurn();if(!result.ok)return;const intent=result.intent; commitAction();
     busy = true; $('first-hint').classList.add('dismissed'); render();
     if (intent.damage) shake('enemy-figure', 'attacking');
+    if(battle.members.length>1)for(const [i,a]of result.actions.entries())setTimeout(()=>{if(serial!==battleSerial)return;shake('enemy-slot-'+a.index,a.intent.damage?'attacking':'shield-up');if(a.intent.damage)strikeEffect('enemy-slot-'+a.index,'hero-figure',!a.hit.lost);},i*180);
     toast(`${intent.name} · ${intent.damage ? `${intent.damage}点攻击来袭` : '敌人正在覆甲'}`);
     setTimeout(() => {
       if (serial !== battleSerial) return;
       if (result.hit.hits.length) selectedPart = battle.hero.bestTreatment()?.id || result.hit.hits[0].id;
       busy = false; render();
       if (result.intent.damage) {
-        strikeEffect('enemy-figure', 'hero-figure', !result.hit.lost);
+        if(battle.members.length===1)strikeEffect('enemy-figure', 'hero-figure', !result.hit.lost);
         if (result.hit.lost) { shake('hero-figure'); shake('hero-health', 'impact-pulse'); floatText('hero-actor', `−${result.hit.lost}`, 'damage'); tone(75, .28, 'sawtooth'); }
         else { shake('hero-figure', 'shield-up'); floatText('hero-actor', `格挡 ${result.hit.blocked}`, 'block'); tone(360, .2); }
         announceImpact(result.intent.name, result.hit.lost ? `−${result.hit.lost}` : '格挡', `${result.hit.hits.length ? result.hit.hits.map(wound => `${wound.name} −${wound.damage}${wound.destroyed ? ' 毁坏' : ''}`).join(' / ') : '伤害已被格挡'}${result.hit.blocked ? ` · 格挡 ${result.hit.blocked}` : ''}`, result.hit.lost ? 'hero-damage' : 'block');
         $('body-diagram').querySelectorAll('[data-body-part]').forEach(e => { if (result.hit.hits.some(wound => wound.id === e.dataset.bodyPart)) e.classList.add('just-hit'); });
         if (result.hit.blocked && result.hit.lost) floatText('hero-actor', `格挡 ${result.hit.blocked}`, 'block secondary');
       } else {
-        shake('enemy-grid-panel', 'shield-up'); announceImpact(result.intent.name, `+${battle.enemy.block}`, '生命格覆甲', 'block'); tone(360, .2);
+        shake('enemy-grid-panel', 'shield-up'); announceImpact(result.intent.name, `+${result.actions.reduce((sum,a)=>sum+battle.members[a.index].block,0)}`, '各敌人为自己的生命格覆甲', 'block'); tone(360, .2);
       }
       if (battle.status !== 'playing') setTimeout(() => { if (serial === battleSerial) showResult(); }, 1000); else toast(`第 ${battle.turn} 回合 · ${battle.energy} 能量 / 抽牌 ${battle.effects.draw} · ${battle.hero.bleeding ? '正在流血，可选择部位包扎' : '留意身体机能'}`);
-    }, 650);
+    }, 650+Math.max(0,result.actions.length-1)*180);
   }
   function openModal(title, content, className = '') {
-    const panel=$('modal-panel'),keepScroll=phoneUI&&modalOpen&&panel.className===`modal-panel ${className}`,scroll=panel.scrollTop;
+    const panel=$('modal-panel'),keepScroll=(phoneUI||className==='overflow-panel')&&modalOpen&&panel.className===`modal-panel ${className}`,scroll=panel.scrollTop;
     modalOpen = true; $('modal-title').textContent = title; $('modal-body').innerHTML = content; panel.className = `modal-panel ${className}`; $('modal').hidden = false;
+    $('modal-close').disabled=className==='overflow-panel';
     if(keepScroll)panel.scrollTop=scroll;else if(phoneUI){panel.scrollTop=0;$('modal-close').focus({preventScroll:true});}else $('modal-close').focus();
     if(phoneUI)document.dispatchEvent(new CustomEvent('ember:modal'));
   }
-  function closeModal() { modalOpen = false; $('modal').hidden = true; const target=run.screen==='battle'?$('end-turn'):$('route-button');if(phoneUI)target.focus({preventScroll:true});else target.focus();renderHealth();if(phoneUI)document.dispatchEvent(new CustomEvent('ember:modal')); }
+  function closeModal() {if(run.screen==='battle'&&battle.overflowCount)return;modalOpen = false; $('modal').hidden = true;$('modal-close').disabled=false; const target=run.screen==='battle'?$('end-turn'):$('route-button');if(phoneUI)target.focus({preventScroll:true});else target.focus();renderHealth();if(phoneUI)document.dispatchEvent(new CustomEvent('ember:modal')); }
   function restart() { saveRun(true); adoptRun(new Floor()); saveRun(); closeModal(); render(); }
   function showPile(pile) {
     const names = { draw: '抽牌堆', discard: '弃牌堆', deck: '初始牌组', exhaust: '消耗区' };
@@ -591,23 +646,27 @@
   }
   function showHelp() {
     if(phoneUI){
-      openModal('手机操作手册','<div class="help-grid"><div><h3>滑动手牌，点格攻击</h3><p>左右滑动底部手牌。点选攻击牌，再点敌人的生命格即可打出；图案以触点为中心。下方按钮可以旋转、取消，开启AUTO后点攻击牌便自动放置。技能点牌直接使用。滑动浏览不会出牌。</p></div><div><h3>把常用操作放在手边</h3><p>能量、抽牌堆、弃牌堆和结束回合位于手牌下方。底部「身体」查看伤势、选择部位包扎或强化；包扎次数无限，每次1能量。健康面板可上下滑动。</p></div><div><h3>滑动探索回廊</h3><p>地图可以上下和左右滑动，点亮的节点可前往。进入房间后显示事件或商店等选择，处理完再继续走图。旅途共五层，每层独立路线、逐层增强的敌人和关底首领。精英与首领掉落遗物，可在「更多」查看；前四层首领结算选择补给进入下一层，第五层胜利才完成旅途。</p></div><div><h3>把旅途带到手机</h3><p>操作后自动保存。切换设备前在「存档」导出，再在新设备导入。横屏会将战斗与手牌放在两侧；竖屏时手牌与常用按钮保持在底部。</p></div></div>');
+      openModal('手机操作手册','<div class="help-grid"><div><h3>滑动手牌，点格攻击</h3><p>左右滑动底部手牌。多敌战斗先点敌人选目标，再选攻击牌、点它的生命格打出；图案以触点为中心。下方按钮可以旋转、取消，开启AUTO后点攻击牌便自动放置。技能点牌直接使用。滑动浏览不会出牌。</p></div><div><h3>把常用操作放在手边</h3><p>能量、抽牌堆、弃牌堆和结束回合位于手牌下方。底部「身体」查看伤势、选择部位包扎或强化；包扎次数无限，每次1能量。健康面板可上下滑动。</p></div><div><h3>滑动探索回廊</h3><p>地图可以上下和左右滑动，点亮的节点可前往。进入房间后显示事件或商店等选择，处理完再继续走图。旅途共五层，每层独立路线、逐层增强的敌人和关底首领。精英与首领掉落遗物，可在「更多」查看；前四层首领结算选择补给进入下一层，第五层胜利才完成旅途。</p></div><div><h3>把旅途带到手机</h3><p>操作后自动保存。切换设备前在「存档」导出，再在新设备导入。手牌超出9张会显示原手牌与新牌，选足数量后点击确认弃牌，确认前可修改选择。横屏会将战斗与手牌放在两侧；竖屏时手牌与常用按钮保持在底部。</p></div></div>');
       return;
     }
-    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>五层独立路线</h3><p>从残火之径，穿过潮汐书库、铜炉工坊和碎镜天台，抵达群星熔心。每层十二站47节点，四种走向。首层随机挑战三位首领之一，后四层各有专属首领。</p></div><div>'+icon('sword')+'<h3>54张卡牌</h3><p>新卡随楼层解锁，高层战斗奖励保证一张本层新卡。支持多层削伤、穿甲、格挡、抽牌、能量、治疗和止血。鼠标居中放置，点格即出；R/滚轮旋转，右键取消，AUTO点牌自动攻击。</p></div><div>'+icon('shield')+'<h3>医疗与过层补给</h3><p>包扎无限次，每次1能量，不能再生。强化默认每场1次，炼金试管增加至2次。前四层胜利可选择补给，修复存活部位60%、止血、补满血容量、获得35金币和一张卡；再生补给可修复一支缺失部位树。</p></div><div>'+icon('flame')+'<h3>逐层增强的敌人</h3><p>共55种敌人、28件遗物、24类双选事件。首层普通生命10–18，首领34–42；后四层首领生命60/82/108/144。护甲、攻击和狂怒逐渐增强。精英与首领掉落本层已解锁且未拥有的遗物。</p></div></div><p class="modal-note">第五层首领胜利才完成旅途。进度、伤势、牌组和遗物跨层延续；过层、动作与奖励后自动保存。支持v1/v2/v3存档，旧路线与战斗保留，旧首层通关可继续第二层。导入前预览并备份。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
+    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>五层独立路线</h3><p>从残火之径，穿过潮汐书库、铜炉工坊和碎镜天台，抵达群星熔心。每层十二站47节点，四种走向。首层随机挑战三位首领之一，后四层各有专属首领。</p></div><div>'+icon('sword')+'<h3>54张卡牌</h3><p>新卡随楼层解锁，高层战斗奖励保证一张本层新卡。支持多层削伤、穿甲、格挡、抽牌、能量、治疗和止血。鼠标居中放置，点格即出；R/滚轮旋转，右键取消，AUTO按所选目标自动放置。每场可有1–3名敌人，各自行动，全灭后领奖；手牌超过9张时选牌并确认弃牌，可保留新抽到的牌。</p></div><div>'+icon('shield')+'<h3>医疗与过层补给</h3><p>包扎无限次，每次1能量，不能再生。强化默认每场1次，炼金试管增加至2次。前四层胜利可选择补给，修复存活部位60%、止血、补满血容量、获得35金币和一张卡；再生补给可修复一支缺失部位树。</p></div><div>'+icon('flame')+'<h3>逐层增强的敌人</h3><p>共55种敌人、28件遗物、24类双选事件。首层普通生命10–18，首领34–42；后四层首领生命60/82/108/144。护甲、攻击和狂怒逐渐增强。精英与首领掉落本层已解锁且未拥有的遗物。</p></div></div><p class="modal-note">第五层首领胜利才完成旅途。进度、伤势、牌组和遗物跨层延续；过层、动作与奖励后自动保存。支持v1/v2/v3/v4存档，旧路线与战斗保留，旧首层通关可继续第二层。导入前预览并备份。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
   }
   function showResult() {
     if(!['reward','lost','cleared'].includes(run.screen))return;
     const cleared=run.screen==='cleared',won=run.screen==='reward'||cleared,loot=run.lastLoot;
+    const defeated=battle.encounters.filter(Boolean).map(e=>e.name).join('、')||'敌人';
     const cards=run.offers.map(id=>{const d=R.cards[id];return '<button class="reward-card" data-card-reward="'+id+'" '+(run.deck.length>=120?'disabled':'')+'><span class="mini-art">'+art(id)+'</span><b>'+d.name+' <small>'+d.cost+'能量</small></b><span>'+d.description+'</span></button>';}).join('');
     const drops=loot?.relics.length?'<div class="loot-section"><p>已自动获得遗物</p>'+loot.relics.map(relicMarkup).join('')+'</div>':'';
-    const story=cleared?escapeHtml(battle.encounter.name)+'已被击败。<br>'+(run.completed?'五层首领尽数倒下，余火终于化为黎明。':'下一层：'+R.floors[run.floorNumber].name+'。选择一份补给继续旅途。'):won?escapeHtml(battle.encounter.name)+'已被击败。<br>'+(loot?.gold?'获得 '+loot.gold+' 金币。':'金币奖励已入账。')+'选择一张卡牌，或跳过。':escapeHtml(run.hero.failureReason)+'。<br>这次旅途结束，存档仍可导出留存。';
+    const story=cleared?escapeHtml(defeated)+'已被击败。<br>'+(run.completed?'五层首领尽数倒下，余火终于化为黎明。':'下一层：'+R.floors[run.floorNumber].name+'。选择一份补给继续旅途。'):won?escapeHtml(defeated)+'已被击败。<br>'+(loot?.gold?'获得 '+loot.gold+' 金币。':'金币奖励已入账。')+'选择一张卡牌，或跳过。':escapeHtml(run.hero.failureReason)+'。<br>这次旅途结束，存档仍可导出留存。';
     let actions=run.screen==='reward'?'<div class="card-rewards">'+cards+'</div><button class="outline-button" data-card-reward="skip">跳过卡牌，继续路线 →</button>':'<button class="gold-button" data-new-run>重新点亮提灯</button>';
     if(cleared&&!run.completed)actions='<p class="ascent-note">前往下一层时：存活部位修复60% · 全部止血 · 血容量补满 · 获得35金币。'+(run.deck.length>=120?'牌组已满，本次不添加补给卡牌。':'')+'</p><div class="ascent-choices">'+run.ascentChoices.map(c=>'<button class="node-choice" data-next-floor="'+c.id+'"><b>'+c.title+' · '+R.cards[c.card].name+'</b><span>'+c.note+' '+R.cards[c.card].description+'</span><i>↗</i></button>').join('')+'</div>';
     openModal(run.completed?'五层旅途 · 黎明已至':cleared?'第'+run.floorNumber+'层 · 首领已败':won?'战利品':'提灯熄灭',campaignTrail()+'<div class="result-emblem">'+icon(won?'flame':'shield')+'</div><p class="result-eyebrow">'+(run.completed?'THE DAWN RETURNS':cleared?'FLOOR '+run.floorNumber+' CLEARED':won?'ENCOUNTER CLEARED':'THE EMBERS WILL RETURN')+'</p><p class="result-story">'+story+'</p>'+drops+(loot?.fallbackGold?'<p class="modal-note">本层已解锁遗物已集齐，掉落转为45金币。</p>':'')+'<div class="result-stats"><div><b>'+(run.history.reduce((sum,h)=>sum+h.visited.length,0)+run.visited.length+(won&&!cleared?1:0))+'</b><span>完成节点</span></div><div><b>'+run.gold+'</b><span>金币</span></div><div><b>'+run.deck.length+'</b><span>牌组</span></div></div><button class="result-health-link" data-open-health>查看身体与无限包扎 ↗</button>'+actions+'<button class="outline-button" data-save-export>导出这次旅途</button><p class="result-footnote">奖励已结算 · 过层选择后自动保存</p>','result-panel');
   }
 
   document.addEventListener('click', e => {
+    const target=e.target.closest('[data-enemy-target]');if(target&&!busy&&!modalOpen&&battle.selectTarget(Number(target.dataset.enemyTarget))){saveRun();render();}
+    const pick=e.target.closest('[data-overflow-pick]');if(pick&&battle.toggleOverflow(pick.dataset.overflowPick)){saveRun();showOverflow();}
+    if(e.target.closest('[data-confirm-overflow]')&&battle.confirmOverflow()){saveRun();closeModal();render();}
     const bodyPart = e.target.closest('[data-body-part]'); if (bodyPart) selectBodyPart(bodyPart.dataset.bodyPart);
     const medical = e.target.closest('[data-medical]'); if (medical) useMedical(medical.dataset.medical);
     if (e.target.closest('[data-open-health]')) showHealth();
