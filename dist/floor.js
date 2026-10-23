@@ -2,7 +2,7 @@
 (function(root){
   'use strict';
   const R=root.EmberRules||require('./balance.js'),Body=root.EmberBody||require('./body.js').HeroBody;
-  const types={battle:{name:'战斗',mark:'⚔',note:'击败敌人，获得金币与三选一卡牌。'},elite:{name:'精英',mark:'♜',note:'获得更多金币、卡牌及一件未拥有的遗物。'},event:{name:'事件',mark:'?',note:'探索遗迹，作出不同的选择。'},shop:{name:'商店',mark:'¤',note:'购买卡牌、遗物、治疗，或精简牌组。'},camp:{name:'营火',mark:'♨',note:'恢复身体、学习卡牌，或移除一张直击。'},treasure:{name:'宝箱',mark:'◇',note:'从两件遗物中选择一件，或带走金币。'},boss:{name:'关底 Boss',mark:'♛',note:'击败本层首领，获得遗物；第五层胜利即完成旅途。'}};
+  const types={battle:{name:'战斗',mark:'⚔',note:'击败敌人，获得金币与三选一卡牌。'},elite:{name:'精英',mark:'♜',note:'获得更多金币、卡牌及一件未拥有的遗物。'},event:{name:'事件',mark:'?',note:'探索遗迹，作出不同的选择。'},shop:{name:'商店',mark:'¤',note:'购买卡牌、遗物、治疗，或精简牌组。'},camp:{name:'营火',mark:'♨',note:'恢复身体、强化或学习卡牌，或自由移除一张牌。'},treasure:{name:'宝箱',mark:'◇',note:'从两件遗物中选择一件，或带走金币。'},boss:{name:'关底 Boss',mark:'♛',note:'击败本层首领，获得遗物；第五层胜利即完成旅途。'}};
   const legacyLayout=[[[0,'battle'],[2,'battle']],[[0,'event'],[1,'battle'],[2,'shop']],[[0,'camp'],[1,'elite'],[2,'event']],[[0,'battle'],[2,'treasure']],[[0,'shop'],[1,'camp'],[2,'elite']],[[0,'event'],[2,'battle']],[[0,'camp'],[2,'treasure']],[[1,'boss']]];
   const rows=[
     [[0,2,4],['battle','battle','battle']],
@@ -114,7 +114,7 @@
   class Floor{
     constructor({seed=(Date.now()>>>0)||1,routeVersion=5,floorNumber=1}={}){
       this.seed=seed>>>0||1;this.rngState=this.seed;this.floorNumber=floorNumber;this.history=[];this.mapSeed=mapSeed(this.seed,floorNumber);this.routeVersion=routeVersion;this.nodes=makeMap(this.mapSeed,routeVersion,floorNumber);this.stations=routeVersion===1?8:12;
-      this.gold=60;this.deck=[...R.deck];this.relics=[];this.hero=new Body();this.visited=[];this.nodeId=null;this.screen='map';this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.migrated=false;
+      this.gold=60;this.deck=[...R.deck];this.relics=[];this.hero=new Body();this.visited=[];this.nodeId=null;this.screen='map';this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.pendingDeckAction=null;this.migrated=false;
     }
     random(){let x=this.rngState;x^=x<<13;x^=x>>>17;x^=x<<5;this.rngState=x>>>0;return this.rngState/4294967296;}
     get node(){return this.nodes.find(n=>n.id===this.nodeId);}
@@ -145,7 +145,7 @@
       if(this.node?.type!=='shop')return[];
       const random=rng(this.mapSeed^hash(this.nodeId)),cards=shuffle(this.routeVersion<4?R.legacy.rewardPool:this.cardPool,random).slice(0,4),relic=pick(this.routeVersion<4?R.legacy.relics:this.relicPool,random);
       const base=this.routeVersion===1?[{id:'heal',name:'战地治疗',description:'存活部位修复30%，止血，血容量+40。',cost:30,heal:.3},...['sweep','wall'].map(id=>({id,name:R.cards[id].name,description:R.cards[id].description,cost:30,card:id})),{id:'blade',name:R.relics.blade.name,description:R.relics.blade.description,cost:60,relic:'blade'}]
-        :[{id:'heal',name:'战地治疗',description:'存活部位修复30%，止血，血容量+40。',cost:30,heal:.3},...cards.map(id=>({id:'card:'+id,name:R.cards[id].name,description:R.cards[id].description,cost:R.cards[id].cost>=2?35:28,card:id})),{id:'relic:'+relic,name:R.relics[relic].name,description:R.relics[relic].description,cost:60,relic},{id:'remove',name:'精简直击',description:'移除一张直击；牌组至少保留5张。',cost:20,remove:'strike'}];
+        :[{id:'heal',name:'战地治疗',description:'存活部位修复30%，止血，血容量+40。',cost:30,heal:.3},...cards.map(id=>({id:'card:'+id,name:R.cards[id].name,description:R.cards[id].description,cost:R.cards[id].cost>=2?35:28,card:id})),{id:'relic:'+relic,name:R.relics[relic].name,description:R.relics[relic].description,cost:60,relic},{id:'remove',name:'移除卡牌',description:'选择移除任意一张牌；牌组至少保留5张，确认后收费。',cost:20,remove:'any'}];
       if(this.floorNumber>1)base.push({id:'restore',name:'部位再生',description:'恢复一支缺失部位树；没有缺失则全身修复40%。',cost:65,restore:true});
       return base.map(item=>({...item,cost:Math.ceil(item.cost*(this.relics.includes('compass')?.8:1))}));
     }
@@ -203,45 +203,73 @@
       if(this.gold<cost)return'金币不足。';
       if(e.card&&this.deck.length>=120)return'牌组已满（120张），请先精简。';
       if(e.bloodCost&&this.hero.blood<=25)return'血容量需要高于25%。';
-      if(e.remove&&(this.deck.length<=5||!this.deck.includes(e.remove)))return'需要可移除的直击，且牌组至少保留5张。';
+      if(e.remove&&this.deck.length<=5)return'牌组至少保留5张，当前无法移除。';
+      if(e.upgrade&&!this.deck.some(id=>R.upgradeId(id)))return'所有卡牌都已强化。';
       return'';
     }
     applyEffect(e){
       if(e.gold)this.gold+=e.gold;if(e.heal||e.blood||e.cleanse)this.heal(e.heal||0,e.blood||0);
       if(e.restore)this.restorePart();
       if(e.bloodCost)this.hero.blood-=e.bloodCost;
-      if(e.card)this.deck.push(e.card);if(e.remove)this.deck.splice(this.deck.indexOf(e.remove),1);
+      if(e.card)this.deck.push(e.card);
       if(e.relic&&!this.addRelic(e.relic))this.gold+=45;if(e.randomRelic)this.dropRelic();
     }
     choose(action){
-      if(this.screen!=='node')return{ok:false};
+      if(this.screen!=='node'||this.pendingDeckAction)return{ok:false};
       const type=this.node.type;
       if(type==='event'){
-        const c=this.event.choices.find(c=>c.id===action);if(!c)return{ok:false};const reason=this.canEffect(c.effects,c.cost);if(reason)return{ok:false,reason};this.gold-=c.cost;this.applyEffect(c.effects);
-      }else if(type==='camp'&&['rest','train','purge'].includes(action)){
-        if(action==='rest')this.heal(.4,45);else if(action==='train'){const reason=this.canEffect({card:this.trainingCard});if(reason)return{ok:false,reason};this.deck.push(this.trainingCard);}else{const reason=this.canEffect({remove:'strike'});if(reason)return{ok:false,reason};this.applyEffect({remove:'strike'});}
+        const c=this.event.choices.find(c=>c.id===action);if(!c)return{ok:false};const reason=this.canEffect(c.effects,c.cost);if(reason)return{ok:false,reason};if(c.effects.remove||c.effects.upgrade)return this.beginDeckAction('event',action);this.gold-=c.cost;this.applyEffect(c.effects);
+      }else if(type==='camp'&&['rest','train','purge','upgrade'].includes(action)){
+        if(action==='purge'||action==='upgrade')return this.beginDeckAction('camp',action);
+        if(action==='rest')this.heal(.4,45);else{const reason=this.canEffect({card:this.trainingCard});if(reason)return{ok:false,reason};this.deck.push(this.trainingCard);}
       }else if(type==='treasure'){
         if(action==='gold')this.gold+=this.treasureGold;else{const id=action.startsWith('relic:')?action.slice(6):action;if(!this.roomRelics.includes(id)||!this.addRelic(id))return{ok:false,reason:'这件遗物无法领取。'};}
       }else if(!(type==='shop'&&action==='leave'))return{ok:false};
       this.leave();return{ok:true};
     }
     buy(id){
-      if(this.screen!=='node'||this.node.type!=='shop')return{ok:false};const item=this.shop.find(i=>i.id===id);
+      if(this.screen!=='node'||this.node.type!=='shop'||this.pendingDeckAction)return{ok:false};const item=this.shop.find(i=>i.id===id);
       if(!item||this.bought.includes(id)||(item.relic&&this.relics.includes(item.relic)))return{ok:false,reason:'已售出或已拥有。'};
       const effect={heal:item.heal,blood:item.heal?40:0,card:item.card,relic:item.relic,remove:item.remove,restore:item.restore},reason=this.canEffect(effect,item.cost);
-      if(reason)return{ok:false,reason};this.gold-=item.cost;this.bought.push(id);this.applyEffect(effect);return{ok:true};
+      if(reason)return{ok:false,reason};if(item.remove)return this.beginDeckAction('shop',id);this.gold-=item.cost;this.bought.push(id);this.applyEffect(effect);return{ok:true};
+    }
+    deckActionFor(source,action){
+      if(this.screen!=='node'||this.node?.type!==source)return null;
+      if(source==='camp'&&['purge','upgrade'].includes(action))return{kind:action==='upgrade'?'upgrade':'remove',effect:action==='upgrade'?{upgrade:true}:{remove:'any'},cost:0};
+      const item=source==='shop'?this.shop.find(i=>i.id===action&&!this.bought.includes(i.id)):source==='event'?this.event.choices.find(c=>c.id===action):null;
+      const effect=source==='shop'?item:item?.effects;
+      if(!effect||!(effect.remove||effect.upgrade))return null;
+      return{kind:effect.upgrade?'upgrade':'remove',effect,cost:item.cost||0};
+    }
+    get deckAction(){const p=this.pendingDeckAction;return p?this.deckActionFor(p.source,p.action):null;}
+    beginDeckAction(source,action){
+      const d=this.deckActionFor(source,action);if(!d)return{ok:false};const reason=this.canEffect(d.effect,d.cost);if(reason)return{ok:false,reason};
+      this.pendingDeckAction={source,action,selectedIndex:null};return{ok:true,pending:true};
+    }
+    selectDeckCard(index){
+      const d=this.deckAction;if(!d||!integer(index,0,this.deck.length-1)||(d.kind==='upgrade'&&!R.upgradeId(this.deck[index])))return false;
+      this.pendingDeckAction.selectedIndex=this.pendingDeckAction.selectedIndex===index?null:index;return true;
+    }
+    cancelDeckAction(){this.pendingDeckAction=null;}
+    confirmDeckAction(){
+      const p=this.pendingDeckAction,d=this.deckAction;if(!d||!integer(p.selectedIndex,0,this.deck.length-1))return{ok:false,reason:'请先选择一张牌。'};
+      const reason=this.canEffect(d.effect,d.cost);if(reason)return{ok:false,reason};const upgraded=R.upgradeId(this.deck[p.selectedIndex]);if(d.kind==='upgrade'&&!upgraded)return{ok:false,reason:'这张牌已经强化过。'};
+      this.gold-=d.cost;if(d.kind==='upgrade')this.deck[p.selectedIndex]=upgraded;else this.deck.splice(p.selectedIndex,1);
+      this.applyEffect(d.effect);if(p.source==='shop')this.bought.push(p.action);this.pendingDeckAction=null;
+      if(p.source!=='shop')this.leave();return{ok:true};
     }
     snapshot(options={}){
       const h=this.hero,b=this.battle;
-      return{format:'ember-corridor',version:4,savedAt:new Date().toISOString(),options:{auto:!!options.auto,sound:!!options.sound},run:{
+      return{format:'ember-corridor',version:5,savedAt:new Date().toISOString(),options:{auto:!!options.auto,sound:!!options.sound},run:{
+        pendingDeckAction:this.pendingDeckAction?{...this.pendingDeckAction}:null,
         floorNumber:this.floorNumber,history:this.history.map(h=>({...h,visited:[...h.visited]})),
         seed:this.seed,rngState:this.rngState,routeVersion:this.routeVersion,gold:this.gold,deck:[...this.deck],relics:[...this.relics],visited:[...this.visited],nodeId:this.nodeId,screen:this.screen,offers:[...this.offers],bought:[...this.bought],roomRelics:[...this.roomRelics],lastLoot:this.lastLoot?{gold:this.lastLoot.gold,relics:[...this.lastLoot.relics],fallbackGold:this.lastLoot.fallbackGold}:null,
         hero:{parts:h.parts.map(p=>({id:p.id,hp:p.hp,bleed:p.bleed,missing:p.missing,detachedBy:p.detachedBy})),block:h.block,blood:h.blood,boostTurns:h.boostTurns,bandages:3,stimulants:h.stimulants},
         battle:b?{enemies:b.members.map(e=>({cells:[...e.cells],armor:[...e.armor],maxHp:e.maxHp,strength:e.strength,intentIndex:e.intentIndex})),targetIndex:b.targetIndex,energy:b.energy,turn:b.turn,status:b.status,played:b.played,attackRemainder:b.attackRemainder,hand:b.hand.map(c=>c.uid),draw:b.drawPile.map(c=>c.uid),discard:b.discardPile.map(c=>c.uid),exhaust:b.exhaustPile.map(c=>c.uid),pendingDraw:b.pendingDraw.map(c=>c.uid),overflowSelection:[...b.overflowSelection],log:b.log.slice(-120)}:null}};
     }
     static restore(data,Battle){
-      assert(data&&data.format==='ember-corridor'&&[1,2,3,4].includes(data.version),'不是本游戏支持的存档版本。');
-      const old=data.version===1,campaign=data.version>=3,group=data.version===4,s=data.run;assert(s&&typeof s==='object');
+      assert(data&&data.format==='ember-corridor'&&[1,2,3,4,5].includes(data.version),'不是本游戏支持的存档版本。');
+      const old=data.version===1,campaign=data.version>=3,group=data.version>=4,upgrades=data.version>=5,s=data.run;assert(s&&typeof s==='object');
       assert(integer(s.seed,1,4294967295)&&integer(s.rngState,1,4294967295)&&integer(s.gold,0,100000));
       const version=old?1:s.routeVersion,floorNumber=campaign?s.floorNumber:1;
       assert(integer(floorNumber,1,5)&&[1,2,3,4,5].includes(version)&&(campaign||version<4)&&(group||version<5)&&(floorNumber===1||version>=4));
@@ -257,7 +285,7 @@
           run.history.push({floor:h.floor,routeVersion:h.routeVersion,boss:h.boss,visited:[...h.visited],boon:h.boon});
         });
       }
-      assert(ids(s.deck,Object.keys(R.cards),5,120)&&ids(s.relics,relicIds,0,relicIds.length)&&new Set(s.relics).size===s.relics.length);
+      assert(ids(s.deck,upgrades?Object.keys(R.cards):R.baseCardIds,5,120)&&ids(s.relics,relicIds,0,relicIds.length)&&new Set(s.relics).size===s.relics.length);
       assert(ids(s.visited,nodeIds,0,run.stations)&&new Set(s.visited).size===s.visited.length);
       s.visited.forEach((id,i)=>assert(i?run.linked(run.nodes.find(n=>n.id===s.visited[i-1]),run.nodes.find(n=>n.id===id)):run.nodes.find(n=>n.id===id).row===0));
       assert(['map','node','battle','reward','lost','cleared'].includes(s.screen));
@@ -278,6 +306,12 @@
       for(const p of run.hero.parts)if(p.parent&&!run.hero.available(p.parent))assert(p.missing);
       assert(number(h.blood,0,100)&&integer(h.block,0,10000)&&integer(h.boostTurns,0,3)&&integer(h.bandages,0,3)&&integer(h.stimulants,0,run.relics.includes('supplies')?2:1));
       for(const key of ['block','blood','boostTurns','stimulants'])run.hero[key]=h[key];
+      if(upgrades&&s.pendingDeckAction!==null){
+        const p=s.pendingDeckAction;assert(p&&['shop','camp','event'].includes(p.source)&&typeof p.action==='string');
+        const d=run.deckActionFor(p.source,p.action);assert(d&&!run.canEffect(d.effect,d.cost));
+        assert(p.selectedIndex===null||(integer(p.selectedIndex,0,run.deck.length-1)&&(d.kind!=='upgrade'||!!R.upgradeId(run.deck[p.selectedIndex]))));
+        run.pendingDeckAction={source:p.source,action:p.action,selectedIndex:p.selectedIndex};
+      }
       if(s.battle!==null){
         assert(n&&['battle','elite','boss'].includes(n.type)&&['battle','reward','lost','cleared'].includes(s.screen));const x=s.battle,e=encounter(n),configs=e.members||[e],oldE=old?oldEncounter(n):null;
         const enemies=group?x.enemies:[x],targetIndex=group?x.targetIndex:0;
@@ -312,8 +346,8 @@
       if(s.screen==='reward')assert(n.type!=='boss');if(!['lost','cleared'].includes(s.screen))assert(!run.hero.failureReason);if(s.screen==='lost')assert(!!run.hero.failureReason);
       if(!old&&s.lastLoot!==null){const loot=s.lastLoot;assert(['reward','cleared'].includes(s.screen)&&loot&&integer(loot.gold,0,1000)&&integer(loot.fallbackGold,0,45)&&ids(loot.relics,relicIds,0,1)&&loot.relics.every(id=>run.relics.includes(id)));run.lastLoot={gold:loot.gold,relics:[...loot.relics],fallbackGold:loot.fallbackGold};}
       if(old&&['reward','cleared'].includes(s.screen)){run.lastLoot={gold:0,relics:[],fallbackGold:0};if(['elite','boss'].includes(n.type)){const id=run.dropRelic();if(id)run.lastLoot.relics.push(id);else run.lastLoot.fallbackGold=45;}}
-      run.migrated=!group;
-      return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:!group};
+      run.migrated=!upgrades;
+      return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:!upgrades};
     }
   }
   Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,5);Floor.connects=connects;

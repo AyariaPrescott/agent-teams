@@ -346,3 +346,39 @@ body:not([data-floor="1"]) .scenery>img,body:not([data-floor="1"]) .scene-room,b
 .overflow-panel{max-width:780px}.overflow-count{text-align:center;font-size:14px;color:#efcf90}.overflow-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.overflow-card{display:flex;flex-direction:column;gap:7px;padding:10px;min-width:0;border:1px solid #a88c6666;border-radius:5px;background:#25202d;text-align:left}.overflow-card .mini-art{position:relative;display:block;width:100%;height:60px;overflow:hidden}.overflow-card>b{font-size:13px}.overflow-card>b small{font-size:10px;font-weight:400;color:#b6a58c}.overflow-card>span:not(.mini-art){font-size:11px;line-height:1.65;color:#c3b6a4}.overflow-card>em{font-size:11px;color:#b4b6b1;font-style:normal;margin-top:auto}.overflow-card.picked{border-color:#eea68c;background:#523337;box-shadow:inset 0 0 0 1px #eea68c77}.overflow-card.picked>em{color:#ffd7ba}.overflow-confirm{position:sticky;bottom:-2px;padding:13px 0 4px;margin-top:14px;background:#211b28;z-index:2;text-align:center}.overflow-confirm button{min-height:44px;width:100%}.overflow-confirm>small{display:block;margin:7px 0;font-size:11px;color:#ad9f91}
 @media(max-width:900px){.enemy-formation{left:12px;right:auto;top:clamp(168px,38cqh,240px);bottom:auto;width:38%;gap:3px}.formation-card{padding:4px 2px;gap:3px}.formation-portrait{height:65px}.formation-card>b{font-size:8px;min-height:24px}.formation-intent{font-size:9px;padding:3px 0}.formation-hp small,.formation-target{font-size:7px}.multi-enemy .hero-actor{left:22%;width:28%}.multi-enemy .hero-figure{height:80px}.overflow-cards{gap:7px}.overflow-card{padding:7px}.overflow-card>b{font-size:11px}.overflow-card>span:not(.mini-art){font-size:10px}.overflow-card .mini-art{height:46px}}
 @media(max-height:550px) and (min-width:901px){.formation-portrait{height:80px}.enemy-formation{bottom:28px}.formation-card>b{font-size:9px;min-height:24px}.formation-intent{font-size:10px}}
+/* Visible decision effects, permanent card upgrades and blood/block HUD. Codex. */
+.node-choice>span,.ascent-choices .node-choice>span{font-size:12px;line-height:1.8;color:#e1d6c4;white-space:normal;overflow:visible}
+.node-choice>b{font-size:14px;line-height:1.6}
+.choice-effect{display:flex;flex-direction:column;align-items:stretch;gap:7px;width:100%;min-width:0;text-align:left;white-space:normal;overflow-wrap:anywhere;font-size:13px;line-height:1.75;color:#f0e3cd}
+.choice-effect .effect-meta{font-size:12px;color:#efc78c;font-weight:700}
+.choice-effect .effect-copy,.effect-copy{display:block;color:#f0e3cd;font-size:13px;line-height:1.8;white-space:normal;overflow:visible;max-height:none;-webkit-line-clamp:unset}
+.choice-effect small{font-size:11px;line-height:1.6;color:#bcb8b1}
+.choice-effect .effect-shape{display:block;width:max-content;height:auto;padding:7px;border:1px solid #bfa57e55;border-radius:3px;background:#151b26;--shape-size:7px}
+.choice-effect .poly-art{height:auto;width:auto}
+.choice-detail{display:block;margin-top:10px;padding:10px;border-left:2px solid #d3aa6b;background:#12121b55}
+.choice-detail>b{display:block;margin-bottom:6px;color:#f3cc93}
+.reward-card>.choice-effect{flex:1;font-size:13px;line-height:1.75;color:#f0e3cd}
+.loot-relic p{font-size:13px;line-height:1.8;color:#e1d6c4}
+.relic-collection .unowned{opacity:.85}
+.shop-item:disabled,.node-choice:disabled{opacity:.72}
+.deck-action-panel{width:900px}
+.deck-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.deck-pick{display:flex;flex-direction:column;gap:9px;align-items:stretch;text-align:left;padding:13px;border:1px solid #9a886655;border-radius:5px;background:#191c28;color:#eed8b9}
+.deck-pick .mini-art{width:100%;height:65px}.deck-pick>b{font-size:15px}.deck-pick>b small{display:block;font-size:11px;font-weight:400;margin-top:5px;color:#c2b5a3}
+.deck-pick:hover:not(:disabled),.deck-pick.picked{border-color:#f0c789;box-shadow:0 0 0 2px #d1a35d44;background:#383126}
+.deck-pick:disabled{opacity:.55}.upgraded>b,.card.upgraded .card-heading{color:#acd7a4}
+.deck-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0;padding:14px;background:#11172099;border:1px solid #c9aa7255;border-radius:5px}
+.deck-preview>div:only-child{grid-column:1/-1}.deck-preview h3{font-size:15px;line-height:1.6;margin:0 0 8px;color:#efd5ad}.deck-preview .upgrade-after h3{color:#b7e2a6}
+.deck-confirm{display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:-30px;z-index:2;background:#26202df5;padding:14px 0;margin-top:15px;border-top:1px solid #bfa57e55}.deck-confirm button{min-height:44px;white-space:normal}
+.blood-display{position:relative;display:block;margin:7px 0 4px;min-width:0;width:100%;padding:0}
+.blood-track{position:relative;display:block;width:100%;height:20px;overflow:hidden;border:1px solid #c87872;border-radius:4px;background:#28121e;box-shadow:0 2px 7px #0005}
+.blood-track>span{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#8e243f,#d85a66);transition:width .3s ease}
+.blood-track>b{position:relative;display:block;color:#fff4e9;font:700 11px/18px system-ui;text-align:center;text-shadow:0 1px 3px #000}
+.low-blood{border-color:#f39679}.low-blood>span{background:linear-gradient(90deg,#7a142c,#e43d4e)}
+.block-badge{position:absolute;z-index:2;left:-15px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:35px;height:38px;color:#d9f7ff;filter:drop-shadow(0 2px 3px #0009)}
+.block-badge>.icon{position:absolute;width:100%;height:100%;fill:#28617e;stroke:#a3e5f5;stroke-width:1.4}.block-badge>b{position:relative;font:700 14px Georgia;color:#fff}
+.has-block .blood-track>b{padding-left:18px}.hero-blood .blood-display{margin-top:6px}.hero-blood .blood-track{height:19px}.hero-blood .blood-track>b{line-height:17px}
+.body-vitals>.blood-display{display:block;grid-column:1/-1;width:100%}.journey-health>.blood-display{margin:2px 0}.health-modal>.blood-display{margin-bottom:18px}
+@media(max-width:760px){.card-rewards{grid-template-columns:1fr}.reward-card{display:grid;grid-template-columns:70px minmax(0,1fr);text-align:left}.reward-card .mini-art{grid-row:1/3;height:70px;width:70px}.reward-card>.choice-effect{grid-column:2}.node-choice>span,.ascent-choices .node-choice>span{font-size:12px}.node-choice>b{font-size:13px}.deck-picker{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.deck-pick{padding:10px}.deck-pick>b{font-size:14px}.deck-pick .choice-effect .effect-copy{font-size:12px}.deck-preview{gap:10px;padding:11px}.deck-preview .effect-copy{font-size:12px}.deck-confirm{bottom:-23px}.hero-blood .blood-track{height:18px}.hero-blood .blood-track>b{font-size:10px;line-height:16px}}
+@media(prefers-reduced-motion:reduce){.blood-track>span{transition:none}}
+.upgrade-inline{display:block;padding:10px;margin-top:5px;border-top:1px solid #add29677;background:#22362866}.upgrade-inline>b{display:block;color:#b7e2a6;margin-bottom:7px;font-size:13px}.health-modal .blood-display{margin:0 0 16px}

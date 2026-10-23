@@ -101,7 +101,7 @@
     spring:{title:'余温泉眼',story:'断裂的石槽里，温热泉水仍在流动。',choices:[choice('drink','饮下泉水','存活部位修复25%，止血，血容量+35。',{heal:.25,blood:35}),choice('coins','打捞旧币','获得45金币。',{gold:45})]},
     medic:{title:'无名医者',story:'戴面具的医者在灯下收拢针线。',choices:[choice('treat','接受治疗','支付20金币，存活部位修复40%，止血，血容量+40。',{heal:.4,blood:40},20),choice('learn','学习缝合','获得「缝合」。',{card:'suture'})]},
     forge:{title:'冷却的锻炉',story:'炉底还有一块温热的月纹磨石。',choices:[choice('stone','购买磨石','支付30金币，获得月纹磨石；已有则改给45金币。',{relic:'whetstone'},30),choice('blade','磨出贯刺','获得「贯刺」。',{card:'spear'})]},
-    library:{title:'散页藏书室',story:'一本没有书名的册子翻到了空白页。',choices:[choice('read','读懂旧卷','获得「澄明」。',{card:'clarity'}),choice('forget','烧去直击的旧页','移除一张直击；牌组至少保留5张。',{remove:'strike'})]},
+    library:{title:'散页藏书室',story:'一本没有书名的册子翻到了空白页。',choices:[choice('read','读懂旧卷','获得「澄明」。',{card:'clarity'}),choice('forget','烧去一页旧技艺','自由选择移除一张牌；牌组至少保留5张。',{remove:'any'})]},
     altar:{title:'余烬祭坛',story:'石碗中有一枚尚未熄灭的晶核。',choices:[choice('offer','献出10%血容量','血容量必须高于25%，获得一件未拥有的遗物。',{randomRelic:true,bloodCost:10}),choice('rest','围坐片刻','血容量+25，止血。',{blood:25,cleanse:true})]},
     prisoner:{title:'门后的囚徒',story:'生锈的牢门后传来轻轻的敲击。',choices:[choice('free','买下钥匙','支付20金币，获得渡鸦之羽；已有则改给45金币。',{relic:'feather'},20),choice('listen','听完他的故事','获得「洞察」与15金币。',{card:'insight',gold:15})]},
     mirror:{title:'裂开的镜子',story:'镜中的旅人比你更早举起了刀。',choices:[choice('cross','模仿镜中剑势','获得「影袭」。',{card:'backstab'}),choice('shatter','击碎空镜','获得35金币。',{gold:35})]},
@@ -188,6 +188,28 @@
     {name:'碎镜天台',subtitle:'THE SHATTERED OBSERVATORY',story:'月光折入万千镜面。厚重生命格与狂怒首领等待成熟的牌组。',hue:225},
     {name:'群星熔心',subtitle:'THE STELLAR HEART',story:'余火抵达永夜中心。整备身体，用最强的形状划出黎明。',hue:285}
   ];
+  // Freeze reward/legacy pools before adding permanent, per-copy upgrade variants.
+  rules.baseCardIds=Object.keys(rules.cards);
+  rules.describeCard=card=>[
+    card.shape?`${card.shape.length}格${card.shapeName}攻击，基础攻效${Math.round((1+(card.powerBonus||0))*100)}%。`:'',
+    card.pierce?'穿甲，忽略生命格护甲。':'',card.block?`获得${card.block}点格挡，下个己方回合开始时清空。`:'',
+    card.draw?`抽${card.draw}张牌。`:'',card.energy?`本回合获得${card.energy}能量。`:'',
+    card.heal?`修复最重的存活伤处${card.heal}点。`:'',card.cleanse?'全部部位止血。':'',
+    card.exhaust?'消耗：本场战斗不再抽到。':''
+  ].filter(Boolean).join('');
+  for(const id of rules.baseCardIds){
+    const c=rules.cards[id];c.baseId=id;c.upgraded=false;c.description=rules.describeCard(c);
+    const u={...c,name:c.name+'+',art:c.art||id,upgraded:true};
+    if(c.shape)u.powerBonus=(c.powerBonus||0)+1;
+    else{
+      if(c.block)u.block=c.block+(c.block>=12?5:3);
+      if(c.draw)u.draw=c.draw+1;
+      if(c.heal)u.heal=c.heal+4;
+      if(c.energy)u.energy=c.energy+1;
+    }
+    u.description=rules.describeCard(u);rules.cards[id+'+']=u;
+  }
+  rules.upgradeId=id=>rules.cards[id]&&!rules.cards[id].upgraded?id+'+':null;
   root.EmberRules = rules;
   if (typeof module !== 'undefined' && module.exports) module.exports = rules;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
