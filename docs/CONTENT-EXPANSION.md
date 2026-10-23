@@ -1,3 +1,7 @@
+# 当前五层扩展
+
+当前已为五层、54卡牌/55敌人/28遗物/24事件，逐层解锁、过层补给与再生详见[FIVE-FLOORS.md](FIVE-FLOORS.md)。存档为v4，新路线为5；多敌与超限抽牌确认详见[MULTI-ENEMY-DRAW.md](MULTI-ENEMY-DRAW.md)；以下为此前首层扩展的历史记录，其中单层总数和v2格式已由当前说明取代。作者/执行者Codex。
+
 # 扩展内容与第一层调整
 
 作者/执行者：Codex。需求 user-2026-10-22-content-balance-relics。图像像素由内置image_gen生成；本轮未调用DeepSeek。
