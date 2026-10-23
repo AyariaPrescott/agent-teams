@@ -1,7 +1,7 @@
 /* Seeded expanded floor, content rewards and versioned save migration. Codex. */
 (function(root){
   'use strict';
-  const R=root.EmberRules||require('./balance.js'),Body=root.EmberBody||require('./body.js').HeroBody;
+  const R=root.EmberRules||require('./balance.js'),Body=root.EmberBody||require('./body.js').HeroBody,S=root.EmberStatuses||require('./statuses.js');
   const types={battle:{name:'战斗',mark:'⚔',note:'击败敌人，获得金币与三选一卡牌。'},elite:{name:'精英',mark:'♜',note:'获得更多金币、卡牌及一件未拥有的遗物。'},event:{name:'事件',mark:'?',note:'探索遗迹，作出不同的选择。'},shop:{name:'商店',mark:'¤',note:'购买卡牌、遗物、治疗，或精简牌组。'},camp:{name:'营火',mark:'♨',note:'恢复身体、强化或学习卡牌，或自由移除一张牌。'},treasure:{name:'宝箱',mark:'◇',note:'从两件遗物中选择一件，或带走金币。'},boss:{name:'关底 Boss',mark:'♛',note:'击败本层首领，获得遗物；第五层胜利即完成旅途。'}};
   const legacyLayout=[[[0,'battle'],[2,'battle']],[[0,'event'],[1,'battle'],[2,'shop']],[[0,'camp'],[1,'elite'],[2,'event']],[[0,'battle'],[2,'treasure']],[[0,'shop'],[1,'camp'],[2,'elite']],[[0,'event'],[2,'battle']],[[0,'camp'],[2,'treasure']],[[1,'boss']]];
   const rows=[
@@ -62,7 +62,7 @@
     return nodes;
   }
   function makeMap(seed,version,floor=1){
-    if(version>=4){const nodes=wovenMap(seed,floor,true);if(version>=5)for(const n of nodes){n.groupCombat=true;n.squadSeed=hash(seed+':'+n.id);}return nodes;}
+    if(version>=4){const nodes=wovenMap(seed,floor,true);if(version>=5)for(const n of nodes){n.groupCombat=true;n.squadSeed=hash(seed+':'+n.id);n.statusCombat=version>=6;}return nodes;}
     if(version===3)return wovenMap(seed);
     const random=rng(seed^0x6a09e667),normals=legacyPool('battle');
     const layout=version===1?legacyLayout:rows.map(([lanes,kinds])=>{const shuffled=shuffle(kinds,random);return lanes.map((lane,i)=>[lane,shuffled[i]]);});
@@ -88,7 +88,7 @@
   function encounter(node){
     const d=R.enemies[node.variant],hp=d.hp+(d.kind==='battle'?Math.min(3,Math.floor(node.row/3)):d.kind==='elite'?Math.min(2,Math.floor(node.row/4)):0);
     const floor=node.floorNumber||1;
-    const lead={...d,id:node.id,floorNumber:floor,enemyId:node.variant,layers:layers(hp,d.style),reward:(d.kind==='boss'?85:d.kind==='elite'?42:22+node.row*2)+(floor-1)*(d.kind==='boss'?25:10),role:types[d.kind].name+' · '+d.name,sceneCell:d.kind==='boss'?5:d.kind==='elite'?4:node.row%3===0?3:null};
+    const lead={...d,id:node.id,floorNumber:floor,statusesEnabled:!!node.statusCombat,enemyId:node.variant,layers:layers(hp,d.style),reward:(d.kind==='boss'?85:d.kind==='elite'?42:22+node.row*2)+(floor-1)*(d.kind==='boss'?25:10),role:types[d.kind].name+' · '+d.name,sceneCell:d.kind==='boss'?5:d.kind==='elite'?4:node.row%3===0?3:null};
     if(!node.groupCombat)return lead;
     const random=rng(node.squadSeed),count=d.kind==='battle'?(node.row===0?1:floor>=3&&random()<.35?3:2):d.kind==='elite'?2:floor===1?1:floor>=4?3:2;
     if(count===1)return lead;
@@ -97,7 +97,7 @@
     const members=ids.map((id,i)=>{
       const e=R.enemies[id],common=d.kind==='battle',scale=common?(count===2?.6:.4):i===0?1:d.kind==='elite'?.45:.3;
       const health=common?budgets[i]:i===0?hp:Math.max(3,Math.ceil(e.hp*(d.kind==='elite'?.25:count===3?.2:.3)));
-      return{...e,id:node.id+':'+i,enemyId:id,floorNumber:floor,layers:layers(health,e.style),role:(i?'同伴 · ':'')+e.name,sceneCell:lead.sceneCell,
+      return{...e,id:node.id+':'+i,enemyId:id,floorNumber:floor,statusesEnabled:!!node.statusCombat,layers:layers(health,e.style),role:(i?'同伴 · ':'')+e.name,sceneCell:lead.sceneCell,
         intents:e.intents.map(a=>({...a,damage:a.damage?Math.max(1,Math.ceil(a.damage*scale)):0,block:a.block?Math.max(1,Math.ceil(a.block*scale)):0,strength:i===0?a.strength:0}))};
     });
     return{...lead,members};
@@ -112,7 +112,7 @@
   const number=(v,min,max)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
   const ids=(v,allowed,min,max)=>Array.isArray(v)&&v.length>=min&&v.length<=max&&v.every(x=>typeof x==='string'&&allowed.includes(x));
   class Floor{
-    constructor({seed=(Date.now()>>>0)||1,routeVersion=5,floorNumber=1}={}){
+    constructor({seed=(Date.now()>>>0)||1,routeVersion=6,floorNumber=1}={}){
       this.seed=seed>>>0||1;this.rngState=this.seed;this.floorNumber=floorNumber;this.history=[];this.mapSeed=mapSeed(this.seed,floorNumber);this.routeVersion=routeVersion;this.nodes=makeMap(this.mapSeed,routeVersion,floorNumber);this.stations=routeVersion===1?8:12;
       this.gold=60;this.deck=[...R.deck];this.relics=[];this.hero=new Body();this.visited=[];this.nodeId=null;this.screen='map';this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.pendingDeckAction=null;this.migrated=false;
     }
@@ -191,7 +191,7 @@
       this.history.push({floor:this.floorNumber,routeVersion:this.routeVersion,boss:this.node.variant,visited:[...this.visited],boon});
       this.hero.block=0;this.hero.boostTurns=0;this.heal(.6,100);
       if(boon==='renewal'){if(!this.hero.parts.some(p=>p.missing))this.heal(1,0);else this.restorePart();}
-      if(this.deck.length<120)this.deck.push(choice.card);this.gold+=35;this.floorNumber++;this.mapSeed=mapSeed(this.seed,this.floorNumber);this.routeVersion=5;this.nodes=makeMap(this.mapSeed,5,this.floorNumber);this.stations=12;
+      if(this.deck.length<120)this.deck.push(choice.card);this.gold+=35;this.floorNumber++;this.mapSeed=mapSeed(this.seed,this.floorNumber);this.routeVersion=6;this.nodes=makeMap(this.mapSeed,6,this.floorNumber);this.stations=12;
       this.visited=[];this.nodeId=null;this.battle=null;this.offers=[];this.bought=[];this.roomRelics=[];this.lastLoot=null;this.screen='map';return true;
     }
     leave(){
@@ -260,24 +260,24 @@
     }
     snapshot(options={}){
       const h=this.hero,b=this.battle;
-      return{format:'ember-corridor',version:5,savedAt:new Date().toISOString(),options:{auto:!!options.auto,sound:!!options.sound},run:{
+      return{format:'ember-corridor',version:6,savedAt:new Date().toISOString(),options:{auto:!!options.auto,sound:!!options.sound},run:{
         pendingDeckAction:this.pendingDeckAction?{...this.pendingDeckAction}:null,
         floorNumber:this.floorNumber,history:this.history.map(h=>({...h,visited:[...h.visited]})),
         seed:this.seed,rngState:this.rngState,routeVersion:this.routeVersion,gold:this.gold,deck:[...this.deck],relics:[...this.relics],visited:[...this.visited],nodeId:this.nodeId,screen:this.screen,offers:[...this.offers],bought:[...this.bought],roomRelics:[...this.roomRelics],lastLoot:this.lastLoot?{gold:this.lastLoot.gold,relics:[...this.lastLoot.relics],fallbackGold:this.lastLoot.fallbackGold}:null,
         hero:{parts:h.parts.map(p=>({id:p.id,hp:p.hp,bleed:p.bleed,missing:p.missing,detachedBy:p.detachedBy})),block:h.block,blood:h.blood,boostTurns:h.boostTurns,bandages:3,stimulants:h.stimulants},
-        battle:b?{enemies:b.members.map(e=>({cells:[...e.cells],armor:[...e.armor],maxHp:e.maxHp,strength:e.strength,intentIndex:e.intentIndex})),targetIndex:b.targetIndex,energy:b.energy,turn:b.turn,status:b.status,played:b.played,attackRemainder:b.attackRemainder,hand:b.hand.map(c=>c.uid),draw:b.drawPile.map(c=>c.uid),discard:b.discardPile.map(c=>c.uid),exhaust:b.exhaustPile.map(c=>c.uid),pendingDraw:b.pendingDraw.map(c=>c.uid),overflowSelection:[...b.overflowSelection],log:b.log.slice(-120)}:null}};
+        battle:b?{heroState:S.snapshot(b.heroState),enemies:b.members.map(e=>({state:S.snapshot(e),cells:[...e.cells],armor:[...e.armor],maxHp:e.maxHp,strength:e.strength,intentIndex:e.intentIndex})),targetIndex:b.targetIndex,energy:b.energy,turn:b.turn,status:b.status,played:b.played,attackRemainder:b.attackRemainder,hand:b.hand.map(c=>c.uid),draw:b.drawPile.map(c=>c.uid),discard:b.discardPile.map(c=>c.uid),exhaust:b.exhaustPile.map(c=>c.uid),pendingDraw:b.pendingDraw.map(c=>c.uid),overflowSelection:[...b.overflowSelection],log:b.log.slice(-120)}:null}};
     }
     static restore(data,Battle){
-      assert(data&&data.format==='ember-corridor'&&[1,2,3,4,5].includes(data.version),'不是本游戏支持的存档版本。');
-      const old=data.version===1,campaign=data.version>=3,group=data.version>=4,upgrades=data.version>=5,s=data.run;assert(s&&typeof s==='object');
+      assert(data&&data.format==='ember-corridor'&&[1,2,3,4,5,6].includes(data.version),'不是本游戏支持的存档版本。');
+      const old=data.version===1,campaign=data.version>=3,group=data.version>=4,upgrades=data.version>=5,statuses=data.version>=6,s=data.run;assert(s&&typeof s==='object');
       assert(integer(s.seed,1,4294967295)&&integer(s.rngState,1,4294967295)&&integer(s.gold,0,100000));
       const version=old?1:s.routeVersion,floorNumber=campaign?s.floorNumber:1;
-      assert(integer(floorNumber,1,5)&&[1,2,3,4,5].includes(version)&&(campaign||version<4)&&(group||version<5)&&(floorNumber===1||version>=4));
+      assert(integer(floorNumber,1,5)&&[1,2,3,4,5,6].includes(version)&&(campaign||version<4)&&(group||version<5)&&(statuses||version<6)&&(floorNumber===1||version>=4));
       const run=new Floor({seed:s.seed,routeVersion:version,floorNumber}),nodeIds=run.nodes.map(n=>n.id),relicIds=Object.keys(R.relics);
       if(campaign){
         assert(Array.isArray(s.history)&&s.history.length===floorNumber-1);
         s.history.forEach((h,i)=>{
-          assert(h&&h.floor===i+1&&[1,2,3,4,5].includes(h.routeVersion)&&(group||h.routeVersion<5)&&(i===0||h.routeVersion>=4)&&['assault','shelter','renewal'].includes(h.boon));
+          assert(h&&h.floor===i+1&&[1,2,3,4,5,6].includes(h.routeVersion)&&(group||h.routeVersion<5)&&(statuses||h.routeVersion<6)&&(i===0||h.routeVersion>=4)&&['assault','shelter','renewal'].includes(h.boon));
           const nodes=makeMap(mapSeed(s.seed,h.floor),h.routeVersion,h.floor),steps=h.routeVersion===1?8:12;
           assert(ids(h.visited,nodes.map(n=>n.id),steps,steps)&&new Set(h.visited).size===steps);
           h.visited.forEach((id,j)=>assert(j?connects(nodes.find(n=>n.id===h.visited[j-1]),nodes.find(n=>n.id===id),h.routeVersion):nodes.find(n=>n.id===id).row===0));
@@ -331,12 +331,14 @@
         const b=new Battle({hero:run.hero,relics:run.relics,deck:run.deck,encounter:e,rng:()=>0});b.rng=()=>run.random();b.allCards=cards;
         // Constructor may grant opening block; replace it with the exact saved value.
         run.hero.block=h.block;
+        b.heroState=statuses?S.restore(x.heroState):S.create();assert(b.heroState.stagger<8);
         for(const[from,to]of[['hand','hand'],['draw','drawPile'],['discard','discardPile'],['exhaust','exhaustPile']])b[to]=x[from].map(uid=>cards.find(c=>c.uid===uid));
         b.pendingDraw=group?x.pendingDraw.map(uid=>cards.find(c=>c.uid===uid)):[];b.overflowSelection=group?[...x.overflowSelection]:[];
         enemies.forEach((m,j)=>{
           b.targetIndex=j;const maxHp=configs[j].layers.reduce((a,b)=>a+b,0);b.enemy.cells=[...m.cells];b.enemy.armor=[...m.armor];b.enemy.strength=old?Math.floor(m.strength/2):m.strength;b.intentIndex=m.intentIndex;
           if(old){const oldMax=oldE.layers.reduce((a,b)=>a+b,0),sum=b.enemy.cells.reduce((a,b)=>a+b,0),target=Math.min(sum,Math.ceil(sum/oldMax*maxHp));let remaining=sum;while(remaining>target){const largest=Math.max(...b.enemy.cells),i=b.enemy.cells.indexOf(largest);b.enemy.cells[i]--;remaining--;}}
           b.syncEnemy();b.enemy.maxHp=maxHp;
+          Object.assign(b.enemy,statuses?S.restore(m.state):S.create());assert(b.enemy.stagger<b.staggerThreshold('enemy'));
         });
         b.targetIndex=targetIndex;
         for(const key of ['energy','turn','status','played','attackRemainder'])b[key]=x[key];b.phase=b.status==='playing'?'player':'finished';b.log=[...x.log];if(old)b.log.push('存档已升级：当前敌人按剩余比例降低生命，包扎次数限制解除。');run.battle=b;
@@ -346,10 +348,10 @@
       if(s.screen==='reward')assert(n.type!=='boss');if(!['lost','cleared'].includes(s.screen))assert(!run.hero.failureReason);if(s.screen==='lost')assert(!!run.hero.failureReason);
       if(!old&&s.lastLoot!==null){const loot=s.lastLoot;assert(['reward','cleared'].includes(s.screen)&&loot&&integer(loot.gold,0,1000)&&integer(loot.fallbackGold,0,45)&&ids(loot.relics,relicIds,0,1)&&loot.relics.every(id=>run.relics.includes(id)));run.lastLoot={gold:loot.gold,relics:[...loot.relics],fallbackGold:loot.fallbackGold};}
       if(old&&['reward','cleared'].includes(s.screen)){run.lastLoot={gold:0,relics:[],fallbackGold:0};if(['elite','boss'].includes(n.type)){const id=run.dropRelic();if(id)run.lastLoot.relics.push(id);else run.lastLoot.fallbackGold=45;}}
-      run.migrated=!upgrades;
-      return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:!upgrades};
+      run.migrated=!statuses;
+      return{run,options:{auto:data.options?.auto===true,sound:data.options?.sound===true},migrated:!statuses};
     }
   }
-  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,5);Floor.connects=connects;
+  Floor.types=types;Floor.encounter=encounter;Floor.legacyLayout=legacyLayout;Floor.nodes=makeMap(1,6);Floor.connects=connects;
   root.EmberFloor=Floor;if(typeof module!=='undefined'&&module.exports)module.exports=Floor;
 })(typeof globalThis!=='undefined'?globalThis:this);

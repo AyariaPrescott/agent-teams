@@ -188,6 +188,34 @@
     {name:'碎镜天台',subtitle:'THE SHATTERED OBSERVATORY',story:'月光折入万千镜面。厚重生命格与狂怒首领等待成熟的牌组。',hue:225},
     {name:'群星熔心',subtitle:'THE STELLAR HEART',story:'余火抵达永夜中心。整备身体，用最强的形状划出黎明。',hue:285}
   ];
+  rules.statuses={
+    burn:{name:'灼烧',mark:'♨',color:'#ef9b63',note:'整轮结束时造成等同威力的固定伤害，次数−1。'},
+    bleed:{name:'出血',mark:'◆',color:'#ee8794',note:'攻击前触发一次，次数−1。敌人失去等同威力的生命；己方扣血容量。与伤口每回合流血分别计算。'},
+    rupture:{name:'破裂',mark:'✧',color:'#a6d483',note:'受到一次实际攻击伤害后，追加等同威力的固定伤害，次数−1；每张牌或敌人行动只触发一次。'},
+    sinking:{name:'沉沦',mark:'☽',color:'#92b7ee',note:'受到实际攻击伤害后，增加等同威力的攻击压制，次数−1。压制最多9：敌方下次攻击伤害−N（最低1），己方下次攻击攻效−10%×N（最低25%）；攻击后解除压制。'},
+    tremor:{name:'震颤',mark:'≋',color:'#dfc26e',note:'有“震颤爆发”的攻击命中后，按已有威力积累失衡；整轮结束次数−1。达到阈值后失衡，失衡期间受攻击+25%。'}
+  };
+  const inflict=(id,kind,potency,count)=>{rules.cards[id].inflict=[{kind,potency,count}];};
+  [['ember','burn',2,2],['burst','burn',3,2],['supernova','burn',4,3],['coronacut','burn',3,2],
+    ['cross','bleed',2,2],['hook','bleed',1,3],['needle','bleed',1,2],['crescent','bleed',2,2],
+    ['strike','rupture',1,1],['spear','rupture',2,2],['backstab','rupture',2,2],['deepneedle','rupture',2,3],['starlance','rupture',3,2],
+    ['tidecut','sinking',2,2],['inkfork','sinking',3,2],['mirrorfan','sinking',3,2],['prism','sinking',2,3],
+    ['parry','tremor',2,3],['rivet','tremor',3,3],['pulse','tremor',3,3]].forEach(args=>inflict(...args));
+  for(const id of ['heavy','cleave','pulse','hammerfall','forgecross'])rules.cards[id].tremorBurst=true;
+  for(const id of ['renew','saltstitch','moonstitch','rebirth'])rules.cards[id].purge=['burn','bleed'];
+  rules.cards.suture.purge=['bleed'];rules.cards.clarity.purge=['sinking','tremor'];rules.cards.focus.purge=['sinking'];rules.cards.wall.purge=['tremor'];
+  rules.enemyStatusProfiles={};
+  const first={rat:'burn',moth:'burn',archer:'bleed',slime:'rupture',pilgrim:'tremor',watcher:'rupture',scavenger:'bleed',shade:'sinking',cinder:'burn',keeper:'tremor',thorn:'bleed',abbot:'tremor',oracle:'sinking',warden:'tremor',crown:'burn',queen:'rupture',priest:'tremor'};
+  for(const [id,e]of Object.entries(rules.enemies)){
+    const floor=e.floor||1,index=Number(id.slice(-1));
+    const kind=floor===1?first[id]:['rupture','burn','bleed','sinking','tremor','rupture','bleed','tremor',floor===4?'sinking':'burn'][index];
+    if(kind)rules.enemyStatusProfiles[id]={kind,potency:Math.max(1,Math.floor((floor+1)/2)),count:kind==='tremor'?3:kind==='burn'?2:1};
+  }
+  rules.describeAffliction=card=>[
+    ...(card.inflict||[]).map(a=>`造成生命伤害后施加${rules.statuses[a.kind].name}（威力${a.potency}／次数${a.count}）。`),
+    card.tremorBurst?'命中后触发震颤爆发，使用目标已有震颤威力。':'',
+    card.purge?.length?'解除自身'+card.purge.map(id=>rules.statuses[id].name).join('、')+(card.purge.includes('sinking')?'及攻击压制':'')+(card.purge.includes('tremor')?'及失衡':'')+'。':''
+  ].filter(Boolean).join('');
   // Freeze reward/legacy pools before adding permanent, per-copy upgrade variants.
   rules.baseCardIds=Object.keys(rules.cards);
   rules.describeCard=card=>[
@@ -195,11 +223,12 @@
     card.pierce?'穿甲，忽略生命格护甲。':'',card.block?`获得${card.block}点格挡，下个己方回合开始时清空。`:'',
     card.draw?`抽${card.draw}张牌。`:'',card.energy?`本回合获得${card.energy}能量。`:'',
     card.heal?`修复最重的存活伤处${card.heal}点。`:'',card.cleanse?'全部部位止血。':'',
-    card.exhaust?'消耗：本场战斗不再抽到。':''
+    card.exhaust?'消耗：本场战斗不再抽到。':'',rules.describeAffliction(card)
   ].filter(Boolean).join('');
   for(const id of rules.baseCardIds){
     const c=rules.cards[id];c.baseId=id;c.upgraded=false;c.description=rules.describeCard(c);
     const u={...c,name:c.name+'+',art:c.art||id,upgraded:true};
+    if(c.inflict)u.inflict=c.inflict.map(a=>({...a,potency:a.potency+1}));
     if(c.shape)u.powerBonus=(c.powerBonus||0)+1;
     else{
       if(c.block)u.block=c.block+(c.block>=12?5:3);

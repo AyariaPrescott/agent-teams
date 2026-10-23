@@ -53,7 +53,7 @@
       <div class="layer-legend" id="layer-legend" aria-label="1至9层生命颜色图例"></div>
       <div class="grid-legend"><span><i class="legend-live"></i>每层 1 生命</span><span><i class="legend-hit"></i>削 1 层</span><span><i class="legend-armor"></i>护甲 / 破甲</span></div>
       <div class="placement-summary"><div id="placement-preview" aria-hidden="true"></div><div><strong id="placement-title">选择攻击形状</strong><p id="placement-status" role="status" aria-live="polite">先选择一张攻击牌。</p></div></div>
-      <div class="placement-actions"><button id="rotate-attack" disabled title="R或滚轮旋转；Shift+R反向旋转，中心保持稳定">旋转 <kbd>R</kbd></button><button id="cancel-attack" disabled title="Esc或棋盘内右键取消，不消耗能量">取消 <kbd>Esc</kbd></button><button id="auto-button" class="auto-button" aria-pressed="false" title="开启后点攻击牌直接出牌，自动选择落点；快捷键A"><i></i><span>AUTO</span><b id="auto-state">关</b></button></div>
+      <div class="combat-afflictions" id="target-afflictions"></div><div class="placement-actions"><button id="rotate-attack" disabled title="R或滚轮旋转；Shift+R反向旋转，中心保持稳定">旋转 <kbd>R</kbd></button><button id="cancel-attack" disabled title="Esc或棋盘内右键取消，不消耗能量">取消 <kbd>Esc</kbd></button><button id="auto-button" class="auto-button" aria-pressed="false" title="开启后点攻击牌直接出牌，自动选择落点；快捷键A"><i></i><span>AUTO</span><b id="auto-state">关</b></button></div>
     </section>
     <div class="first-hint" id="first-hint"><span>✧</span> 选攻击牌 → 点格即出 / 开启 AUTO 免放置 <i>↓</i></div>
     <div class="combat-effects" id="combat-effects" aria-hidden="true"></div>
@@ -69,5 +69,5 @@
 </div>
 <div class="modal-backdrop" id="modal" hidden><section class="modal-panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="关闭弹窗">×</button><div class="modal-ornament">— ✦ —</div><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
 <input type="file" id="save-file" accept=".json,application/json" hidden>
-<script src="art.js"></script><script src="balance.js"></script><script src="body.js"></script><script src="floor.js"></script><script src="game.js"></script>
+<script src="art.js"></script><script src="balance.js"></script><script src="statuses.js"></script><script src="body.js"></script><script src="floor.js"></script><script src="game.js"></script>
 </body></html>

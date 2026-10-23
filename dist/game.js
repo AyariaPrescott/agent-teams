@@ -2,14 +2,15 @@
   'use strict';
   const R = root.EmberRules || (typeof require === 'function' ? require('./balance.js') : null);
   const Body = root.EmberBody || (typeof require === 'function' ? require('./body.js').HeroBody : null);
+  const S = root.EmberStatuses || (typeof require === 'function' ? require('./statuses.js') : null);
   class Battle {
     constructor({ rng = Math.random, relic = null, relics = [], hero = null, deck = R.deck, encounter = null } = {}) {
       this.rng = rng; this.relic = relic; this.relics = [...relics]; this.baseEncounter=encounter;
-      this.hero = hero || new Body({ relic }); this.attackRemainder = 0;
+      this.hero = hero || new Body({ relic }); this.attackRemainder = 0;this.heroState=S.create();this.statusEvents=[];this.statusHits=[];
       this.columns = R.gridColumns; this.rows = R.gridRows;
       this.maxCellLayers = R.maxCellLayers;
       this.encounters=encounter?.members||[encounter];this.targetIndex=0;
-      this.members=this.encounters.map(e=>{const cells=Array.from({length:this.columns*this.rows},(_,i)=>this.clampLayers((e?.layers||R.enemyLayers)[i])),hp=cells.reduce((a,b)=>a+b,0);return{hp,maxHp:hp,block:0,strength:0,intentIndex:0,cells,armor:Array(cells.length).fill(false)};});
+      this.members=this.encounters.map(e=>{const cells=Array.from({length:this.columns*this.rows},(_,i)=>this.clampLayers((e?.layers||R.enemyLayers)[i])),hp=cells.reduce((a,b)=>a+b,0);return{...S.create(),hp,maxHp:hp,block:0,strength:0,intentIndex:0,cells,armor:Array(cells.length).fill(false)};});
       this.energy = this.effects.energy + (encounter ? this.relicBonus('openingEnergy') : 0); this.turn = 1; this.intentIndex = 0; this.status = 'playing'; this.phase = 'player'; this.played = 0;
       this.allCards = deck.map((id, i) => ({ id, uid: `card-${i}` }));
       const opening = encounter ? this.shuffle(this.allCards) : this.allCards;
@@ -26,23 +27,61 @@
     get living(){return this.members.map((e,i)=>e.hp>0?i:-1).filter(i=>i>=0);}
     get overflowCount(){return this.pendingDraw.length;}
     selectTarget(index){if(!Number.isInteger(index)||!this.members[index]?.hp||this.phase!=='player'||this.status!=='playing')return false;this.targetIndex=index;return true;}
-    intentFor(index){const e=this.encounters[index],m=this.members[index],base=(e?.intents||R.intents)[m.intentIndex],enraged=e?.kind==='boss'&&m.hp<=m.maxHp/2;return{...base,name:base.name+(enraged&&base.damage?' · 狂怒':''),damage:base.damage?base.damage+m.strength+(enraged?e.enrage||0:0):0};}
+    intentFor(index){
+      const e=this.encounters[index],m=this.members[index],base=(e?.intents||R.intents)[m.intentIndex],enraged=e?.kind==='boss'&&m.hp<=m.maxHp/2;
+      if(m.staggered)return{name:'失衡 · 跳过行动',type:'stagger',damage:0,block:0,strength:0,inflict:[]};
+      const profile=e?.statusesEnabled?R.enemyStatusProfiles[e.enemyId]:null,active=base.damage&&profile&&(m.intentIndex===2||(profile.kind==='tremor'&&m.intentIndex===0));
+      return{...base,name:base.name+(enraged&&base.damage?' · 狂怒':'')+(active?' · '+R.statuses[profile.kind].name:''),damage:base.damage?Math.max(1,base.damage+m.strength+(enraged?e.enrage||0:0)-m.dread):0,inflict:active?[profile]:[],tremorBurst:active&&profile.kind==='tremor'&&m.intentIndex===2};
+    }
     shuffle(cards) {
       const a = [...cards];
       for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
       return a;
     }
     relicBonus(key) { return this.relics.reduce((sum,id)=>sum+(R.relics[id]?.[key]||0),0); }
-    get effects() { const e={...this.hero.effects}; e.attack*=1+this.relicBonus('attack')+(this.hero.boostTurns?this.relicBonus('boostAttack'):0);e.block*=1+this.relicBonus('guard');e.energy=Math.min(6,e.energy+this.relicBonus('energy'));e.draw+=this.relicBonus('draw');e.healing+=this.relicBonus('healing');return e; }
+    get effects() { const e={...this.hero.effects}; e.attack*=(1+this.relicBonus('attack')+(this.hero.boostTurns?this.relicBonus('boostAttack'):0))*Math.max(.25,1-this.heroState.dread*.1);e.block*=1+this.relicBonus('guard');e.energy=Math.min(6,e.energy+this.relicBonus('energy'));e.draw+=this.relicBonus('draw');e.healing+=this.relicBonus('healing');e.incoming*=this.heroState.staggered?1.25:1;return e; }
     get intent() {return this.intentFor(this.targetIndex);}
     definition(card) {
       const d = { ...R.cards[typeof card === 'string' ? card : card.id] }, effects = this.effects;
-      if (d.shape) { d.damage = d.shape.length; d.power = effects.attack * (1+(d.powerBonus||0)); d.pierce = !!d.pierce || this.relic === 'blade' || this.relics.includes('blade'); }
+      if (d.shape) { d.damage = d.shape.length; d.power = effects.attack * (1+(d.powerBonus||0))*(this.enemy.staggered?1.25:1); d.pierce = !!d.pierce || this.relic === 'blade' || this.relics.includes('blade'); }
       d.block = Math.max(0, Math.floor(d.block * effects.block + 1e-8));
       if (d.draw) d.draw = Math.max(1, Math.round(d.draw * this.hero.capacities.consciousness));
       d.description = [d.shape ? `${d.shape.length}格${d.shapeName}攻击，当前攻效${Math.round(d.power * 100)}%。` : '',d.pierce?'穿甲。':'', d.block ? `获得${d.block}点格挡。` : '', d.draw ? `抽${d.draw}张牌。` : '', d.energy ? `获得${d.energy}能量。` : '',d.heal?`修复最重的存活伤处约${Math.round(d.heal*this.hero.capacities.metabolism)}点。`:'',d.cleanse?'全部止血。':'',d.exhaust?'消耗。':''].filter(Boolean).join('');
+      d.description+=R.describeAffliction(d);
       return d;
     }
+    stateFor(who){return who==='hero'?this.heroState:this.enemy;}
+    staggerThreshold(who){return who==='hero'?8:Math.max(3,Math.ceil(this.enemy.maxHp*.2));}
+    emitStatus(kind,who,text,amount=0){const event={kind,who,index:who==='enemy'?this.targetIndex:null,text,amount};this.statusEvents.push(event);this.log.push(text);}
+    statusDamage(who,amount,kind){
+      let lost=0;
+      if(who==='enemy'){
+        for(let i=0;i<amount&&this.enemy.hp>0;i++){const largest=Math.max(...this.enemy.cells),index=this.enemy.cells.indexOf(largest);this.enemy.cells[index]--;lost++;this.syncEnemy();}
+      }else if(kind==='bleed'){lost=Math.min(this.hero.blood,amount);this.hero.blood-=lost;}
+      else{
+        const pool=this.hero.parts.filter(p=>this.hero.available(p.id)),total=pool.reduce((sum,p)=>sum+p.weight,0);
+        let roll=this.rng()*total;const target=pool.find(p=>(roll-=p.weight)<0)||pool.at(-1),hits=[];
+        if(target&&!this.hero.failureReason)lost=this.hero.injure(target.id,amount,hits);this.statusHits.push(...hits);
+      }
+      const name=who==='hero'?'旅人':this.encounter?.name||'敌人';
+      this.emitStatus(kind,who,name+' · '+R.statuses[kind].name+' −'+lost+(who==='hero'&&kind==='bleed'?' 血容量':' 生命'),lost);return lost;
+    }
+    triggerDamage(who,kind){const p=S.consume(this.stateFor(who),kind);if(p)this.statusDamage(who,p,kind);}
+    onHurt(who,burst=false){
+      const alive=()=>who==='hero'?!this.hero.failureReason:this.enemy.hp>0,state=this.stateFor(who);
+      if(!alive())return;this.triggerDamage(who,'rupture');if(!alive())return;
+      const sinking=S.consume(state,'sinking');if(sinking){state.dread=Math.min(9,state.dread+sinking);this.emitStatus('sinking',who,(who==='hero'?'旅人':this.encounter?.name||'敌人')+' · 沉沦触发，攻击压制 '+state.dread+'。');}
+      if(burst&&state.ailments.tremor&&!state.staggered){
+        const p=state.ailments.tremor.potency,threshold=this.staggerThreshold(who);state.stagger+=p;
+        if(state.stagger>=threshold){state.stagger=0;state.staggered=true;}
+        this.emitStatus('tremor',who,(who==='hero'?'旅人':this.encounter?.name||'敌人')+' · 震颤爆发 '+p+'，'+(state.staggered?'陷入失衡！':'失衡进度 '+state.stagger+'/'+threshold+'。'));
+      }
+    }
+    inflict(who,effects){
+      if(who==='hero'?!!this.hero.failureReason:!this.enemy.hp)return;
+      for(const a of effects||[]){S.add(this.stateFor(who),a);this.emitStatus(a.kind,who,(who==='hero'?'旅人':this.encounter?.name||'敌人')+' · 获得'+R.statuses[a.kind].name+' '+a.potency+'威力 / '+a.count+'次数。');}
+    }
+    canBandage(id){return this.hero.canTreat(id)||!!this.heroState.ailments.bleed;}
     shapeFor(card, rotation = 0) {
       let points = (this.definition(card).shape || []).map(p => [...p]);
       for (let i = 0; i < ((rotation % 4) + 4) % 4; i++) {
@@ -108,8 +147,8 @@
       this.log.push('整理手牌：确认弃置'+discarded.map(c=>R.cards[c.id].name).join('、')+'，保留'+this.hand.length+'张。');return true;
     }
     checkResult() {
-      if (!this.living.length) { this.status = 'won'; this.phase = 'finished'; this.log.push('全部敌人已被击败。余烬之后，仍有前路。'); }
-      else if (this.hero.failureReason) { this.status = 'lost'; this.phase = 'finished'; this.log.push(`提灯熄灭：${this.hero.failureReason}。`); }
+      if (this.hero.failureReason) { this.status = 'lost'; this.phase = 'finished'; this.log.push(`提灯熄灭：${this.hero.failureReason}。`); }
+      else if (!this.living.length) { this.status = 'won'; this.phase = 'finished'; this.log.push('全部敌人已被击败。余烬之后，仍有前路。'); }
       else if(!this.enemy.hp)this.targetIndex=this.living[0];
       return this.status;
     }
@@ -119,6 +158,7 @@
       const index = this.hand.findIndex(c => c.uid === uid);
       if (index < 0) return { ok: false, reason: '这张牌不在手中。' };
       const card = this.hand[index], d = this.definition(card),targetIndex=this.targetIndex,targetName=this.encounter?.name||'石门守卫';
+      if(d.shape&&this.heroState.staggered)return{ok:false,reason:'失衡中，本回合不能使用攻击牌；可使用技能、包扎或强化剂。'};
       if (d.cost > this.energy) return { ok: false, reason: '能量不足，可以结束回合恢复能量。' };
       let plan = null;
       if (d.shape) {
@@ -128,28 +168,38 @@
       }
       this.energy -= d.cost; this.hand.splice(index, 1); this.played++;
       (d.exhaust ? this.exhaustPile : this.discardPile).push(card);
+      this.statusEvents=[];this.statusHits=[];
       const hit = { lost: 0, blocked: 0, cleared: 0 };
+      if(plan){
+        this.triggerDamage('hero','bleed');
+        if(this.hero.failureReason){this.log.push(d.name+"因出血致命而中断，已消耗卡牌和能量。");this.checkResult();return{ok:true,card,definition:d,hit,plan:null,recovery:null,targetIndex,targetName,interrupted:true,statusEvents:[...this.statusEvents]};}
+        this.heroState.dread=0;
+      }
       if (plan) {
         for (const c of plan.blocked) { this.enemy.armor[c.index] = false; hit.blocked++; }
         for (const c of plan.hits) { this.enemy.cells[c.index] -= c.lost; this.enemy.armor[c.index] = false; hit.lost += c.lost; if (this.enemy.cells[c.index] === 0) hit.cleared++; }
         this.attackRemainder = plan.nextRemainder;
         this.syncEnemy();
+        if(hit.lost){this.onHurt('enemy',d.tremorBurst);this.inflict('enemy',d.inflict);}
       }
       this.hero.block += d.block; this.energy += d.energy;
       if (d.draw) this.draw(d.draw);
       const recovery=(d.heal||d.cleanse)?this.hero.recover(d.heal||0,!!d.cleanse):null;
+      if(d.purge?.length){S.purge(this.heroState,d.purge);this.emitStatus('cleanse','hero',d.name+' · '+R.describeAffliction({purge:d.purge}));}
+      if(d.cleanse)S.purge(this.heroState,['bleed']);
       const parts = [plan ? `${d.shapeName}在第${plan.y + 1}行第${plan.x + 1}列 / ${((plan.rotation % 4) + 4) % 4 * 90}°，削去 ${hit.lost} 层生命、击碎 ${hit.cleared} 格${hit.blocked ? `，破甲 ${hit.blocked} 格` : ''}` : '', d.block ? `+${d.block} 格挡` : '', d.draw ? `抽 ${d.draw} 张` : '', d.energy ? '+1 能量 · 消耗' : ''].filter(Boolean);
       if(d.energy) parts[parts.length-1]=`+${d.energy}能量${d.exhaust?' · 消耗':''}`;
       if(recovery) parts.push(`${recovery.part||'身体'}修复${recovery.healed}${d.cleanse?'，全部止血':''}`);
       this.log.push(`第 ${this.turn} 回合 · ${d.name}${plan?' → '+targetName:''}：${parts.join('，')}。`); this.checkResult();
-      return { ok: true, card, definition: d, hit, plan, recovery,targetIndex,targetName };
+      return { ok: true, card, definition: d, hit, plan, recovery,targetIndex,targetName,statusEvents:[...this.statusEvents] };
     }
     medical(action, partId) {
       if (this.status !== 'playing' || this.phase !== 'player') return { ok: false, reason: '现在无法医疗。' };
       if(this.overflowCount)return{ok:false,reason:'请先确认弃牌。'};
       if (this.energy < 1) return { ok: false, reason: '医疗需要1点能量。' };
-      const result = action === 'bandage' ? this.hero.treat(partId,this.relicBonus('healing')) : action === 'boost' ? this.hero.stimulate() : { ok: false, reason: '未知医疗操作。' };
+      const result = action === 'bandage' ? this.hero.canTreat(partId)?this.hero.treat(partId,this.relicBonus('healing')):this.heroState.ailments.bleed?{ok:true,part:'战术出血',healed:0,stopped:0}:{ok:false,reason:'没有需要处理的伤口或战术出血。'} : action === 'boost' ? this.hero.stimulate() : { ok: false, reason: '未知医疗操作。' };
       if (!result.ok) return result;
+      if(action==='bandage')S.purge(this.heroState,['bleed']);else S.purge(this.heroState,['sinking','tremor']);
       this.energy--;
       this.log.push(action === 'bandage' ? `包扎${result.part}：修复 ${result.healed} 部位生命并止血。` : '注射战斗强化剂：能力提高，持续当前及后续共3个玩家回合，不恢复缺失部位。');
       return { ...result, action };
@@ -157,11 +207,23 @@
     endTurn() {
       if (this.status !== 'playing' || this.phase !== 'player'||this.overflowCount) return { ok: false };
       this.phase = 'enemy'; this.discardPile.push(...this.hand); this.hand = [];
+      this.statusEvents=[];this.statusHits=[];this.heroState.staggered=false;
       const focused=this.targetIndex,actions=[],hit={lost:0,blocked:0,hits:[]};
+      const finish=(recovery=null)=>{
+        this.targetIndex=this.members[focused].hp?focused:(this.living[0]??focused);this.hero.lastHits=[...hit.hits,...this.statusHits];
+        const intent=actions.length===1?actions[0].intent:{name:actions.length?'敌方联合行动':'状态结算',type:actions.some(a=>a.intent.damage)?'attack':'defend',damage:actions.reduce((s,a)=>s+a.intent.damage,0),block:actions.reduce((s,a)=>s+a.intent.block,0),strength:0};
+        return{ok:true,intent,hit,recovery,actions,statusEvents:[...this.statusEvents],statusHits:[...this.statusHits]};
+      };
       for(const m of this.members){m.armor.fill(false);m.block=0;}
       for(const index of this.living){
         this.targetIndex=index;const intent=this.intent,name=this.encounter?.name||'石门守卫';
-        const damage=intent.damage?this.hero.receiveAttack(intent.damage,this.rng):{lost:0,blocked:0,hits:[]};
+        if(this.enemy.staggered){
+          this.enemy.staggered=false;this.emitStatus('tremor','enemy',name+' · 失衡，跳过本次行动。');
+          actions.push({index,name,intent,hit:{lost:0,blocked:0,hits:[]}});this.intentIndex=(this.intentIndex+1)%(this.encounter?.intents||R.intents).length;continue;
+        }
+        if(intent.damage){this.triggerDamage('enemy','bleed');if(!this.enemy.hp)continue;this.enemy.dread=0;}
+        const damage=intent.damage?this.hero.receiveAttack(intent.damage*(this.heroState.staggered?1.25:1),this.rng):{lost:0,blocked:0,hits:[]};
+        if(damage.lost){this.onHurt('hero',intent.tremorBurst);this.inflict('hero',intent.inflict);}
         if(intent.block)this.grantArmor(intent.block);this.enemy.strength+=intent.strength;
         actions.push({index,name,intent,hit:damage});hit.lost+=damage.lost;hit.blocked+=damage.blocked;hit.hits.push(...damage.hits);
         this.log.push(`${name} · ${intent.name}：${intent.damage?`造成 ${damage.lost} 伤害，格挡吸收 ${damage.blocked}`:`为 ${this.enemy.block} 个生命格覆甲`}${intent.strength?`，力量 +${intent.strength}`:''}。`);
@@ -169,17 +231,18 @@
         this.intentIndex=(this.intentIndex+1)%(this.encounter?.intents||R.intents).length;
         if(this.hero.failureReason)break;
       }
-      this.targetIndex=this.members[focused].hp?focused:this.living[0];
-      this.hero.lastHits=[...hit.hits];
-      const intent=actions.length===1?actions[0].intent:{name:'敌方联合行动',type:actions.some(a=>a.intent.damage)?'attack':'defend',damage:actions.reduce((s,a)=>s+a.intent.damage,0),block:actions.reduce((s,a)=>s+a.intent.block,0),strength:0};
-      if (this.checkResult() === 'lost') return { ok: true, intent, hit,actions };
+      if(this.checkResult()!=='playing')return finish();
+      for(const index of this.living){this.targetIndex=index;this.triggerDamage('enemy','burn');S.consume(this.enemy,'tremor');}
+      if(this.checkResult()!=='playing')return finish();
+      this.triggerDamage('hero','burn');S.consume(this.heroState,'tremor');
+      if(this.checkResult()!=='playing')return finish();
       const recovery = this.hero.advanceTurn();
       if (recovery.bleeding > 0) this.log.push(`流血 ${recovery.bleeding.toFixed(1)}，恢复血容量 ${recovery.recovered.toFixed(1)}；血容量 ${this.hero.blood.toFixed(1)}%。`);
       if (recovery.expired) this.log.push('强化剂到期，身体能力重新计算。');
-      if (this.checkResult() === 'lost') return { ok: true, intent, hit, recovery,actions };
+      if (this.checkResult() !== 'playing') return finish(recovery);
       this.turn++; this.hero.block = this.relicBonus('turnBlock'); this.phase = 'player';
       this.energy = this.effects.energy; this.draw(this.effects.draw);
-      return { ok: true, intent, hit, recovery,actions };
+      return finish(recovery);
     }
   }
   root.EmberBattle = Battle;
@@ -342,6 +405,28 @@
   function bloodMarkup(h,withShield=false){
     return '<div class="blood-display '+(withShield&&h.block?'has-block':'')+'"><div class="blood-track '+(h.blood<65?'low-blood':'')+'" role="progressbar" aria-label="血容量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+h.blood.toFixed(1)+'"><span style="width:'+h.blood+'%"></span><b>血容量 '+h.blood.toFixed(0)+' / 100</b></div>'+(withShield&&h.block?'<span class="block-badge" aria-label="格挡 '+h.block+'" title="格挡 '+h.block+'：先抵挡攻击伤害，下个己方回合开始时清空">'+icon('shield')+'<b>'+h.block+'</b></span>':'')+'</div>';
   }
+  function statusMarkup(state,who,interactive=true){
+    const tag=interactive?'button':'span',attr=interactive?' type="button" data-open-statuses':'',chips=[];
+    for(const [id,a]of Object.entries(state.ailments)){
+      const d=R.statuses[id];chips.push('<'+tag+attr+' class="ailment-chip" style="--ailment-color:'+d.color+'" title="'+d.name+'：'+a.potency+'威力 / '+a.count+'次数。'+d.note+'">'+d.mark+' '+d.name+' <b>'+a.potency+'×'+a.count+'</b></'+tag+'>');
+    }
+    if(state.dread)chips.push('<'+tag+attr+' class="ailment-chip" style="--ailment-color:#92b7ee">☽ 攻击压制 <b>'+state.dread+'</b></'+tag+'>');
+    const threshold=who==='hero'?8:Math.max(3,Math.ceil(state.maxHp*.2));
+    if(state.staggered||state.stagger)chips.push('<'+tag+attr+' class="ailment-chip" style="--ailment-color:#dfc26e">≋ '+(state.staggered?'失衡':('失衡进度 <b>'+state.stagger+'/'+threshold+'</b>'))+'</'+tag+'>');
+    return '<span class="ailment-list">'+chips.join('')+'</span>';
+  }
+  function showStatuses(){
+    if(busy)return;
+    openModal('负面状态 · 威力 × 次数','<p class="modal-note">威力决定效果强度，次数决定还能触发几次。重复施加时两者分别相加，上限20威力 / 9次数。攻击型状态每张卡牌或敌人行动最多触发一次，格挡完全挡住攻击时不触发受击状态，也不附加新状态。</p><div class="status-summary"><h3>旅人当前状态</h3>'+statusMarkup(battle.heroState,'hero',false)+'<h3>'+escapeHtml(battle.encounter?.name||'当前目标')+'</h3>'+statusMarkup(battle.enemy,'enemy',false)+'</div><div class="status-guide">'+Object.entries(R.statuses).map(([id,d])=>'<article style="--ailment-color:'+d.color+'"><h3>'+d.mark+' '+d.name+'</h3><p>'+d.note+'</p></article>').join('')+'</div><p class="modal-note">震颤爆发使用本次攻击前已有的震颤；该牌附加的新状态在触发之后生效。敌人失衡阈值为最大生命20%向上取整，至少3；旅人为8。敌人失衡跳过下次行动；旅人失衡期间不能攻击，可用技能或医疗，到下次结束回合时解除。固定状态伤害忽略护甲/格挡，不再次触发破裂等状态。敌人的固定伤害从最厚生命格逐层扣除；己方灼烧/破裂伤害按部位分配，可能留下伤口。</p><p class="modal-note">包扎清除战术出血，并处理所选伤口；强化剂解除沉沦、攻击压制、震颤及失衡。卡牌的解除效果在卡面说明中列出。战术出血与伤口流血独立，状态在本场战斗中生效，伤势和失血会延续。</p>','status-modal');
+  }
+  function statusFeedback(events=[]){
+    for(const [i,event]of events.filter(e=>e.amount>0).slice(0,6).entries()){
+      const target=event.who==='hero'?'hero-actor':battle.members.length>1?'enemy-slot-'+event.index:'enemy-actor';
+      floatText(target,R.statuses[event.kind].name+' −'+Number(event.amount.toFixed(1)),'damage'+(i?' secondary':''));
+    }
+    if(events.length)toast(events.slice(-3).map(e=>e.text).join(' / '));
+    if(events.some(e=>e.who==='hero'&&e.amount>0)){shake('hero-health','impact-pulse');tone(100,.15);}
+  }
   function showDeckAction(){
     const p=run.pendingDeckAction,d=run.deckAction;if(!p||!d)return;
     const upgrading=d.kind==='upgrade',selected=p.selectedIndex,id=selected===null?null:run.deck[selected],next=id&&upgrading?R.upgradeId(id):null;
@@ -360,7 +445,7 @@
       const e=battle.encounters[i],intent=battle.intentFor(i),atlas=typeof e.sprite==='number'&&artReady.has('enemies')&&!artErrors.has('enemies'),key=typeof e.sprite==='string'?e.sprite:(e.kind==='boss'?'boss':e.kind==='elite'?'elite':'sentinel');
       const fallback=artErrors.has(key)?'sentinel':key;
       const portrait=atlas?atlasArt('enemies',e.sprite,4,2):!artErrors.has(fallback)?'<img data-art-key="'+fallback+'" src="'+A[fallback]+'" alt="" draggable="false">':'<span class="art-placeholder">✦</span>';
-      return '<button id="enemy-slot-'+i+'" class="formation-card '+(i===battle.targetIndex?'targeted ':'')+(!m.hp?'fallen':'')+'" data-enemy-target="'+i+'" aria-pressed="'+(i===battle.targetIndex)+'" aria-label="'+e.name+'，生命'+m.hp+'/'+m.maxHp+'，'+(!m.hp?'已击败':intent.name+'，'+(intent.damage?'攻击'+intent.damage:'覆甲'+intent.block))+'" '+(busy||!m.hp||battle.status!=='playing'?'disabled':'')+'><strong class="formation-intent">'+(!m.hp?'已击败':(intent.damage?'⚔ '+intent.damage:'◇ '+intent.block)+(intent.strength?' · 力量+'+intent.strength:''))+'</strong><span class="formation-portrait">'+portrait+'</span><b>'+e.name+'</b><span class="formation-hp"><i><em style="width:'+m.hp/m.maxHp*100+'%"></em></i><small>'+m.hp+' / '+m.maxHp+(m.block?' · ◇'+m.block:'')+'</small></span><span class="formation-target">'+(!m.hp?'已击败':i===battle.targetIndex?'当前目标':'点击选为目标')+'</span></button>';
+      return '<button id="enemy-slot-'+i+'" class="formation-card '+(i===battle.targetIndex?'targeted ':'')+(!m.hp?'fallen':'')+'" data-enemy-target="'+i+'" aria-pressed="'+(i===battle.targetIndex)+'" aria-label="'+e.name+'，生命'+m.hp+'/'+m.maxHp+'，'+(!m.hp?'已击败':m.staggered?'失衡，跳过行动':intent.name+'，'+(intent.damage?'攻击'+intent.damage:'覆甲'+intent.block))+'" '+(busy||!m.hp||battle.status!=='playing'?'disabled':'')+'><strong class="formation-intent">'+(!m.hp?'已击败':m.staggered?'≋ 失衡':(intent.damage?'⚔ '+intent.damage:'◇ '+intent.block)+(intent.strength?' · 力量+'+intent.strength:''))+'</strong>'+(intent.inflict?.length?'<span class="formation-ailment">'+intent.inflict.map(a=>R.statuses[a.kind].name+' '+a.potency+'×'+a.count).join(' · ')+(intent.tremorBurst?' · 爆发':'')+'</span>':'')+'<span class="formation-portrait">'+portrait+'</span><b>'+e.name+'</b><span class="formation-hp"><i><em style="width:'+m.hp/m.maxHp*100+'%"></em></i><small>'+m.hp+' / '+m.maxHp+(m.block?' · ◇'+m.block:'')+'</small></span>'+statusMarkup(m,'enemy',false)+'<span class="formation-target">'+(!m.hp?'已击败':i===battle.targetIndex?'当前目标':'点击选为目标')+'</span></button>';
     }).join('');
   }
   function showOverflow(){
@@ -483,6 +568,7 @@
     $('enemy-grid').style.setProperty('--grid-cols', battle.columns);
     $('enemy-grid').innerHTML = battle.enemy.cells.map((layers, i) => `<button class="hp-cell ${layers ? 'alive' : 'empty'} ${layers > 1 ? 'layered' : ''} ${layers && battle.enemy.armor[i] ? 'armored' : ''}" data-cell="${i}" data-layers="${layers}" style="--layer-color:${R.layerColors[Math.max(0, layers - 1)]}" aria-label="第${Math.floor(i / battle.columns) + 1}行第${i % battle.columns + 1}列，${layers ? `${layers}层生命${battle.enemy.armor[i] ? '，有护甲' : ''}` : '已破损'}" title="${layers ? `${layers}层生命${battle.enemy.armor[i] ? ' · 有护甲' : ''}` : '空格'}" ${busy || battle.status !== 'playing' ? 'disabled' : ''}><span>${layers || '·'}</span>${layers && battle.enemy.armor[i] ? '<i class="cell-armor" aria-hidden="true">◇</i>' : ''}</button>`).join('');
     $('enemy-cell-count').textContent = `${battle.enemy.cells.filter(layers => layers > 0).length} 格 · 每格最多 ${battle.maxCellLayers} 层`;
+    $('target-afflictions').innerHTML='<button class="status-guide-link" data-open-statuses>目标状态 · 说明 ↗</button>'+statusMarkup(battle.enemy,'enemy');
     paintPlacement();
   }
   function paintPlacement() {
@@ -535,7 +621,7 @@
     $('treatment-part').innerHTML = h.parts.map(part => `<option value="${part.id}" ${selectedPart === part.id ? 'selected' : ''}>${part.name} · ${part.missing ? '缺失' : `${part.hp}/${part.maxHp}`}${part.bleed ? ' · 流血' : ''}</option>`).join('');
     $('part-description').textContent = `${p.name}：${p.affects}${p.detachedBy ? ` · 因${h.part(p.detachedBy).name}毁坏而缺失` : ''}`;
     $('bandage-button').textContent = '包扎 ∞ · 1能量';
-    $('bandage-button').disabled = busy || modalOpen || battle.status !== 'playing' || battle.energy < 1 || !h.canTreat(p.id);
+    $('bandage-button').disabled = busy || modalOpen || battle.status !== 'playing' || battle.energy < 1 || !battle.canBandage(p.id);
     $('boost-button').textContent = h.boostTurns ? `强化中 · ${h.boostTurns}回合` : `强化 ${h.stimulants}次 · 1能量`;
     $('boost-button').disabled = busy || modalOpen || battle.status !== 'playing' || battle.energy < 1 || !h.stimulants;
     $('treatment-part').disabled = busy || battle.status !== 'playing';
@@ -552,8 +638,8 @@
   }
   function showHealth() {
     const h = battle.hero, sumWeights = h.parts.filter(p => h.available(p.id)).reduce((sum, p) => sum + p.weight, 0);
-    openModal('旅人 · 身体与机能', `<p class="modal-note">每个部位独立承伤。父部位毁坏会连带失去子部位；要害失效、意识低于30%、行动不高于15%或血容量耗尽，单人战斗即失败。下列命中率是每段伤害在当前存活部位中的权重，属于本游戏改编规则。</p><div class="capacity-grid health-capacities">${capacityCards()}</div><div class="health-part-list">${h.parts.map(p => `<button data-body-part="${p.id}" class="health-part-row ${p.missing ? 'missing' : p.hp < p.maxHp ? 'injured' : ''} ${selectedPart === p.id ? 'selected' : ''}"><span>${p.internal ? '◇ ' : ''}${p.name}${p.vital ? ' <small>要害</small>' : ''}</span><b>${p.missing ? '缺失' : `${p.hp} / ${p.maxHp}`}</b><small>${p.affects}<br>${p.missing ? p.detachedBy ? `随${h.part(p.detachedBy).name}缺失` : '毁坏；残端可止血，不能再生' : `命中权重 ${(p.weight / sumWeights * 100).toFixed(1)}% · 流血 ${p.bleed.toFixed(1)}/回合`}</small></button>`).join('')}</div><p class="modal-note">已选 ${h.part(selectedPart).name} · 包扎修复最多${battle.effects.healing}点并止血（次数无限）；强化提高机能、持续3个玩家回合（默认每场1次，遗物可增加）。两者均消耗1能量，缺失部位不会再生。</p><div class="health-modal-actions"><button class="gold-button" data-medical="bandage" ${battle.energy < 1 || !h.canTreat(selectedPart) || battle.status !== 'playing' ? 'disabled' : ''}>包扎所选部位 · 无限次</button><button class="gold-button" data-medical="boost" ${battle.energy < 1 || !h.stimulants || battle.status !== 'playing' ? 'disabled' : ''}>战斗强化剂 · 剩${h.stimulants}次</button></div>`, 'health-modal');
-    $('modal-body').insertAdjacentHTML('afterbegin',bloodMarkup(h,true)+`<div class="health-anatomy">${bodyDiagram()}</div>`);
+    openModal('旅人 · 身体与机能', `<p class="modal-note">每个部位独立承伤。父部位毁坏会连带失去子部位；要害失效、意识低于30%、行动不高于15%或血容量耗尽，单人战斗即失败。下列命中率是每段伤害在当前存活部位中的权重，属于本游戏改编规则。</p><div class="capacity-grid health-capacities">${capacityCards()}</div><div class="health-part-list">${h.parts.map(p => `<button data-body-part="${p.id}" class="health-part-row ${p.missing ? 'missing' : p.hp < p.maxHp ? 'injured' : ''} ${selectedPart === p.id ? 'selected' : ''}"><span>${p.internal ? '◇ ' : ''}${p.name}${p.vital ? ' <small>要害</small>' : ''}</span><b>${p.missing ? '缺失' : `${p.hp} / ${p.maxHp}`}</b><small>${p.affects}<br>${p.missing ? p.detachedBy ? `随${h.part(p.detachedBy).name}缺失` : '毁坏；残端可止血，不能再生' : `命中权重 ${(p.weight / sumWeights * 100).toFixed(1)}% · 流血 ${p.bleed.toFixed(1)}/回合`}</small></button>`).join('')}</div><p class="modal-note">已选 ${h.part(selectedPart).name} · 包扎修复最多${battle.effects.healing}点并止血（次数无限）；强化提高机能、持续3个玩家回合（默认每场1次，遗物可增加）。两者均消耗1能量，缺失部位不会再生。</p><div class="health-modal-actions"><button class="gold-button" data-medical="bandage" ${battle.energy < 1 || !battle.canBandage(selectedPart) || battle.status !== 'playing' ? 'disabled' : ''}>包扎所选部位 · 无限次</button><button class="gold-button" data-medical="boost" ${battle.energy < 1 || !h.stimulants || battle.status !== 'playing' ? 'disabled' : ''}>战斗强化剂 · 剩${h.stimulants}次</button></div>`, 'health-modal');
+    $('modal-body').insertAdjacentHTML('afterbegin',bloodMarkup(h,true)+statusMarkup(battle.heroState,'hero')+`<div class="health-anatomy">${bodyDiagram()}</div>`);
     if (run.screen !== 'battle') $('modal-body').querySelectorAll('[data-medical]').forEach(b=>b.disabled=true);
     if (['reward','lost','cleared'].includes(run.screen)) $('modal-body').insertAdjacentHTML('beforeend', '<button class="gold-button result-restart" data-open-result>返回战斗结算</button>');
     renderHealth();
@@ -570,20 +656,24 @@
     $('enemy-health').setAttribute('aria-valuemax', battle.enemy.maxHp);
     $('hero-blood').innerHTML=bloodMarkup(battle.hero,true);
     $('hero-status').innerHTML = `<span class="subtle-status">${battle.hero.failureReason || (battle.hero.bleeding?'流血 '+battle.hero.bleeding.toFixed(1)+' / 回合':'')}${battle.hero.block?' · 格挡 '+battle.hero.block:''}</span>`;
+    $('hero-status').insertAdjacentHTML('beforeend',statusMarkup(battle.heroState,'hero'));
     $('enemy-status').innerHTML = (battle.enemy.block ? `<span class="status shield" title="护甲吸收1点冲击；穿甲忽略护甲">${icon('shield')} ${battle.enemy.block} 格护甲</span>` : '') + (battle.enemy.strength ? `<span class="status strength" title="攻击伤害永久增加">${icon('sword')} +${battle.enemy.strength}</span>` : '');
     const intent = battle.intent;
     $('intent-value').innerHTML = `${icon(intent.type === 'attack' ? 'sword' : 'shield')} <b>${intent.damage || intent.block}</b>${intent.strength ? `<small>随后 +${intent.strength} 力量</small>` : ''}`;
+    if(battle.enemy.staggered)$('intent-value').innerHTML='<b>失衡</b><small>跳过本次行动</small>';
     $('intent-label').textContent = intent.name;
     $('enemy-intent').classList.toggle('defensive', intent.type === 'defend');
-    $('enemy-intent').title = intent.damage ? `攻击 ${intent.damage}，按当前受击倍率约 ${Math.round(intent.damage * battle.hero.effects.incoming)} 点；先格挡，再按部位权重分配最多3段${intent.strength ? `，随后力量+${intent.strength}` : ''}` : `为${intent.block}个生命格覆甲，护甲在下一次敌方行动前清空`;
+    $('enemy-intent').title = intent.damage ? `攻击 ${intent.damage}，按当前受击倍率约 ${Math.round(intent.damage * battle.effects.incoming)} 点；先格挡，再按部位权重分配最多3段${intent.strength ? `，随后力量+${intent.strength}` : ''}` : `为${intent.block}个生命格覆甲，护甲在下一次敌方行动前清空`;
+    if(battle.enemy.staggered)$('enemy-intent').title='失衡：跳过原定行动，之后恢复。';
+    else if(intent.inflict?.length)$('enemy-intent').title+='；造成生命伤害后施加'+intent.inflict.map(a=>R.statuses[a.kind].name+' '+a.potency+'威力/'+a.count+'次数').join('、')+(intent.tremorBurst?'，并对已有震颤触发爆发。':'。');
     $('draw-count').textContent = battle.drawPile.length; $('discard-count').textContent = battle.discardPile.length;
     $('hand-count').textContent = battle.hand.length; $('exhaust-count').textContent = battle.exhaustPile.length ? `已消耗 ${battle.exhaustPile.length}` : '';
     $('phase-label').textContent = busy ? '敌方行动' : battle.overflowCount?'需要确认弃牌':battle.status === 'playing' ? '你的回合' : '战斗结束'; $('end-turn').disabled = busy || !!battle.overflowCount || run.screen !== 'battle' || battle.status !== 'playing';
     $('hand').style.setProperty('--cards', battle.hand.length);
     $('hand').innerHTML = battle.hand.map((card, i) => {
-      const d = battle.definition(card), affordable = d.cost <= battle.energy;
+      const d = battle.definition(card), affordable = d.cost <= battle.energy && !(d.shape&&battle.heroState.staggered);
       const desc = (d.shape ? `<span><b>${d.shape.length}</b> 格${d.shapeName} · 攻效${Math.round(d.power * 100)}%</span><small>${auto ? '自动落点' : '点格即出'}</small>` : '') + (R.cards[card.id].block ? `<span>格挡 <b>${d.block}</b></span>` : '') + (d.pierce ? '<small>穿甲</small>' : '') + (d.draw ? `<span>抽 <b>${d.draw}</b> 张牌</span>` : '') + (d.energy ? `<span>能量 <b>+${d.energy}</b></span>` : '') + (d.heal?`<span>修复伤处 <b>${Math.round(d.heal*battle.hero.capacities.metabolism)}</b></span>`:'')+(d.cleanse?'<small>全部止血</small>':'')+(d.exhaust?'<small>消耗</small>':'');
-      return `<button class="card card-${card.id} ${d.upgraded ? 'upgraded' : ''} ${!affordable ? 'unaffordable' : ''}" style="--r:${(i - (battle.hand.length - 1) / 2) * 2.5}deg;--i:${i}" data-uid="${card.uid}" ${busy ? 'disabled' : ''} aria-label="${i + 1}号牌 ${d.name}，消耗${d.cost}能量，${d.description}" title="${affordable ? d.shape ? auto ? '点击自动攻击' : '选中后点击格子立即攻击' : '点击打出' : '能量不足'}"><span class="card-cost">${d.cost}</span><span class="card-heading">${d.name}</span><span class="card-art">${art(card.id)}</span><span class="card-type">${d.type === 'attack' ? '形 状 攻 击' : '技 能'}</span><span class="card-description">${desc}</span><span class="card-key">${i + 1}</span><span class="card-corner">✦</span></button>`;
+      return `<button class="card card-${card.id} ${d.upgraded ? 'upgraded' : ''} ${!affordable ? 'unaffordable' : ''}" style="--r:${(i - (battle.hand.length - 1) / 2) * 2.5}deg;--i:${i}" data-uid="${card.uid}" ${busy ? 'disabled' : ''} aria-label="${i + 1}号牌 ${d.name}，消耗${d.cost}能量，${d.description}" title="${affordable ? d.shape ? auto ? '点击自动攻击' : '选中后点击格子立即攻击' : '点击打出' : battle.heroState.staggered&&d.shape?'失衡中不能攻击；可以使用技能或医疗':'能量不足'}"><span class="card-cost">${d.cost}</span><span class="card-heading">${d.name}</span><span class="card-art">${art(card.id)}</span><span class="card-type">${d.type === 'attack' ? '形 状 攻 击' : '技 能'}</span><span class="card-description">${desc}<small class="card-ailment">${(d.inflict||[]).map(a=>R.statuses[a.kind].name+' '+a.potency+'×'+a.count).join(' · ')}${d.tremorBurst?' · 震颤爆发':''}${d.purge?.length?' · 净化':''}</small></span><span class="card-key">${i + 1}</span><span class="card-corner">✦</span></button>`;
     }).join('');
     if(phoneUI)$('hand').scrollLeft=handScroll;
     $('arena').classList.toggle('victory', battle.status === 'won'); $('enemy-figure').classList.toggle('defeated', battle.status === 'won');
@@ -597,6 +687,7 @@
     if(battle.overflowCount){showOverflow();return;}
     const card = battle.hand.find(c => c.uid === uid); if (!card || battle.status !== 'playing') return;
     const d = battle.definition(card);
+    if(d.shape&&battle.heroState.staggered){toast('失衡中不能攻击，可使用技能、包扎或强化剂。');return;}
     if (d.cost > battle.energy) { toast('能量不足，可以结束回合恢复能量。'); return; }
     if (d.shape) {
       if (auto) {
@@ -617,7 +708,8 @@
     if (result.plan) attackFeedback(result); else tone(440, .15);
     if (result.definition.block) { floatText('hero-actor', `+${result.definition.block} 格挡`, 'block'); if (!result.plan) shake('hero-figure', 'shield-up'); }
     if (result.recovery) { floatText('hero-actor',`+${result.recovery.healed} 修复`,'block');toast(result.recovery.cleanse?'修复伤处并止住全部出血。':`修复${result.recovery.part||'身体'} ${result.recovery.healed} 点。`); }
-    if (battle.status === 'won') { const serial = battleSerial; setTimeout(() => { if (serial === battleSerial) showResult(); }, 1000); }
+    statusFeedback(result.statusEvents);
+    if (battle.status !== 'playing') { const serial = battleSerial; setTimeout(() => { if (serial === battleSerial) showResult(); }, 1000); }
   }
   function confirmAttack() { const card = selectedCard(); if (!card || busy || modalOpen || !anchorChosen) return; const plan = battle.planAttack(card, { ...anchor, rotation }); if (!plan.ok) { toast(plan.reason); return; } resolvePlay(card.uid, { ...anchor, rotation }); }
   function endTurn() {
@@ -629,7 +721,7 @@
     busy = true; $('first-hint').classList.add('dismissed'); render();
     if (intent.damage) shake('enemy-figure', 'attacking');
     if(battle.members.length>1)for(const [i,a]of result.actions.entries())setTimeout(()=>{if(serial!==battleSerial)return;shake('enemy-slot-'+a.index,a.intent.damage?'attacking':'shield-up');if(a.intent.damage)strikeEffect('enemy-slot-'+a.index,'hero-figure',!a.hit.lost);},i*180);
-    toast(`${intent.name} · ${intent.damage ? `${intent.damage}点攻击来袭` : '敌人正在覆甲'}`);
+    toast(`${intent.name} · ${intent.damage ? `${intent.damage}点攻击来袭` : intent.block?'敌人正在覆甲':'负面状态结算'}`);
     setTimeout(() => {
       if (serial !== battleSerial) return;
       if (result.hit.hits.length) selectedPart = battle.hero.bestTreatment()?.id || result.hit.hits[0].id;
@@ -641,9 +733,12 @@
         announceImpact(result.intent.name, result.hit.lost ? `−${result.hit.lost}` : '格挡', `${result.hit.hits.length ? result.hit.hits.map(wound => `${wound.name} −${wound.damage}${wound.destroyed ? ' 毁坏' : ''}`).join(' / ') : '伤害已被格挡'}${result.hit.blocked ? ` · 格挡 ${result.hit.blocked}` : ''}`, result.hit.lost ? 'hero-damage' : 'block');
         $('body-diagram').querySelectorAll('[data-body-part]').forEach(e => { if (result.hit.hits.some(wound => wound.id === e.dataset.bodyPart)) e.classList.add('just-hit'); });
         if (result.hit.blocked && result.hit.lost) floatText('hero-actor', `格挡 ${result.hit.blocked}`, 'block secondary');
-      } else {
+      } else if(result.actions.some(a=>a.intent.block)) {
         shake('enemy-grid-panel', 'shield-up'); announceImpact(result.intent.name, `+${result.actions.reduce((sum,a)=>sum+battle.members[a.index].block,0)}`, '各敌人为自己的生命格覆甲', 'block'); tone(360, .2);
+      } else {
+        announceImpact('状态结算',battle.status==='won'?'全灭':'失衡',result.statusEvents?.map(e=>e.text).join(' / ')||'敌人跳过行动','damage');
       }
+      statusFeedback(result.statusEvents);
       if (battle.status !== 'playing') setTimeout(() => { if (serial === battleSerial) showResult(); }, 1000); else toast(`第 ${battle.turn} 回合 · ${battle.energy} 能量 / 抽牌 ${battle.effects.draw} · ${battle.hero.bleeding ? '正在流血，可选择部位包扎' : '留意身体机能'}`);
     }, 650+Math.max(0,result.actions.length-1)*180);
   }
@@ -667,7 +762,7 @@
       openModal('手机操作手册','<div class="help-grid"><div><h3>滑动手牌，点格攻击</h3><p>左右滑动底部手牌。多敌战斗先点敌人选目标，再选攻击牌、点它的生命格打出；图案以触点为中心。下方按钮可以旋转、取消，开启AUTO后点攻击牌便自动放置。技能点牌直接使用。滑动浏览不会出牌。</p></div><div><h3>把常用操作放在手边</h3><p>能量、抽牌堆、弃牌堆和结束回合位于手牌下方。底部「身体」查看伤势、选择部位包扎或注射强化剂；包扎次数无限，每次1能量。健康面板可上下滑动。</p></div><div><h3>滑动探索回廊</h3><p>地图可以上下和左右滑动，点亮的节点可前往。进入房间后显示事件或商店等选择，处理完再继续走图。旅途共五层，每层独立路线、逐层增强的敌人和关底首领。营火可永久强化一张牌或自由移除卡牌，先选后确认。精英与首领掉落遗物，可在「更多」查看；前四层首领结算选择补给进入下一层，第五层胜利才完成旅途。</p></div><div><h3>把旅途带到手机</h3><p>操作后自动保存。切换设备前在「存档」导出，再在新设备导入。手牌超出9张会显示原手牌与新牌，选足数量后点击确认弃牌，确认前可修改选择。横屏会将战斗与手牌放在两侧；竖屏时手牌与常用按钮保持在底部。</p></div></div>');
       return;
     }
-    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>五层独立路线</h3><p>从残火之径，穿过潮汐书库、铜炉工坊和碎镜天台，抵达群星熔心。每层十二站47节点，四种走向。首层随机挑战三位首领之一，后四层各有专属首领。</p></div><div>'+icon('sword')+'<h3>54张卡牌</h3><p>新卡随楼层解锁，高层战斗奖励保证一张本层新卡。支持多层削伤、穿甲、格挡、抽牌、能量、治疗和止血。营火可选一张牌强化一次，名称带+；移除牌也可自由选择，选后确认。鼠标居中放置，点格即出；R/滚轮旋转，右键取消，AUTO按所选目标自动放置。每场可有1–3名敌人，各自行动，全灭后领奖；手牌超过9张时选牌并确认弃牌，可保留新抽到的牌。</p></div><div>'+icon('shield')+'<h3>医疗与过层补给</h3><p>包扎无限次，每次1能量，不能再生。强化默认每场1次，炼金试管增加至2次。前四层胜利可选择补给，修复存活部位60%、止血、补满血容量、获得35金币和一张卡；再生补给可修复一支缺失部位树。</p></div><div>'+icon('flame')+'<h3>逐层增强的敌人</h3><p>共55种敌人、28件遗物、24类双选事件。首层普通生命10–18，首领34–42；后四层首领生命60/82/108/144。护甲、攻击和狂怒逐渐增强。精英与首领掉落本层已解锁且未拥有的遗物。</p></div></div><p class="modal-note">第五层首领胜利才完成旅途。进度、伤势、牌组和遗物跨层延续；过层、动作与奖励后自动保存。支持v1–v5存档，旧路线与战斗保留，旧首层通关可继续第二层。导入前预览并备份。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
+    openModal('提灯旅人的旅途手册','<div class="help-grid"><div>'+icon('star')+'<h3>五层独立路线</h3><p>从残火之径，穿过潮汐书库、铜炉工坊和碎镜天台，抵达群星熔心。每层十二站47节点，四种走向。首层随机挑战三位首领之一，后四层各有专属首领。</p></div><div>'+icon('sword')+'<h3>54张卡牌</h3><p>新卡随楼层解锁，高层战斗奖励保证一张本层新卡。支持多层削伤、穿甲、格挡、抽牌、能量、治疗和止血。营火可选一张牌强化一次，名称带+；移除牌也可自由选择，选后确认。鼠标居中放置，点格即出；R/滚轮旋转，右键取消，AUTO按所选目标自动放置。每场可有1–3名敌人，各自行动，全灭后领奖；手牌超过9张时选牌并确认弃牌，可保留新抽到的牌。</p></div><div>'+icon('shield')+'<h3>医疗与过层补给</h3><p>包扎无限次，每次1能量，不能再生。强化默认每场1次，炼金试管增加至2次。前四层胜利可选择补给，修复存活部位60%、止血、补满血容量、获得35金币和一张卡；再生补给可修复一支缺失部位树。</p></div><div>'+icon('flame')+'<h3>逐层增强的敌人</h3><p>共55种敌人、28件遗物、24类双选事件。首层普通生命10–18，首领34–42；后四层首领生命60/82/108/144。护甲、攻击和狂怒逐渐增强。精英与首领掉落本层已解锁且未拥有的遗物。</p></div></div><p class="modal-note">第五层首领胜利才完成旅途。进度、伤势、牌组和遗物跨层延续；过层、动作与奖励后自动保存。支持v1–v6存档，旧路线与战斗保留，旧首层通关可继续第二层。导入前预览并备份。</p><div class="shortcut-line"><kbd>1</kbd>–<kbd>9</kbd> 出牌 · <kbd>R</kbd> 旋转 · <kbd>A</kbd> AUTO · <kbd>E</kbd> 结束回合</div>');
   }
   function showResult() {
     if(!['reward','lost','cleared'].includes(run.screen))return;
@@ -682,6 +777,7 @@
   }
 
   document.addEventListener('click', e => {
+    if(e.target.closest('[data-open-statuses]'))showStatuses();
     const deckPick=e.target.closest('[data-deck-pick]');if(deckPick&&!deckPick.disabled&&run.selectDeckCard(Number(deckPick.dataset.deckPick))){saveRun();showDeckAction();}
     if(e.target.closest('[data-cancel-deck]'))closeModal();
     if(e.target.closest('[data-confirm-deck]')){const result=run.confirmDeckAction();if(result.ok){afterNodeAction();toast('卡牌已更新并自动保存。');}else if(result.reason)toast(result.reason);}
