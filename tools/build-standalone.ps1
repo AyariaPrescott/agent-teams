@@ -3,7 +3,7 @@ param([ValidateSet('all','desktop','mobile')][string]$Edition='all')
 $ErrorActionPreference='Stop'
 $project=Split-Path -Parent $PSScriptRoot
 $utf8=New-Object Text.UTF8Encoding($false)
-$common=@('art.js','balance.js','statuses.js','progression.js','exploration.js','body.js','floor.js','game.js')
+$common=@('art.js','balance.js','statuses.js','progression.js','exploration.js','body.js','floor.js','media.js','game.js')
 $modules=@{}
 foreach($file in ($common+@('mobile.js'))){
     $content=[IO.File]::ReadAllText((Join-Path $project ('dist\'+$file)))
@@ -21,8 +21,8 @@ foreach($file in ($common+@('mobile.js'))){
     $modules[$file]=$content
 }
 $specs=@(
-    @{name='desktop';source='index.html';target='余烬回廊.html';styles=@('style.css','forest-ui.css');scripts=$common},
-    @{name='mobile';source='mobile.html';target='余烬回廊-手机版.html';styles=@('style.css','mobile.css','forest-ui.css');scripts=($common+@('mobile.js'))}
+    @{name='desktop';source='index.html';target='余烬回廊.html';styles=@('style.css','forest-ui.css','motion.css');scripts=$common},
+    @{name='mobile';source='mobile.html';target='余烬回廊-手机版.html';styles=@('style.css','mobile.css','forest-ui.css','motion.css');scripts=($common+@('mobile.js'))}
 )
 foreach($spec in $specs){
     if($Edition -ne 'all' -and $Edition -ne $spec.name){continue}

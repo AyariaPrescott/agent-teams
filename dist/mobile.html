@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#131e21"><meta name="description" content="余烬回廊：可离线游玩的五层卡牌爬塔，逐层增强、不同节点与七位首领，支持自动存档和存档导入导出。">
-  <title>余烬回廊 · 手机版</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="mobile.css"><link rel="stylesheet" href="forest-ui.css"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>余烬回廊 · 手机版</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="mobile.css"><link rel="stylesheet" href="forest-ui.css"><link rel="stylesheet" href="motion.css"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body class="phone forest-interface crafted-interface">
 <div class="game-shell">
@@ -55,7 +55,7 @@
     <button class="relic-badge" id="relic-badge" hidden title="查看遗物效果"></button>
     <button id="log-button">战斗记录 ↗</button>
     <button id="help-button" data-phone-label="玩法说明" aria-label="玩法说明"></button>
-    <button id="sound-button" data-phone-label="切换音效" aria-label="切换音效" aria-pressed="false"></button>
+    <button id="sound-button" data-phone-label="声音与动画" aria-label="声音与动画设置" aria-pressed="false"></button>
     <button id="restart-button" data-phone-label="重新开始" aria-label="重新开始"></button>
     <a href="index.html" data-desktop-link>桌面版 ↗</a>
   </div></details>
@@ -68,4 +68,4 @@
 <div class="combat-banner" id="combat-banner" role="status" aria-live="polite" aria-atomic="true"><span id="impact-name"></span><b id="impact-value"></b><small id="impact-detail"></small></div><div class="modal-backdrop" id="modal" hidden><section class="modal-panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="关闭弹窗">×</button><div class="modal-ornament">— ✦ —</div><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
 <div id="relic-tooltip" class="relic-tooltip" role="tooltip" hidden></div>
 <input type="file" id="save-file" accept=".json,application/json" hidden>
-<script src="art.js"></script><script src="balance.js"></script><script src="statuses.js"></script><script src="progression.js"></script><script src="exploration.js"></script><script src="body.js"></script><script src="floor.js"></script><script src="game.js"></script><script src="mobile.js"></script></body></html>
+<script src="art.js"></script><script src="balance.js"></script><script src="statuses.js"></script><script src="progression.js"></script><script src="exploration.js"></script><script src="body.js"></script><script src="floor.js"></script><script src="media.js"></script><script src="game.js"></script><script src="mobile.js"></script></body></html>
