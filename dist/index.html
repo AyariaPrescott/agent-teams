@@ -3,24 +3,26 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#131e21"><meta name="description" content="余烬回廊：可离线游玩的五层卡牌爬塔，逐层增强、不同节点与七位首领，支持自动存档和存档导入导出。">
-  <title>余烬回廊 · 五层旅途</title><link rel="stylesheet" href="style.css">
+  <title>余烬回廊 · 五层旅途</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="forest-ui.css">
 </head>
-<body>
+<body class="forest-interface crafted-interface">
 <div class="game-shell">
   <header class="topbar">
     <a class="brand" href="#" aria-label="余烬回廊首页"><span class="brand-mark"><svg viewBox="0 0 32 40" fill="none" aria-hidden="true"><path d="M18 2c5 11-7 13-4 22 3-2 6-6 6-10 14 16 6 24-4 24S1 29 6 20c1 5 3 6 5 7-3-10 9-15 7-25Z" fill="currentColor"/><path d="M16 25c-7 7-4 11 1 10s8-6-1-10Z" fill="#fff2cf"/></svg></span><span>余烬回廊<small>THE EMBER CORRIDOR</small></span></a>
     <div class="run-resources"><span id="floor-label">第1 / 5层 · 残火之径</span><b id="run-progress">0 / 12</b><span class="gold-resource">¤ <b id="run-gold">60</b></span><button id="route-button">路线</button></div>
     <div class="top-actions"><button class="save-button" id="save-button"><i></i><span id="save-state">本地存档</span></button><button class="icon-button" id="sound-button" title="开启音效" aria-label="切换音效" aria-pressed="false"></button><button class="icon-button" id="help-button" title="玩法说明" aria-label="玩法说明"></button><button class="icon-button" id="restart-button" title="重新挑战" aria-label="重新挑战"></button></div>
+    <section class="relic-strip" aria-label="本次旅途遗物"><button class="strip-label" data-open-relics>遗物 <b id="relic-count">0</b></button><div class="relic-slots" id="relic-slots"></div><button class="tech-button" id="tech-button" data-open-tech>✧ 科技 <b id="tech-points">0</b></button></section>
   </header>
   <main class="expedition-view" id="expedition-view" hidden aria-label="五层旅途路线">
     <img class="expedition-backdrop" id="expedition-backdrop" alt="" aria-hidden="true" draggable="false">
-    <div class="map-intro"><div><span class="eyebrow">ACT I · THE ASHEN PATH</span><h1>残火之径</h1><p>选择你的路，带着余火走向灰冠。</p></div><span class="map-instruction">从下往上 · 点亮的节点可前往</span></div>
+    <div class="map-intro"><span class="map-section-number" id="map-section-number" aria-hidden="true">01</span><div class="map-heading"><span class="eyebrow">ACT I · THE ASHEN PATH</span><h1>残火之径</h1><p>选择你的路，带着余火走向灰冠。</p></div><div class="map-brief"><span>调查进度<b id="survey-progress">0 / 0</b></span><span>旅人状态<b id="survey-condition">100%</b></span><span class="map-instruction">从下往上 · 点亮的节点可前往</span></div></div>
     <div class="expedition-layout"><section class="route-map" id="route-map" aria-label="分岔路线，十二站四十七个节点"></section><aside class="node-panel" id="node-panel"></aside></div>
     <div class="map-legend" id="map-legend"></div>
   </main>
   <main class="arena" id="arena" aria-label="石门守卫战斗场景">
     <div class="scenery" aria-hidden="true"><img id="scene-image" alt="" decoding="async"><div class="scene-room atlas-frame" id="scene-room" hidden><img class="atlas-image" id="scene-room-image" alt="" draggable="false"></div></div>
     <div class="scene-vignette"></div><div class="grain"></div>
+    <div class="combat-rail" aria-hidden="true"></div><svg class="combat-floor" viewBox="0 0 800 200" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="400" cy="100" rx="350" ry="72"/><ellipse class="floor-dashed" cx="400" cy="100" rx="330" ry="64"/><ellipse cx="400" cy="100" rx="230" ry="47"/><path class="floor-heavy" d="M25 100h90m570 0h90M400 17v27m0 112v27M135 47l40 11m450 84 40 11M135 153l40-11m450-84 40-11"/><path d="m390 100 10-9 10 9-10 9-10-9Zm-148 0h65m186 0h65M400 66v15m0 38v15"/></svg>
     <div class="encounter-title"><div class="eyebrow" id="encounter-eyebrow">第一层 · 残火之径</div><h1 id="encounter-name">石门守卫</h1><p id="encounter-note">把攻击拼进生命格，由你决定破碎的位置。</p></div>
     <div class="round-display"><span>ROUND</span><b id="turn">01</b><i></i><strong id="phase-label">你的回合</strong></div>
     <button class="relic-badge" id="relic-badge" hidden title="查看遗物效果"></button>
@@ -68,6 +70,7 @@
   <footer><span>✦ 余烬之后，仍有前路。</span><span id="footer-status">第一层 · 十二站分岔路线</span><button id="asset-warning" hidden>图片加载异常</button><button id="deck-button"></button></footer>
 </div>
 <div class="modal-backdrop" id="modal" hidden><section class="modal-panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="关闭弹窗">×</button><div class="modal-ornament">— ✦ —</div><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
+<div id="relic-tooltip" class="relic-tooltip" role="tooltip" hidden></div>
 <input type="file" id="save-file" accept=".json,application/json" hidden>
-<script src="art.js"></script><script src="balance.js"></script><script src="statuses.js"></script><script src="body.js"></script><script src="floor.js"></script><script src="game.js"></script>
+<script src="art.js"></script><script src="balance.js"></script><script src="statuses.js"></script><script src="progression.js"></script><script src="exploration.js"></script><script src="body.js"></script><script src="floor.js"></script><script src="game.js"></script>
 </body></html>

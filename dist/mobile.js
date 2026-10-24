@@ -17,7 +17,7 @@
   document.addEventListener('ember:modal',()=>{
     if(!$('modal').hidden)closeMenu();sync();
     const preview=$('modal').querySelector('.route-preview');
-    if(preview)scheduleLayout(()=>{const current=preview.querySelector('.route-node.current');if(current){preview.scrollTop=Math.max(0,current.offsetTop-preview.clientHeight*.6);preview.scrollLeft=Math.max(0,(preview.scrollWidth-preview.clientWidth)/2);}});
+    if(preview)scheduleLayout(()=>{const current=preview.querySelector('.route-node.current'),viewport=preview.querySelector('.sea-map-viewport')||preview;if(current){viewport.scrollTop=Math.max(0,current.offsetTop-viewport.clientHeight*.6);viewport.scrollLeft=Math.max(0,current.offsetLeft-viewport.clientWidth/2);}});
   });
   function guardSwipe(element){
     let touch=null,ignoreClick=false;
@@ -34,8 +34,8 @@
   }
   function focusAvailable(){
     if(game.run.screen!=='map')return;
-    const node=map.querySelector('.route-node.available');
-    if(node){map.scrollTop=Math.max(0,node.offsetTop-map.clientHeight*.68);map.scrollLeft=Math.max(0,(map.scrollWidth-map.clientWidth)/2);}
+    const node=map.querySelector('.sea-node.current')||map.querySelector('.route-node.available'),viewport=map.querySelector('.sea-map-viewport')||map;
+    if(node){viewport.scrollTop=Math.max(0,node.offsetTop-viewport.clientHeight*.6);viewport.scrollLeft=Math.max(0,node.offsetLeft-viewport.clientWidth/2);}
   }
   function revealGrid(){
     if(game.run.screen!=='battle'||!$('modal').hidden)return;
@@ -49,14 +49,14 @@
     $('phone-health-button').disabled=busy;$('save-button').disabled=busy;$('route-button').disabled=busy;
     const title=document.querySelector('.map-intro h1'),note=document.querySelector('.map-intro p');
     if(title.textContent!==run.mapName)title.textContent=run.mapName;
-    note.textContent=run.screen==='node'?'处理当前房间后继续前行。':'滑动浏览地图 · 点亮的节点可前往';
+    note.textContent=run.screen==='node'?'处理当前房间后继续前行。':run.exploration?'滑动地图 · 点节点预览 · 确认移动':'滑动浏览地图 · 点亮的节点可前往';
     const nextHand=[run.seed,run.floorNumber,run.nodeId,battle.turn].join(':');
     if(nextHand!==handKey){handKey=nextHand;hand.scrollLeft=0;}
     const chosen=hand.querySelector('.card.selected')?.dataset.uid||null;
     if(chosen&&chosen!==lastSelected)scheduleLayout(revealGrid);
     lastSelected=chosen;
     if(run.screen==='map'){
-      const nextMap=[run.seed,run.floorNumber,run.routeVersion,run.visited.at(-1)||'start'].join(':');
+      const nextMap=[run.seed,run.floorNumber,run.routeVersion,run.exploration?.position||run.visited.at(-1)||'start'].join(':');
       if(nextMap!==mapKey){mapKey=nextMap;scheduleLayout(focusAvailable);}
     }
     const nextRoom=run.seed+':'+run.floorNumber+':'+run.nodeId;
