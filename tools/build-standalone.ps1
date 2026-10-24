@@ -21,8 +21,8 @@ foreach($file in ($common+@('mobile.js'))){
     $modules[$file]=$content
 }
 $specs=@(
-    @{name='desktop';source='index.html';target='余烬回廊.html';styles=@('style.css');scripts=$common},
-    @{name='mobile';source='mobile.html';target='余烬回廊-手机版.html';styles=@('style.css','mobile.css');scripts=($common+@('mobile.js'))}
+    @{name='desktop';source='index.html';target='余烬回廊.html';styles=@('style.css','forest-ui.css');scripts=$common},
+    @{name='mobile';source='mobile.html';target='余烬回廊-手机版.html';styles=@('style.css','mobile.css','forest-ui.css');scripts=($common+@('mobile.js'))}
 )
 foreach($spec in $specs){
     if($Edition -ne 'all' -and $Edition -ne $spec.name){continue}

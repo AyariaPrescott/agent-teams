@@ -1,4 +1,24 @@
 # 美术方向、资产与生成提示词
++
+## 2026-10-24 · 原创树海背景与界面
+
+本轮需求user-2026-10-24-tree-sea-ui新增一张背景；上文十项历史PNG不改字节。当前共11项本地PNG，两版独立HTML均内嵌。参考[黑流树海公开界面](https://www.taptap.cn/moment/828059228320039824)的冷青/雾紫和半透明调查面板，原作截图没有进入项目；组件由CSS绘制，节点仍为本作原创SVG。具体接入及兼容见[TREE-SEA-UI.md](TREE-SEA-UI.md)。
+
+| 最终文件 | 用途 | 尺寸 | 字节数 | SHA-256 |
+| --- | --- | --- | --- | --- |
+| dist/assets/tree-sea-survey-v1.png | 地图与战斗共同使用的原创空景 | 1672×941 | 2759103 | e022da28b658777d43e94b58e9e817e4c9506afb92b396f057e71ac7497db682 |
+
+采用imagegen技能的内置image_gen工具模式，transparent_background=false。Codex撰写提示并选择、接入原始输出，图像像素由生成工具完成；未用CLI或外部API回退，未调用DeepSeek。返回元数据没有提供模型版本，因此不标注具体版本。工具管理的原图逐字节复制到上述目标，未裁剪、压缩或重绘。实际返回源为：
+C:\Users\AyariaPrescott\.codex\generated_images\01a15ea8-dc34-7562-a805-add48391c1be\exec-1ff65681-225b-4b78-b2c5-4c13f9142886.png
+
+源路径在工具返回后才获知，作为生成结果的客观元数据登记，不声称对该工具管理位置作过生成前快照。项目目标在事务b0d304c687464a80a18d8950b33f4f88中事先保存了不存在状态；原图保留在工具管理目录。图片本身已查看，未运行游戏验证实际叠加/裁切。
+
+### tree-sea-survey-v1.png · 完整提示词
+
+```text
+Use case: stylized-concept. Asset type: final original landscape background for a local dark science-fantasy deckbuilding game's exploration map and battle HUD. Create a wide 16:9 full-bleed illustration of an uncanny, ancient forest at night: slender black tree trunks, tangled root systems and faint botanical silhouettes framing a broad dim clearing, strange subtle luminous cyan moss, desaturated blue-green mist drifting across the ground, a restrained violet aurora-like haze near the distant canopy. Style: sophisticated atmospheric digital painting with delicate ink-engraved botanical detail and soft cinematic volumetric fog, eerie and elegant, original world with no recognizable franchise landmarks. Composition: low-contrast dark negative space across the central 60 percent, most detailed trunks and roots at the far edges and lower corners so overlaid game nodes and cards stay legible; no bright central object. Palette: near-black blue charcoal, muted teal, pale cool ivory highlights, very restrained lavender. Lighting: soft ghostly moonlight, sparse bioluminescence, deeply layered forest silhouettes; not oversaturated neon. Constraints: background landscape only, no characters, no creatures, no portraits, no text, no letters, no numbers, no logos, no watermarks, no user interface, no node icons, no borders, no circles, no map paths. The artwork must remain useful cropped to a phone portrait viewport.
+```
+
 
 后续贴图修复（需求user-2026-10-22-texture-map-shapes）：本页十项PNG原始字节未改动、未重新生成。卡面、地图纸张、房间及敌人从CSS背景改为显式img裁切，新增加载状态和回退；地图形状与显示修复见[贴图与地图形状](TEXTURES-MAP-SHAPES.md)。本页其余提示词与资产信息保留为实际生成记录。
 

@@ -258,7 +258,7 @@
   const artErrors=new Set(),artReady=new Set();
   function setArtImage(element,key){element.hidden=artErrors.has(key);if(element.dataset.artKey!==key){element.dataset.artKey=key;element.src=A[key];}}
   function cropAtlas(element,index,columns,rows){element.style.width=columns*100+'%';element.style.height=rows*100+'%';element.style.left=-(index%columns)*100+'%';element.style.top=-Math.floor(index/columns)*100+'%';}
-  setArtImage($('hero-figure'),'hero');setArtImage($('scene-image'),'scene');setArtImage($('expedition-backdrop'),'scene');
+  setArtImage($('hero-figure'),'hero');setArtImage($('scene-image'),'forest');setArtImage($('expedition-backdrop'),'forest');
   setArtImage($('scene-room-image'),'rooms');setArtImage($('enemy-atlas-image'),'enemies');
   const escapeHtml = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let profile=new P.Profile(),profileIssue='';
@@ -985,6 +985,9 @@
         if(key==='cardsExtra'&&!artErrors.has('cards'))frame.outerHTML=atlasArt('cards',2,5,2,'painted-card-art');
         else frame.innerHTML='<span class="art-placeholder">✦</span>';
       }else img.hidden=true;
+    }
+    if(key==='forest'){
+      setArtImage($('scene-image'),'scene');setArtImage($('expedition-backdrop'),'scene');
     }
     refreshArt();
   }

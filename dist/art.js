@@ -3,6 +3,7 @@
   'use strict';
   const base=typeof document!=='undefined'?(document.currentScript?.src||document.baseURI):null;
   const paths={
+    forest: 'assets/tree-sea-survey-v1.png',
     scene: 'assets/ashen-hall.png',
     map: 'assets/route-parchment.png',
     hero: 'assets/lantern-wanderer.png',
