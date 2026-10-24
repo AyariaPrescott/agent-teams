@@ -263,7 +263,8 @@
   const escapeHtml = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let profile=new P.Profile(),profileIssue='';
   try{const raw=localStorage.getItem(PROFILE_KEY);if(raw){if(raw.length>MAX_SAVE_SIZE)throw new Error();profile=P.Profile.restore(JSON.parse(raw));}}catch(_){profileIssue='永久科技记录暂时无法读取，将尝试从旅途存档恢复。';}
-  let run = new Floor({profile}), battle = new Battle({hero:run.hero,deck:run.deck,techs:run.techs}), busy = false, sound = false, auto = false, context, modalOpen = false;
+  let run = new Floor({profile}), battle = new Battle({hero:run.hero,deck:run.deck,techs:run.techs}), busy = false, sound = false, auto = false, modalOpen = false;
+  const media=root.EmberMedia.create();sound=media.settings.effects&&!media.settings.muted;
   let savedAt = null, saveError = '', memoryBackup = null, pendingImport = null, startupNotice = '';
   let selectedUid = null, rotation = 0, anchor = { x: 1, y: 1 }, anchorChosen = false;
   let aim = { x: (battle.columns - 1) / 2, y: (battle.rows - 1) / 2 }, aimSource = 'keyboard', edgeSnapped = false;
@@ -310,13 +311,47 @@
     const picture=expanded?atlasArt('cardsExtra',i,5,4,'painted-card-art'):!artErrors.has('cards')?atlasArt('cards',i,5,2,'painted-card-art'):'<span class="art-placeholder">✦</span>';
     return picture+(R.cards[id].shape?`<span class="card-shape-badge">${shapeArt(R.cards[id].shape)}</span>`:'');
   };
-  function tone(freq = 200, dur = .12, type = 'sine') {
-    if (!sound) return;
-    try { context ||= new (root.AudioContext || root.webkitAudioContext)(); context.resume(); const o = context.createOscillator(), g = context.createGain(); o.type = type; o.frequency.setValueAtTime(freq, context.currentTime); o.frequency.exponentialRampToValueAtTime(freq * .55, context.currentTime + dur); g.gain.setValueAtTime(.035, context.currentTime); g.gain.exponentialRampToValueAtTime(.001, context.currentTime + dur); o.connect(g).connect(context.destination); o.start(); o.stop(context.currentTime + dur); } catch (_) { sound = false; }
+  function updateMediaUi(){
+    const settings=media.settings,status=media.status;
+    sound=settings.effects&&!settings.muted;
+    const button=$('sound-button');
+    button.classList.toggle('active',media.audible);button.setAttribute('aria-pressed',String(media.audible));
+    button.title='声音与动画设置';button.setAttribute('aria-label','声音与动画设置');
+    const state=$('media-status');if(state)state.textContent=status.text;
+    const storage=$('media-storage-note');if(storage){storage.hidden=!status.storageError;storage.textContent='当前设置暂时无法保存；本次打开期间仍会生效。';}
+    for(const key of ['music','effects','muted']){const input=$('media-'+key);if(input)input.checked=settings[key];}
+    for(const key of ['musicVolume','effectsVolume']){const output=$('media-'+key+'-value');if(output)output.textContent=Math.round(settings[key]*100)+'%';}
+  }
+  function mediaKind(){
+    if(['reward','cleared'].includes(run.screen))return 'victory';
+    if(run.screen==='lost')return 'defeat';
+    if(run.screen==='battle')return battle.baseEncounter?.kind==='boss'?'boss':'battle';
+    if(run.screen==='node')return run.node?.type==='camp'?'rest':run.node?.type==='shop'?'shop':'explore';
+    return 'explore';
+  }
+  function presentMedia(){
+    media.present({kind:mediaKind(),floor:run.floorNumber,screen:run.screen,
+      key:[run.journeyId,run.floorNumber,run.nodeId,run.screen].join(':'),
+      phase:busy?'enemy':run.screen==='battle'?'player':run.screen,
+      hand:run.screen==='battle'?battle.hand.map(c=>String(c.uid)):[]});
+  }
+  function showMedia(){
+    if(busy)return;
+    if(run.screen==='battle'&&battle.overflowCount){showOverflow();return;}
+    if(run.pendingDeckAction){toast('请先完成或取消当前选牌。');return;}
+    const s=media.settings,checked=key=>s[key]?' checked':'';
+    openModal('声音与动画',
+      '<div class="media-now"><p class="media-status" id="media-status"></p><button class="outline-button" data-media-start>恢复声音</button></div>'+
+      '<div class="media-settings"><section class="media-setting"><label>全部静音<input id="media-muted" data-media-input="muted" type="checkbox"'+checked('muted')+'></label></section>'+
+      '<section class="media-setting"><div class="media-setting-top"><h3>场景配乐</h3><label><span>开启</span><input id="media-music" data-media-input="music" type="checkbox"'+checked('music')+'></label></div><p>探索、交锋、首领、营地与行商，各有自己的旋律。</p><label class="media-volume"><span>音量</span><input aria-label="背景音乐音量" data-media-input="musicVolume" type="range" min="0" max="100" value="'+Math.round(s.musicVolume*100)+'"><output id="media-musicVolume-value"></output></label></section>'+
+      '<section class="media-setting"><div class="media-setting-top"><h3>动作音效</h3><label><span>开启</span><input id="media-effects" data-media-input="effects" type="checkbox"'+checked('effects')+'></label></div><p>纸牌、刀锋、碎甲、护盾、治疗和战利品的不同回响。</p><label class="media-volume"><span>音量</span><input aria-label="动作音效音量" data-media-input="effectsVolume" type="range" min="0" max="100" value="'+Math.round(s.effectsVolume*100)+'"><output id="media-effectsVolume-value"></output></label></section>'+
+      '<section class="media-setting"><h3>动画强度</h3><p>轻量模式保留淡入和文字反馈，关闭环境漂移与大幅动作。</p><select aria-label="动画强度" class="media-motion" data-media-input="motion">'+[['auto','跟随系统'],['full','完整动画'],['reduced','轻量动画'],['off','关闭动画']].map(([id,name])=>'<option value="'+id+'"'+(s.motion===id?' selected':'')+'>'+name+'</option>').join('')+'</select></section></div>'+
+      '<div class="media-actions"><button class="outline-button" data-media-test="hit">试听打击音</button><button class="outline-button" data-media-test="relic">试听奖励音</button></div><p class="modal-note">首次点击后开启声音；切到后台自动暂停。设置保存在这台设备，独立于旅途存档，随时可调。</p><p class="media-storage-note" id="media-storage-note" hidden></p>','media-panel');
+    updateMediaUi();
   }
   function toast(text) { $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 2400); }
   function floatText(target, text, kind = '') { const e = document.createElement('span'); e.className = `float-text ${kind}`; e.textContent = text; $(target).appendChild(e); setTimeout(() => e.remove(), 1300); }
-  function shake(target, cls = 'hit') { const e = $(target); clearTimeout(shakeTimers.get(e)); e.classList.remove('hit', 'attacking', 'shield-up', 'impact-pulse'); void e.offsetWidth; e.classList.add(cls); shakeTimers.set(e, setTimeout(() => e.classList.remove(cls), 650)); }
+  function shake(target, cls = 'hit') { const e = $(target);if(media.motion!=='full'){media.burst(e);return;} clearTimeout(shakeTimers.get(e)); e.classList.remove('hit', 'attacking', 'shield-up', 'impact-pulse'); void e.offsetWidth; e.classList.add(cls); shakeTimers.set(e, setTimeout(() => e.classList.remove(cls), 650)); }
   function effectPoint(element) {
     const a = $('arena').getBoundingClientRect();let b = element.getBoundingClientRect();
     if(!b.width&&!b.height&&element.id==='hero-figure')b=$('hero-actor').getBoundingClientRect();
@@ -326,6 +361,7 @@
   function effect(className, point, styles = {}) {
     const e = document.createElement('span'); e.className = className; e.style.left = `${point.x}px`; e.style.top = `${point.y}px`;
     Object.entries(styles).forEach(([key, value]) => e.style.setProperty(key, value));
+    if(media.motion!=='full')return e;
     $('combat-effects').appendChild(e); setTimeout(() => e.remove(), 1000); return e;
   }
   function strikeEffect(from, to, blocked = false) {
@@ -355,7 +391,8 @@
     }
     floatText(battle.members.length>1?target:'enemy-actor', hit.lost ? `−${hit.lost}` : hit.blocked ? `破甲 ${hit.blocked}` : '弱击', hit.lost ? 'damage' : 'block');
     announceImpact(d.name, hit.lost ? `−${hit.lost}` : hit.blocked ? '破甲' : '弱击', `${result.targetName} · ${hit.lost ? `削去 ${hit.lost} 层 · 击碎 ${hit.cleared} 格` : hit.blocked ? '护甲碎裂' : '本次未造成伤害'}${hit.blocked ? ` · 破甲 ${hit.blocked} 格` : ''}`, hit.lost ? 'damage' : 'block');
-    tone(hit.lost ? 150 : 360, .2, hit.lost ? 'sawtooth' : 'triangle');
+    media.sfx(hit.lost?(hit.lost>=6?'heavy':'hit'):hit.blocked?'armor':'block',{strength:Math.min(2,1+hit.lost/12),broken:hit.cleared});
+    if(hit.lost&&hit.blocked)media.sfx('armor');
   }
   function saveRun(backup = false) {
     const errors=[];
@@ -508,7 +545,9 @@
       floatText(target,R.statuses[event.kind].name+' −'+Number(event.amount.toFixed(1)),'damage'+(i?' secondary':''));
     }
     if(events.length)toast(events.slice(-3).map(e=>e.text).join(' / '));
-    if(events.some(e=>e.who==='hero'&&e.amount>0)){shake('hero-health','impact-pulse');tone(100,.15);}
+    if(events.some(e=>e.who==='hero'&&e.amount>0))shake('hero-health','impact-pulse');
+    const sounds={burn:'burn',bleed:'bleed',rupture:'rupture',sinking:'sinking',tremor:'tremor'};
+    for(const kind of [...new Set(events.map(e=>e.kind))].slice(0,2))if(sounds[kind])media.sfx(sounds[kind]);
   }
   function showDeckAction(){
     const p=run.pendingDeckAction,d=run.deckAction;if(!p||!d)return;
@@ -597,13 +636,16 @@
     $('arena').setAttribute('aria-label',`${e?.name || '回廊'}战斗场景`); $('enemy-actor').setAttribute('aria-label',e?.name || '敌人'); $('enemy-grid-panel').setAttribute('aria-label',`${e?.name || '敌人'}的生命方格`);
     $('enemy-grid-panel').querySelector('h2').textContent=battle.members.length>1?'目标 · '+e.name:'生命方格';
     $('enemy-health').setAttribute('aria-label','敌人剩余总生命');
-    $('sound-button').classList.toggle('active',sound); $('sound-button').setAttribute('aria-pressed',String(sound));
+    media.scene(mediaKind(),run.floorNumber);updateMediaUi();
     $('relic-badge').hidden=true;renderRelics();
     if(!inCombat) renderRoute(); updateSaveBadge();
   }
   function routeAction(id) {
-    if(busy || modalOpen || !run.enter(id,Battle)) return;
+    if(busy || modalOpen) return;
+    const from=run.exploration?.position,mode=run.exploration?.mode,path=run.exploration?run.routePlan(id).path:[];
+    if(!run.enter(id,Battle))return;
     adoptRun(run); saveRun(); render();
+    media.sfx(mode==='grapple'?'grapple':mode==='glide'?'glide':'move');if(from&&run.screen==='map')media.travel(from,id,path);
   }
   function afterNodeAction() { adoptRun(run); saveRun(); closeModal(); render(); }
   function showRoute() {
@@ -687,11 +729,11 @@
     $('hand-shortcuts').textContent = phoneUI?(auto?'AUTO · 点牌直接攻击':'左右滑动手牌 · 选牌后点格'):(auto ? 'AUTO · 点牌直接攻击  /  A 切换' : '选牌 1–9 · 鼠标居中 · R/滚轮旋转');
     document.querySelectorAll('.card').forEach(e => e.classList.toggle('selected', e.dataset.uid === selectedUid));
   }
-  function rotateAttack(direction = 1) { if (!selectedCard() || busy || modalOpen || auto) return; flushPointerAim(); rotation = (rotation + (direction < 0 ? 3 : 1)) % 4; aimAt(aim.x, aim.y, true); tone(320, .06); }
+  function rotateAttack(direction = 1) { if (!selectedCard() || busy || modalOpen || auto) return; flushPointerAim(); rotation = (rotation + (direction < 0 ? 3 : 1)) % 4; aimAt(aim.x, aim.y, true); media.sfx('rotate'); }
   function cancelAttack() { if (!selectedUid) return; clearPlacement(); paintPlacement(); toast('已取消放置，未消耗卡牌或能量。'); }
   function toggleAuto() {
     if (busy || modalOpen || run.screen !== 'battle' || battle.status !== 'playing') return;
-    auto = !auto; clearPlacement(); saveRun(); render(); tone(auto ? 520 : 300, .08);
+    auto = !auto; clearPlacement(); saveRun(); render(); media.sfx('select');
     toast(auto ? 'AUTO 开启 · 点击攻击牌，自动选落点并打出' : 'AUTO 关闭 · 选牌后点击格子立即攻击');
   }
   const capacityTips = { consciousness: '大脑、头部、疼痛和失血影响意识；决定抽牌数量，并影响操作、行动与感官。', manipulation: '双臂与双手效率、意识决定操作；影响形状攻击和格挡。', moving: '腿、脚、脊柱、意识与器官决定行动；影响下回合能量和受击倍率。', sight: '双眼与意识决定视觉；影响攻击效能。', hearing: '双耳与意识决定听觉；影响受击倍率。', breathing: '双肺与颈部决定呼吸；影响意识、行动及能量恢复。', pumping: '心脏与血容量决定循环；影响意识、格挡和血容量恢复。', metabolism: '胃与循环决定代谢；影响包扎修复和血容量恢复。' };
@@ -725,7 +767,7 @@
     if (busy || run.screen !== 'battle' || (modalOpen && !$('modal-panel').classList.contains('health-modal'))) return;
     const result = battle.medical(action, selectedPart);
     if (!result.ok) { toast(result.reason); return; }
-    clearPlacement(); commitAction(); render(); shake('hero-figure', 'shield-up'); tone(520, .2);
+    clearPlacement(); commitAction(); render(); shake('hero-figure', 'shield-up'); media.sfx(result.action==='bandage'?'heal':'boost');media.burst($('body-panel'),'heal');
     toast(result.action === 'bandage' ? result.healed ? `${result.part}修复 ${result.healed} 点，已止血。` : `${result.part}已止血，缺失部位不会再生。` : '强化开启，当前及后续共3个玩家回合生效。');
     if (modalOpen) showHealth();
   }
@@ -770,7 +812,7 @@
     }).join('');
     if(phoneUI)$('hand').scrollLeft=handScroll;
     $('arena').classList.toggle('victory', battle.status === 'won'); $('enemy-figure').classList.toggle('defeated', battle.status === 'won');
-    renderGrid(); renderHealth(); renderRun();renderEnemies();
+    renderGrid(); renderHealth(); renderRun();renderEnemies();presentMedia();
     if(phoneUI)document.dispatchEvent(new CustomEvent('ember:render',{detail:{screen:run.screen,nodeId:run.nodeId,selectedUid,busy}}));
     if(battle.overflowCount&&!busy)showOverflow();
     else if(run.pendingDeckAction&&!busy&&!modalOpen)showDeckAction();
@@ -781,7 +823,7 @@
     const card = battle.hand.find(c => c.uid === uid); if (!card || battle.status !== 'playing') return;
     const d = battle.definition(card);
     if(d.shape&&battle.heroState.staggered){toast('失衡中不能攻击，可使用技能、包扎或强化剂。');return;}
-    if (d.cost > battle.energy) { toast('能量不足，可以结束回合恢复能量。'); return; }
+    if (d.cost > battle.energy) { media.sfx('error');toast('能量不足，可以结束回合恢复能量。'); return; }
     if (d.shape) {
       if (auto) {
         const placement = battle.autoPlacement(card);
@@ -789,16 +831,17 @@
         resolvePlay(uid, placement); return;
       }
       if (selectedUid === uid) { cancelAttack(); return; }
-      flushPointerAim(); selectedUid = uid; rotation = 0; anchorChosen = false; wheelAmount = 0; lastWheelAt = 0; lastWheelTurn = -Infinity; aimAt(aim.x, aim.y, true); render(); tone(300, .08);
+      flushPointerAim(); selectedUid = uid; rotation = 0; anchorChosen = false; wheelAmount = 0; lastWheelAt = 0; lastWheelTurn = -Infinity; aimAt(aim.x, aim.y, true); render(); media.sfx('select');
       toast(phoneUI?`${d.name}已选中 · 点生命格攻击，下方按钮旋转`:`${d.name}已选中 · 图案中心跟随鼠标，点击攻击，滚轮旋转`); return;
     }
     clearPlacement(); resolvePlay(uid);
   }
   function resolvePlay(uid, placement = null) {
-    const result = battle.play(uid, placement); if (!result.ok) { tone(90); toast(result.reason); return; }
+    const result = battle.play(uid, placement); if (!result.ok) { media.sfx('error'); toast(result.reason); return; }
     clearPlacement(); commitAction();
     $('first-hint').classList.add('dismissed'); render();
-    if (result.plan) attackFeedback(result); else tone(440, .15);
+    media.sfx('card');
+    if (result.plan) attackFeedback(result);else if(result.recovery)media.sfx('heal');else if(result.definition.block)media.sfx('shield');else if(result.definition.energy)media.sfx('boost');else media.sfx('select');
     if (result.definition.block) { floatText('hero-actor', `+${result.definition.block} 格挡`, 'block'); if (!result.plan) shake('hero-figure', 'shield-up'); }
     if (result.recovery) { floatText('hero-actor',`+${result.recovery.healed} 修复`,'block');toast(result.recovery.cleanse?'修复伤处并止住全部出血。':`修复${result.recovery.part||'身体'} ${result.recovery.healed} 点。`); }
     statusFeedback(result.statusEvents);
@@ -811,9 +854,9 @@
     clearPlacement(); const serial = battleSerial;
     // Resolve and save atomically before playing feedback; reloading cannot skip this enemy turn.
     const result=battle.endTurn();if(!result.ok)return;const intent=result.intent; commitAction();
-    busy = true; $('first-hint').classList.add('dismissed'); render();
+    busy = true; $('first-hint').classList.add('dismissed'); render();media.sfx('turn');media.sfx('enemy');
     if (intent.damage) shake('enemy-figure', 'attacking');
-    if(battle.members.length>1)for(const [i,a]of result.actions.entries())setTimeout(()=>{if(serial!==battleSerial)return;shake('enemy-slot-'+a.index,a.intent.damage?'attacking':'shield-up');if(a.intent.damage)strikeEffect('enemy-slot-'+a.index,'hero-figure',!a.hit.lost);},i*180);
+    if(battle.members.length>1)for(const [i,a]of result.actions.entries())setTimeout(()=>{if(serial!==battleSerial)return;shake('enemy-slot-'+a.index,a.intent.damage?'attacking':'shield-up');if(a.intent.damage){strikeEffect('enemy-slot-'+a.index,'hero-figure',!a.hit.lost);media.sfx(a.hit.lost?'hurt':'block');}},i*180);
     toast(`${intent.name} · ${intent.damage ? `${intent.damage}点攻击来袭` : intent.block?'敌人正在覆甲':'负面状态结算'}`);
     setTimeout(() => {
       if (serial !== battleSerial) return;
@@ -821,13 +864,13 @@
       busy = false; render();
       if (result.intent.damage) {
         if(battle.members.length===1)strikeEffect('enemy-figure', 'hero-figure', !result.hit.lost);
-        if (result.hit.lost) { shake('hero-figure'); shake('hero-health', 'impact-pulse'); floatText('hero-actor', `−${result.hit.lost}`, 'damage'); tone(75, .28, 'sawtooth'); }
-        else { shake('hero-figure', 'shield-up'); floatText('hero-actor', `格挡 ${result.hit.blocked}`, 'block'); tone(360, .2); }
+        if (result.hit.lost) { shake('hero-figure'); shake('hero-health', 'impact-pulse'); floatText('hero-actor', `−${result.hit.lost}`, 'damage'); media.sfx(result.hit.hits.some(h=>h.destroyed)?'break':'hurt'); }
+        else { shake('hero-figure', 'shield-up'); floatText('hero-actor', `格挡 ${result.hit.blocked}`, 'block'); media.sfx('block'); }
         announceImpact(result.intent.name, result.hit.lost ? `−${result.hit.lost}` : '格挡', `${result.hit.hits.length ? result.hit.hits.map(wound => `${wound.name} −${wound.damage}${wound.destroyed ? ' 毁坏' : ''}`).join(' / ') : '伤害已被格挡'}${result.hit.blocked ? ` · 格挡 ${result.hit.blocked}` : ''}`, result.hit.lost ? 'hero-damage' : 'block');
         $('body-diagram').querySelectorAll('[data-body-part]').forEach(e => { if (result.hit.hits.some(wound => wound.id === e.dataset.bodyPart)) e.classList.add('just-hit'); });
         if (result.hit.blocked && result.hit.lost) floatText('hero-actor', `格挡 ${result.hit.blocked}`, 'block secondary');
       } else if(result.actions.some(a=>a.intent.block)) {
-        shake('enemy-grid-panel', 'shield-up'); announceImpact(result.intent.name, `+${result.actions.reduce((sum,a)=>sum+battle.members[a.index].block,0)}`, '各敌人为自己的生命格覆甲', 'block'); tone(360, .2);
+        shake('enemy-grid-panel', 'shield-up'); announceImpact(result.intent.name, `+${result.actions.reduce((sum,a)=>sum+battle.members[a.index].block,0)}`, '各敌人为自己的生命格覆甲', 'block'); media.sfx('shield');
       } else {
         announceImpact('状态结算',battle.status==='won'?'全灭':'失衡',result.statusEvents?.map(e=>e.text).join(' / ')||'敌人跳过行动','damage');
       }
@@ -839,6 +882,7 @@
     hideRelicTooltip();const panel=$('modal-panel'),keepScroll=(phoneUI||className==='overflow-panel'||className==='deck-action-panel'||className==='tech-panel')&&modalOpen&&panel.className===`modal-panel ${className}`,scroll=panel.scrollTop;
     modalOpen = true; $('modal-title').textContent = title; $('modal-body').innerHTML = content; panel.className = `modal-panel ${className}`; $('modal').hidden = false;
     $('modal-close').disabled=className==='overflow-panel';
+    if(!keepScroll)media.animate(panel,[{opacity:.2,transform:'translateY(15px) scale(.985)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:260});
     if(keepScroll)panel.scrollTop=scroll;else if(phoneUI){panel.scrollTop=0;$('modal-close').focus({preventScroll:true});}else $('modal-close').focus();
     if(phoneUI)document.dispatchEvent(new CustomEvent('ember:modal'));
   }
@@ -877,18 +921,18 @@
     if(e.target.closest('[data-sea-help]'))showExplorationHelp();
     if(e.target.closest('[data-sea-locate]'))locateSea();
     const seaMove=e.target.closest('[data-sea-move]');if(seaMove&&!seaMove.disabled)routeAction(seaMove.dataset.seaMove);
-    if(e.target.closest('[data-start-pursuit]')&&!busy&&!modalOpen&&run.startPursuit(Battle)){adoptRun(run);saveRun();render();}
+    if(e.target.closest('[data-start-pursuit]')&&!busy&&!modalOpen&&run.startPursuit(Battle)){adoptRun(run);saveRun();render();media.sfx('enemy');}
     if(e.target.closest('[data-open-tech]'))showTech();
     const techSelect=e.target.closest('[data-tech-select]');if(techSelect){selectedTech=techSelect.dataset.techSelect;showTech();}
-    const techUnlock=e.target.closest('[data-tech-unlock]');if(techUnlock&&!techUnlock.disabled){saveRun();const result=profile.unlock(techUnlock.dataset.techUnlock);if(result.ok){saveRun();renderRelics();showTech();toast('科技已解锁，下次新旅途生效。');}else{showTech();toast(result.reason);}}
+    const techUnlock=e.target.closest('[data-tech-unlock]');if(techUnlock&&!techUnlock.disabled){saveRun();const result=profile.unlock(techUnlock.dataset.techUnlock);if(result.ok){saveRun();renderRelics();showTech();media.sfx('upgrade');toast('科技已解锁，下次新旅途生效。');}else{showTech();toast(result.reason);}}
     const relicSlot=e.target.closest('[data-relic-id]');if(relicSlot)showRelic(relicSlot.dataset.relicId);
     if(e.target.closest('[data-open-statuses]'))showStatuses();
     const deckPick=e.target.closest('[data-deck-pick]');if(deckPick&&!deckPick.disabled&&run.selectDeckCard(Number(deckPick.dataset.deckPick))){saveRun();showDeckAction();}
     if(e.target.closest('[data-cancel-deck]'))closeModal();
-    if(e.target.closest('[data-confirm-deck]')){const result=run.confirmDeckAction();if(result.ok){afterNodeAction();toast('卡牌已更新并自动保存。');}else if(result.reason)toast(result.reason);}
-    const target=e.target.closest('[data-enemy-target]');if(target&&!busy&&!modalOpen&&battle.selectTarget(Number(target.dataset.enemyTarget))){saveRun();render();}
+    if(e.target.closest('[data-confirm-deck]')){const upgrade=run.deckAction?.kind==='upgrade',result=run.confirmDeckAction();if(result.ok){afterNodeAction();media.sfx(upgrade?'upgrade':'card');toast('卡牌已更新并自动保存。');}else if(result.reason)toast(result.reason);}
+    const target=e.target.closest('[data-enemy-target]');if(target&&!busy&&!modalOpen&&battle.selectTarget(Number(target.dataset.enemyTarget))){saveRun();render();media.sfx('select');media.burst($('enemy-grid-panel'));}
     const pick=e.target.closest('[data-overflow-pick]');if(pick&&battle.toggleOverflow(pick.dataset.overflowPick)){saveRun();showOverflow();}
-    if(e.target.closest('[data-confirm-overflow]')&&battle.confirmOverflow()){saveRun();closeModal();render();}
+    if(e.target.closest('[data-confirm-overflow]')&&battle.confirmOverflow()){saveRun();closeModal();render();media.sfx('draw',{count:2});}
     const bodyPart = e.target.closest('[data-body-part]'); if (bodyPart) selectBodyPart(bodyPart.dataset.bodyPart);
     const medical = e.target.closest('[data-medical]'); if (medical) useMedical(medical.dataset.medical);
     if (e.target.closest('[data-open-health]')) showHealth();
@@ -896,14 +940,14 @@
     if (e.target.closest('[data-open-relics]')) showRelics();
     const card = e.target.closest('[data-uid]'); if (card) play(card.dataset.uid);
     const node=e.target.closest('[data-node]'); if(node && !node.disabled){if(run.exploration&&!busy&&!modalOpen&&run.screen==='map'){selectedSeaNode=node.dataset.node;render();$('route-map').querySelector('[data-node="'+selectedSeaNode+'"]')?.focus({preventScroll:true});}else routeAction(node.dataset.node);}
-    const choice=e.target.closest('[data-node-choice]'); if(choice && !choice.disabled && !modalOpen) { const result=run.choose(choice.dataset.nodeChoice); if(result.ok){if(result.pending){saveRun();render();}else afterNodeAction();} else if(result.reason)toast(result.reason); }
-    const buy=e.target.closest('[data-buy]'); if(buy && !buy.disabled && !modalOpen) { const result=run.buy(buy.dataset.buy); if(result.ok) { adoptRun(run); saveRun(); render(); } else if(result.reason)toast(result.reason); }
-    const cardReward=e.target.closest('[data-card-reward]'); if(cardReward && run.chooseCard(cardReward.dataset.cardReward)) afterNodeAction();
-    const ascent=e.target.closest('[data-next-floor]');if(ascent&&!busy&&run.advanceFloor(ascent.dataset.nextFloor))afterNodeAction();
+    const choice=e.target.closest('[data-node-choice]'); if(choice && !choice.disabled && !modalOpen) { const result=run.choose(choice.dataset.nodeChoice); if(result.ok){media.sfx(result.pending?'select':choice.dataset.nodeChoice.startsWith('relic:')?'relic':choice.dataset.nodeChoice==='rest'?'heal':choice.dataset.nodeChoice==='train'?'draw':choice.dataset.nodeChoice==='purge'?'card':choice.dataset.nodeChoice==='survey'?'glide':'coin');if(result.pending){saveRun();render();}else afterNodeAction();} else if(result.reason)toast(result.reason); }
+    const buy=e.target.closest('[data-buy]'); if(buy && !buy.disabled && !modalOpen) { const result=run.buy(buy.dataset.buy); if(result.ok) { adoptRun(run); saveRun(); render();media.sfx(result.pending?'select':'coin'); } else if(result.reason)toast(result.reason); }
+    const cardReward=e.target.closest('[data-card-reward]'); if(cardReward && run.chooseCard(cardReward.dataset.cardReward)){afterNodeAction();media.sfx(cardReward.dataset.cardReward==='skip'?'move':'draw');}
+    const ascent=e.target.closest('[data-next-floor]');if(ascent&&!busy&&run.advanceFloor(ascent.dataset.nextFloor)){afterNodeAction();media.sfx('relic');}
     if(e.target.closest('[data-save-export]')) exportSave();
     if(e.target.closest('[data-save-import]')) { $('save-file').value=''; $('save-file').click(); }
     if(e.target.closest('[data-save-backup]')) { let raw=memoryBackup; try { raw=raw||localStorage.getItem(BACKUP_KEY); } catch (_) {} if(raw) downloadSave(raw,'余烬回廊-替换前备份.json'); }
-    if(e.target.closest('[data-confirm-import]') && pendingImport) { saveRun(true); const imported=pendingImport; pendingImport=null; adoptRun(imported.run); auto=imported.options.auto; sound=imported.options.sound; saveRun(); closeModal(); render(); if(['reward','lost','cleared'].includes(run.screen)) showResult(); }
+    if(e.target.closest('[data-confirm-import]') && pendingImport) { saveRun(true); const imported=pendingImport; pendingImport=null; adoptRun(imported.run); auto=imported.options.auto; saveRun(); closeModal(); render(); if(['reward','lost','cleared'].includes(run.screen)) showResult(); }
     if(e.target.closest('[data-new-run]')) showRestart();
   });
   function showRestart(){if(busy)return;openModal('开始新的旅途？','<p class="modal-note">当前旅途将被替换，并保存为本机备份。<strong>永久科技、通层记录和剩余科技点保留</strong>，所有已解锁能力在新旅途生效。</p><div class="save-actions"><button class="outline-button" data-save-export>先导出当前存档</button><button class="gold-button" id="confirm-restart">开始新旅途</button></div>');}
@@ -940,7 +984,17 @@
   $('log-button').addEventListener('click', () => openModal('战斗记录', `<ol class="battle-log">${battle.log.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ol>`));
   $('restart-button').addEventListener('click',showRestart);
   $('modal-body').addEventListener('click', e => { if (e.target.closest('#confirm-restart')) restart(); });
-  $('sound-button').addEventListener('click', () => { sound = !sound; saveRun(); $('sound-button').classList.toggle('active', sound); $('sound-button').setAttribute('aria-pressed', String(sound)); $('sound-button').title = sound ? '关闭音效' : '开启音效'; toast(sound ? '音效已开启' : '音效已关闭'); if (sound) tone(500); });
+  $('sound-button').addEventListener('click',showMedia);
+  document.addEventListener('ember:media-state',updateMediaUi);
+  $('modal-body').addEventListener('input',event=>{
+    const input=event.target.closest('[data-media-input]');if(!input)return;
+    const key=input.dataset.mediaInput,value=input.type==='checkbox'?input.checked:input.type==='range'?Number(input.value)/100:input.value;
+    media.set({[key]:value});media.unlock(event);updateMediaUi();
+  });
+  $('modal-body').addEventListener('click',event=>{
+    if(event.target.closest('[data-media-start]'))media.unlock();
+    const sample=event.target.closest('[data-media-test]');if(sample)media.sfx(sample.dataset.mediaTest);
+  });
   $('route-button').addEventListener('click',showRoute); $('save-button').addEventListener('click',showSaveMenu);
   $('relic-badge').addEventListener('click',showRelics);
   $('relic-slots').addEventListener('pointerover',e=>showRelicTooltip(e.target.closest('[data-relic-id]')));
@@ -966,7 +1020,7 @@
     if (e.key === 'Tab') aimSource = 'keyboard';
     if (!modalOpen && e.target.closest('[data-body-part]') && ['Enter', ' '].includes(e.key)) { e.preventDefault(); selectBodyPart(e.target.closest('[data-body-part]').dataset.bodyPart); return; }
     if (e.key === 'Escape' && modalOpen) { closeModal(); return; }
-    if (modalOpen) { if (e.key === 'Tab') { const list = [...$('modal').querySelectorAll('button:not([disabled]),[tabindex="0"]')]; if (e.shiftKey && document.activeElement === list[0]) { e.preventDefault(); list.at(-1).focus(); } else if (!e.shiftKey && document.activeElement === list.at(-1)) { e.preventDefault(); list[0].focus(); } } return; }
+    if (modalOpen) { if (e.key === 'Tab') { const list = [...$('modal').querySelectorAll('button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),[tabindex="0"]')]; if (e.shiftKey && document.activeElement === list[0]) { e.preventDefault(); list.at(-1).focus(); } else if (!e.shiftKey && document.activeElement === list.at(-1)) { e.preventDefault(); list[0].focus(); } } return; }
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || run.screen!=='battle') return;
     if (e.key === 'Escape' && selectedUid) { e.preventDefault(); cancelAttack(); return; }
     if (e.key.toLowerCase() === 'a') { e.preventDefault(); toggleAuto(); return; }
@@ -987,13 +1041,13 @@
     if(raw) {
       if(raw.length>MAX_SAVE_SIZE) throw new Error('已有存档过大');
       const data=JSON.parse(raw),restored=Floor.restore(data,Battle);
-      adoptRun(restored.run); auto=restored.options.auto; sound=restored.options.sound; savedAt=typeof data.savedAt==='string'&&!isNaN(Date.parse(data.savedAt))?data.savedAt:null;
+      adoptRun(restored.run); auto=restored.options.auto; savedAt=typeof data.savedAt==='string'&&!isNaN(Date.parse(data.savedAt))?data.savedAt:null;
       saveRun(restored.migrated);
       if(profileIssue)startupNotice='已从旅途存档恢复永久科技；不可读的原科技记录已尝试另存本机备份。'+(saveError?'请立即导出保存进度。':'');
     } else saveRun();
   } catch (_) { saveError='存档不可读，可导出或重开'; startupNotice='本地存档暂时无法读取，原记录尚未替换。你可在存档菜单导出备份，或开始新旅途。'; try { memoryBackup=localStorage.getItem(SAVE_KEY); if(memoryBackup) localStorage.setItem(BACKUP_KEY,memoryBackup); } catch (_) {} }
   if(profileIssue&&!startupNotice)startupNotice=profileIssue+'原记录在覆盖前会尝试另存备份，请保留已有导出文件。';
-  $('sound-button').classList.toggle('active',sound); $('sound-button').setAttribute('aria-pressed',String(sound));
+  updateMediaUi();
   render();
   // Browser load events update presentation only; they never advance or save the run.
   let artRefresh=0;
